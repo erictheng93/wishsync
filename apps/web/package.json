@@ -7,7 +7,7 @@
     "build": "nuxt build",
     "preview": "npm run build && wrangler pages dev dist",
     "build:demo": "NUXT_DEMO=1 NUXT_PUBLIC_API_BASE= nuxt build",
-    "deploy": "NUXT_DEMO= nuxt build && wrangler pages deploy dist --project-name wishsync-web",
+    "deploy": "node scripts/check-prod-env.mjs && NUXT_DEMO= nuxt build && wrangler pages deploy dist --project-name wishsync-web",
     "deploy:demo": "npm run build:demo && wrangler pages deploy dist --project-name wishsync-web",
     "typecheck": "nuxt typecheck",
     "test": "vitest run"

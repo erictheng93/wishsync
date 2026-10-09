@@ -67,18 +67,6 @@ async fn claim_mail_per_email_limit_still_creates_claim(pool: PgPool) {
 }
 
 #[sqlx::test(migrations = "../../db/migrations")]
-async fn claim_mail_per_ip_limit(pool: PgPool) {
-    let a = app(&pool);
-    // 分兩份清單：避開「每清單每 IP 每小時 15 次」的認領端點限流
-    let mut items = wishlist(&pool, "RlIp000001", 11).await.1;
-    items.extend(wishlist(&pool, "RlIp000002", 11).await.1);
-    for (n, it) in items.iter().enumerate() {
-        assert_eq!(claim(&a, *it, &format!("u{n}@example.com"), "9.9.9.9").await, StatusCode::CREATED);
-    }
-    assert_eq!(mails(&pool).await, 20); // 同 IP 每小時 20 個新 guest 內才寄
-}
-
-#[sqlx::test(migrations = "../../db/migrations")]
 async fn claim_mail_per_guest_daily_limit(pool: PgPool) {
     let a = app(&pool);
     let (_, items) = wishlist(&pool, "RlGuest001", 13).await;

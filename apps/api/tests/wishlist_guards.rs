@@ -16,7 +16,6 @@ async fn call(pool: &PgPool, method: &str, uri: &str, hdr: &[(&str, String)], bo
     (st, h, serde_json::from_slice(&bytes).unwrap_or(Value::Null))
 }
 fn ck(t: &str) -> [(&'static str, String); 1] { [("cookie", format!("ws_session={t}"))] }
-fn gt(t: &str) -> [(&'static str, String); 1] { [("x-guest-token", t.to_string())] }
 
 async fn user(pool: &PgPool, staff: bool) -> (Uuid, String) {
     let id: Uuid = sqlx::query_scalar("INSERT INTO users (display_name, email, is_staff) VALUES ('u', $1, $2) RETURNING id")

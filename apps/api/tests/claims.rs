@@ -22,7 +22,7 @@ fn post_claim(item: Uuid, key: Uuid, token: Option<&str>, body: Value) -> Reques
     r.body(Body::from(body.to_string())).unwrap()
 }
 
-struct Fx { slug: String, wl: Uuid }
+struct Fx { wl: Uuid }
 
 /// 建立 owner + 清單（active）；回傳 slug / id
 async fn wishlist(pool: &PgPool, slug: &str, extra: &str) -> Fx {
@@ -31,7 +31,7 @@ async fn wishlist(pool: &PgPool, slug: &str, extra: &str) -> Fx {
         "INSERT INTO wishlists (owner_id, type, status, slug, title {}) VALUES ($1, 'registry', 'active', $2, '寶寶清單' {}) RETURNING id",
         if extra.is_empty() { "" } else { ", moderation_status, moderation_reason, show_claimer_names" },
         if extra.is_empty() { "" } else { extra })).bind(owner).bind(slug).fetch_one(pool).await.unwrap();
-    Fx { slug: slug.into(), wl }
+    Fx { wl }
 }
 
 async fn item(pool: &PgPool, wl: Uuid, title: &str, needed: i32) -> Uuid {

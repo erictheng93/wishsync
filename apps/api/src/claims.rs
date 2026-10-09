@@ -98,13 +98,24 @@ async fn create(State(st): State<AppState>, Path(item_id): Path<Uuid>, MaybeActo
     // 限流放在重播判斷之後：重播只回放已存的回應、不產生新認領，不消耗額度（也讓網路重試不會被誤擋）。
     // 超限時 tx 隨 return 回滾，idempotency key 不會被占用，額度重置後可用同 key 重試。
     // 計數與認領同一個 tx（不另佔連線，避免併發時 pool 耗盡死結；429 時計數一併回滾，只算成功放行的請求）。
-    ratelimit::check(&mut *tx, &format!("claim_post_ip:{}", peer.0), 30, 3600).await?;
-    let wl: Option<Uuid> = sqlx::query_scalar("SELECT wishlist_id FROM wishlist_items WHERE id = $1").bind(item_id).fetch_optional(&mut *tx).await?;
-    if let Some(w) = wl { ratelimit::check(&mut *tx, &format!("claim_post_wl:{w}:{}", peer.0), 15, 3600).await?; }
+    // 以「身分」計數，不以 IP：派對場地 Wi-Fi、電信商 CGNAT 會讓很多真人共用同一個 IP。
+    // 既有 guest / 登入使用者：各自每小時 30 次、同一清單 15 次；只有「建立全新 guest」才按 IP 計（每小時 100 個）。
+    let who = match actor {
+        Some(Actor::Guest(g)) => Some(format!("guest:{g}")),
+        Some(Actor::User(u)) => Some(format!("user:{u}")),
+        None => None,
+    };
+    match &who {
+        Some(w) => {
+            ratelimit::check(&mut *tx, &format!("claim_post:{w}"), 30, 3600).await?;
+            let wl: Option<Uuid> = sqlx::query_scalar("SELECT wishlist_id FROM wishlist_items WHERE id = $1").bind(item_id).fetch_optional(&mut *tx).await?;
+            if let Some(wl) = wl { ratelimit::check(&mut *tx, &format!("claim_post_wl:{wl}:{w}"), 15, 3600).await?; }
+        }
+        None => ratelimit::check(&mut *tx, &format!("claim_new_guest_ip:{}", peer.0), 100, 3600).await?,
+    }
 
     // 身分：user / 既有 guest / 首次建立 guest（同交易，失敗一併 rollback）
     let (mut guest_id, mut user_id, mut new_token) = (None, None, None);
-    let created_guest = actor.is_none();
     let name: String = match actor {
         Some(Actor::User(u)) => {
             user_id = Some(u);
@@ -175,8 +186,7 @@ async fn create(State(st): State<AppState>, Path(item_id): Path<Uuid>, MaybeActo
     };
     let send_mail = match (&guest_email, guest_id) {
         (Some(e), Some(g)) => {
-            (!created_guest || ratelimit::allow(&st.pool, &format!("claim_ip:{}", peer.0), 20, 3600).await?)
-                && ratelimit::allow(&st.pool, &format!("claim_mail:{e}"), 3, 3600).await?
+            ratelimit::allow(&st.pool, &format!("claim_mail:{e}"), 3, 3600).await?
                 && ratelimit::allow(&st.pool, &format!("claim_guest:{g}"), 10, 86400).await?
         }
         _ => false,

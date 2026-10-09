@@ -96,32 +96,60 @@ async fn expire_due_concurrent_and_vs_cancel(pool: PgPool) {
 
 fn sha(b: &[u8]) -> Vec<u8> { use sha2::{Digest, Sha256}; Sha256::digest(b).to_vec() }
 
-#[sqlx::test(migrations = "../../db/migrations")]
-async fn claim_post_ip_limit_and_replay_free(pool: PgPool) {
-    let a = app(&pool);
-    // 5 份清單各 7 個品項，避開每清單 15 次的限制
-    let mut its = vec![];
-    for w in 0..5 { its.extend(wishlist(&pool, &format!("RlIp{w:06}"), 7, 100).await.1); }
-    let k = Uuid::new_v4();
-    assert_eq!(call(&a, post_claim(its[0], k), "5.5.5.5").await.0, StatusCode::CREATED);
-    // 同 key 重播 40 次：不消耗額度、不 429
-    for _ in 0..40 { assert_eq!(call(&a, post_claim(its[0], k), "5.5.5.5").await.0, StatusCode::CREATED); }
-    for it in &its[1..30] { assert_eq!(call(&a, post_claim(*it, Uuid::new_v4()), "5.5.5.5").await.0, StatusCode::CREATED); }
-    let (s, h, b) = call(&a, post_claim(its[30], Uuid::new_v4()), "5.5.5.5").await;
-    assert_eq!((s, b["code"].as_str()), (StatusCode::TOO_MANY_REQUESTS, Some("RATE_LIMITED")));
-    assert!(h.contains_key("retry-after"));
-    assert_eq!(call(&a, post_claim(its[30], Uuid::new_v4()), "6.6.6.6").await.0, StatusCode::CREATED); // 另一 IP 不受影響
-    // 超限後重播先前成功的請求仍可回放
-    assert_eq!(call(&a, post_claim(its[0], k), "5.5.5.5").await.0, StatusCode::CREATED);
+fn post_claim_as(item: Uuid, key: Uuid, token: &str) -> Request<Body> {
+    Request::post(format!("/api/v1/items/{item}/claims")).header("content-type", "application/json").header("idempotency-key", key.to_string())
+        .header("x-guest-token", token).body(Body::from(json!({"qty": 1}).to_string())).unwrap()
+}
+
+/// 建一個 guest 並回傳 token
+async fn new_guest(a: &Router, item: Uuid, ip: &str) -> String {
+    let (s, _, b) = call(a, post_claim(item, Uuid::new_v4()), ip).await;
+    assert_eq!(s, StatusCode::CREATED);
+    b["guest_token"].as_str().unwrap().to_string()
+}
+
+fn limited(r: &(StatusCode, axum::http::HeaderMap, Value)) -> bool {
+    r.0 == StatusCode::TOO_MANY_REQUESTS && r.2["code"] == "RATE_LIMITED" && r.1.contains_key("retry-after")
 }
 
 #[sqlx::test(migrations = "../../db/migrations")]
-async fn claim_post_per_wishlist_limit(pool: PgPool) {
+async fn claim_limit_is_per_identity_and_replay_free(pool: PgPool) {
     let a = app(&pool);
-    let (_, its) = wishlist(&pool, "RlWl000001", 17, 100).await;
-    for it in &its[..15] { assert_eq!(call(&a, post_claim(*it, Uuid::new_v4()), "7.7.7.7").await.0, StatusCode::CREATED); }
-    let (s, h, b) = call(&a, post_claim(its[15], Uuid::new_v4()), "7.7.7.7").await;
-    assert_eq!((s, b["code"].as_str()), (StatusCode::TOO_MANY_REQUESTS, Some("RATE_LIMITED")));
-    assert!(h.contains_key("retry-after"));
-    assert_eq!(call(&a, post_claim(its[15], Uuid::new_v4()), "8.8.8.8").await.0, StatusCode::CREATED);
+    // 5 份清單各 7 個品項：避開「同清單 15 次」
+    let mut its = vec![];
+    for w in 0..5 { its.extend(wishlist(&pool, &format!("RlId{w:06}"), 7, 100).await.1); }
+    let tok = new_guest(&a, its[0], "5.5.5.5").await; // 第 1 次（建立 guest 的那次）
+    // 同 key 重播：不消耗額度
+    let k = Uuid::new_v4();
+    assert_eq!(call(&a, post_claim_as(its[1], k, &tok), "5.5.5.5").await.0, StatusCode::CREATED);
+    for _ in 0..40 { assert_eq!(call(&a, post_claim_as(its[1], k, &tok), "5.5.5.5").await.0, StatusCode::CREATED); }
+    // 建立 guest 的那次按 IP 計、不計入該 guest；之後共 30 次：已計 1 次（its[1]），再 29 次成功，下一次 429
+    for it in &its[2..31] { assert_eq!(call(&a, post_claim_as(*it, Uuid::new_v4(), &tok), "5.5.5.5").await.0, StatusCode::CREATED); }
+    assert!(limited(&call(&a, post_claim_as(its[31], Uuid::new_v4(), &tok), "5.5.5.5").await));
+    // 同一個 IP 的另一個人不受影響（派對 Wi-Fi / CGNAT）
+    let tok2 = new_guest(&a, its[32], "5.5.5.5").await;
+    assert_eq!(call(&a, post_claim_as(its[33], Uuid::new_v4(), &tok2), "5.5.5.5").await.0, StatusCode::CREATED);
+    // 超限後重播先前成功的請求仍可回放
+    assert_eq!(call(&a, post_claim_as(its[1], k, &tok), "5.5.5.5").await.0, StatusCode::CREATED);
+}
+
+#[sqlx::test(migrations = "../../db/migrations")]
+async fn claim_per_wishlist_limit_is_per_identity(pool: PgPool) {
+    let a = app(&pool);
+    let (_, its) = wishlist(&pool, "RlWl000001", 20, 100).await;
+    let tok = new_guest(&a, its[0], "7.7.7.7").await;
+    // 建立 guest 那次不計；其後同清單 15 次成功，第 16 次 429
+    for it in &its[1..16] { assert_eq!(call(&a, post_claim_as(*it, Uuid::new_v4(), &tok), "7.7.7.7").await.0, StatusCode::CREATED); }
+    assert!(limited(&call(&a, post_claim_as(its[16], Uuid::new_v4(), &tok), "7.7.7.7").await));
+    // 同 IP、同清單的其他人照常認領（場地 Wi-Fi 的賓客）
+    for it in &its[17..20] { assert_eq!(call(&a, post_claim(*it, Uuid::new_v4()), "7.7.7.7").await.0, StatusCode::CREATED); }
+}
+
+#[sqlx::test(migrations = "../../db/migrations")]
+async fn new_guest_limit_is_per_ip(pool: PgPool) {
+    let a = app(&pool);
+    let (_, its) = wishlist(&pool, "RlNew00001", 101, 100).await;
+    for it in &its[..100] { assert_eq!(call(&a, post_claim(*it, Uuid::new_v4()), "4.4.4.4").await.0, StatusCode::CREATED); }
+    assert!(limited(&call(&a, post_claim(its[100], Uuid::new_v4()), "4.4.4.4").await)); // 同 IP 第 101 個新 guest
+    assert_eq!(call(&a, post_claim(its[100], Uuid::new_v4()), "3.3.3.3").await.0, StatusCode::CREATED); // 換 IP 可以
 }
