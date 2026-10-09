@@ -38,7 +38,7 @@ const pct = computed(() => data.value?.completion?.completion_pct ?? 0)
 const closed = computed(() => data.value?.status === 'closed')
 
 // --- 線上狀態 / LINE 引導 ---
-const online = ref(true), live = ref(false), lineHint = ref(false)
+const online = ref(true), mode = ref<LiveMode>('connecting'), lineHint = ref(false)
 // --- 我的認領（有 token 時 GET /guest/me）---
 const myClaims = ref<Record<string, any>>({})
 async function loadMine() {
@@ -52,7 +52,7 @@ const isOwner = ref(false)
 const me = ref<any>(null) // 已登入使用者：認領以帳號名稱進行，不再問暱稱
 const masked = computed(() => isOwner.value && !!data.value?.surprise_mode)
 
-let es: EventSource | undefined
+let live: ReturnType<typeof createLiveRefresh> | undefined
 onMounted(async () => {
   online.value = navigator.onLine
   addEventListener('online', () => { online.value = true; refresh() }); addEventListener('offline', () => (online.value = false))
@@ -60,18 +60,19 @@ onMounted(async () => {
   loadMine()
   $fetch<any>(`${apiBase}/api/v1/me`, { credentials: 'include' }).then(m => { me.value = m; isOwner.value = m?.id === data.value?.owner?.id }).catch(() => {})
   if (!data.value) return
-  es = new EventSource(`${apiBase}/api/v1/public/wishlists/${slug}/events`)
-  es.onopen = () => (live.value = true)
-  // EventSource 會自動重連；被伺服器拒絕（410/404）時 readyState=CLOSED 不再重連，改重抓一次讓頁面顯示下架 / 找不到
-  es.onerror = () => { live.value = false; if (es?.readyState === 2) refresh() }
-  es.addEventListener('item.updated', (ev: any) => {
-    const d = JSON.parse(ev.data)
-    if (d.deleted) items.value = items.value.filter(i => i.id !== d.item_id)
-    else items.value = items.value.map(i => i.id === d.item_id ? { ...i, ...d, id: i.id, progress_percent: Math.min(100, Math.round(d.qty_claimed / d.qty_needed * 100)) } : i)
+  live = createLiveRefresh({
+    url: `${apiBase}/api/v1/public/wishlists/${slug}/events`,
+    refresh, onMode: m => (mode.value = m),
+    onEvent: (type, d) => {
+      if (type === 'wishlist.updated' || !d) return refresh()
+      if (d.deleted) items.value = items.value.filter(i => i.id !== d.item_id)
+      else items.value = items.value.map(i => i.id === d.item_id ? { ...i, ...d, id: i.id, progress_percent: Math.min(100, Math.round(d.qty_claimed / d.qty_needed * 100)) } : i)
+    },
   })
-  es.addEventListener('wishlist.updated', () => refresh())
+  live.start()
 })
-onBeforeUnmount(() => es?.close())
+onBeforeUnmount(() => live?.stop())
+
 
 // --- 認領 sheet / 成功 overlay ---
 const sheetItem = ref<any>(null), done = ref<any>(null), reporting = ref(false), toast = ref('')
@@ -114,7 +115,7 @@ function dismissHint() { setPref('ws_hint_dismissed', '1'); lineHint.value = fal
         <GuestItemCard v-for="it in sorted" :key="it.id" :item="it" :mine="myClaims[it.id] ?? null" :masked="masked" :closed="closed" :online="online" @claim="sheetItem = it" />
       </ul>
       <div class="g-foot">
-        <div><span class="g-dot" :class="{ on: live }" />{{ live ? '即時更新中' : '連線中…' }}</div>
+        <div><span class="g-dot" :class="{ on: mode !== 'connecting' }" />{{ liveLabel(mode) }}</div>
         <button class="g-link" @click="reporting = true">檢舉此清單</button>
         ・<NuxtLink to="/terms">服務條款</NuxtLink>・<NuxtLink to="/privacy">隱私權政策</NuxtLink>
       </div>

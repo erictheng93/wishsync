@@ -16,17 +16,21 @@ pub fn routes() -> Router<AppState> {
 }
 
 // ---------- S3 設定與簽章 ----------
+#[derive(Clone)] // 同上：含 secret key
 pub struct S3 { pub endpoint: String, pub bucket: String, pub ak: String, pub sk: String, pub region: String, pub public_base: String }
 
 impl S3 {
-    pub fn from_env() -> S3 {
-        let g = |k: &str, d: &str| std::env::var(k).unwrap_or_else(|_| d.to_string());
+    /// dev/test：MinIO 預設，仍可由 S3_* 覆寫。production 的必填檢查在 Config::try_from_env。
+    pub fn dev() -> S3 {
+        let g = |k: &str, d: &str| std::env::var(k).ok().filter(|v| !v.is_empty()).unwrap_or_else(|| d.to_string());
         let endpoint = g("S3_ENDPOINT", "http://localhost:9000").trim_end_matches('/').to_string();
         let bucket = g("S3_BUCKET", "wishsync-media");
         let public_base = g("S3_PUBLIC_BASE", &format!("{endpoint}/{bucket}"));
         S3 { endpoint, bucket, ak: g("S3_ACCESS_KEY", "wishsync"), sk: g("S3_SECRET_KEY", "wishsync-secret"),
              region: g("S3_REGION", "us-east-1"), public_base }
     }
+    /// 讀全域 Config
+    pub fn get() -> S3 { crate::config::get().s3 }
     pub fn public_url(&self, key: &str) -> String { format!("{}/{}", self.public_base.trim_end_matches('/'), key) }
     fn host(&self) -> &str { self.endpoint.split("://").nth(1).unwrap_or(&self.endpoint) }
     /// 回傳完整 presigned URL（path-style）。`headers` 為要簽進去的額外標頭（小寫名稱）。
@@ -79,7 +83,7 @@ pub fn sign_url(endpoint: &str, host: &str, path: &str, method: &str, expires: i
 
 // ponytail: 薄層，測試可改指向本機 mock；單次請求無重試。
 async fn s3_req(method: &str, key: &str, body: Option<(Vec<u8>, &str)>) -> Result<reqwest::Response, AppError> {
-    let s3 = S3::from_env();
+    let s3 = S3::get();
     let url = s3.presign(method, key, 300, &[], Utc::now());
     let c = reqwest::Client::new();
     let mut rb = c.request(method.parse().unwrap(), url);
@@ -134,7 +138,7 @@ async fn presign(State(st): State<AppState>, user: CurrentUser, Json(r): Json<Pr
     }
     crate::ratelimit::check(&st.pool, &format!("presign:{}", user.id), 60, 3600).await?;
     ensure_bucket().await;
-    let s3 = S3::from_env();
+    let s3 = S3::get();
     let object_key = format!("{dir}/{}.{ext}", Uuid::new_v4());
     let now = Utc::now();
     let len = r.content_length.to_string();
@@ -173,7 +177,7 @@ async fn confirm(user: CurrentUser, Json(r): Json<ConfirmReq>) -> Result<Json<Va
         Ok((clean, ct)) if ext_of(ct) == Some(want_ext) => {
             s3_req("PUT", &r.object_key, Some((clean, ct))).await?;
             let _ = s3_req("DELETE", &inc, None).await;
-            Ok(Json(json!({ "object_key": r.object_key, "public_url": S3::from_env().public_url(&r.object_key), "image_status": "ready" })))
+            Ok(Json(json!({ "object_key": r.object_key, "public_url": S3::get().public_url(&r.object_key), "image_status": "ready" })))
         }
         other => {
             let _ = s3_req("DELETE", &inc, None).await;
@@ -229,4 +233,9 @@ mod tests {
         assert!(valid_key(&format!("items/{}.webp", Uuid::new_v4())));
         assert!(!valid_key("items/../x.png") && !valid_key("incoming/a/b.png"));
     }
+}
+
+// 手寫 Debug：不印 access / secret key
+impl std::fmt::Debug for S3 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result { f.debug_struct("S3").field("endpoint", &self.endpoint).field("bucket", &self.bucket).finish_non_exhaustive() }
 }

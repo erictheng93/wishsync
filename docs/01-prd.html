@@ -219,11 +219,12 @@ header.top,main{padding-left:16px;padding-right:16px}
 <h2 id="s6">6. 使用者故事與驗收條件</h2>
 <h3>6.1 <span class="badge p0">P0</span> MVP / Phase 1</h3>
 
-<div class="story"><span class="id">US-01 建立清單</span>　身為建立者，我想以 Email OTP、LINE 或 Google 登入並建立清單，以便開始收集心願。
+<div class="story"><span class="id">US-01 建立清單</span>　身為建立者，我想以 Email＋密碼、Google 或 LINE 登入並建立清單，以便開始收集心願。
 <ul>
-<li><b>Given</b> 我未登入，<b>When</b> 我完成 Email OTP 驗證，<b>Then</b> 系統建立 session（<code>ws_session</code>）並導向 <code>/dashboard</code>。</li>
+<li><b>Given</b> 我未登入，<b>When</b> 我以 Email＋密碼（或 Google／LINE）完成登入，<b>Then</b> 系統建立 session（<code>ws_session</code>）並導向 <code>/dashboard</code>。</li>
 <li><b>Given</b> 我已登入，<b>When</b> 我在 <code>/w/new</code> 選擇類型 <code>personal</code> 或 <code>registry</code> 並填標題，<b>Then</b> 建立一張 <code>draft</code> 清單與 10 碼 slug。</li>
-<li><b>Given</b> OTP 錯誤超過限制次數，<b>When</b> 我再次提交，<b>Then</b> 回 <code>RATE_LIMITED</code>。</li>
+<li><b>Given</b> 密碼錯誤次數超過限制，<b>When</b> 我再次提交，<b>Then</b> 回 <code>RATE_LIMITED</code>。</li>
+<li><b>Given</b> 我是新用戶或忘記密碼，<b>When</b> 我以 Email 驗證碼完成註冊驗證或密碼重設，<b>Then</b> 才能設定密碼（Email 驗證碼僅用於註冊驗證與忘記密碼，不作為登入方式）。</li>
 </ul></div>
 
 <div class="story"><span class="id">US-02 新增品項與數量</span>　身為建立者，我想設定品項、品牌、數量與圖片，以便讓親友知道要買多少。
@@ -493,7 +494,7 @@ header.top,main{padding-left:16px;padding-right:16px}
 <table>
 <thead><tr><th>ID</th><th>功能</th><th>說明</th><th>優先級</th><th>分期</th></tr></thead>
 <tbody>
-<tr><td>FR-01</td><td>建立者登入</td><td>Email OTP、LINE Login、Google；opaque session cookie <code>ws_session</code></td><td><span class="badge p0">P0</span></td><td>MVP</td></tr>
+<tr><td>FR-01</td><td>建立者登入</td><td>Email＋密碼、Google、LINE Login（Email 驗證碼僅用於註冊驗證與忘記密碼重設）；opaque session cookie <code>ws_session</code></td><td><span class="badge p0">P0</span></td><td>MVP</td></tr>
 <tr><td>FR-02</td><td>清單 CRUD</td><td>類型 personal / registry；狀態 draft / active / closed / archived；visibility link / private</td><td><span class="badge p0">P0</span></td><td>MVP</td></tr>
 <tr><td>FR-03</td><td>品項管理</td><td>名稱、品牌、數量、優先度、圖片、備註、排序（reorder）</td><td><span class="badge p0">P0</span></td><td>MVP</td></tr>
 <tr><td>FR-04</td><td>圖片上傳</td><td>R2 presigned PUT 直傳；限制 MIME 與大小</td><td><span class="badge p0">P0</span></td><td>MVP</td></tr>

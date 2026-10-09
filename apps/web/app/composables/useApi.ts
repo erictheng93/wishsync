@@ -17,7 +17,7 @@ export function useApi() {
   async function api<T = any>(path: string, opts: any = {}): Promise<T> {
     const { noRedirect, ...rest } = opts
     try {
-      return await $fetch<T>(path, { baseURL: base, credentials: 'include', ...rest })
+      return await $fetch(path, { baseURL: base, credentials: 'include', ...rest }) as T
     } catch (e: any) {
       const status = e.statusCode || e.status || 0
       const d = e.data && typeof e.data === 'object' ? e.data : {}

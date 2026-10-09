@@ -7,7 +7,7 @@ const MAX = 5 * 1024 * 1024
 const preview = ref<string | null>(null)
 const state = ref<'idle' | 'uploading' | 'done' | 'fail'>('idle')
 const msg = ref('')
-let last: File | null = null
+const last = shallowRef<File | null>(null)
 
 async function shrink(f: File): Promise<Blob> {
   try {
@@ -22,7 +22,7 @@ async function shrink(f: File): Promise<Blob> {
   return f
 }
 async function upload(f: File) {
-  last = f; msg.value = ''
+  last.value = f; msg.value = ''
   if (!['image/jpeg', 'image/png', 'image/webp'].includes(f.type)) { state.value = 'fail'; msg.value = '圖片限 JPG、PNG、WebP'; return }
   if (f.size > MAX * 4) { state.value = 'fail'; msg.value = '圖片需在 5 MB 以內'; return }
   state.value = 'uploading'; emit('busy', true)
@@ -61,7 +61,7 @@ function pick(ev: Event) {
         </label>
         <div v-if="state === 'uploading'" class="c-mute" role="status">上傳中…</div>
         <div v-else-if="state === 'done'" class="c-ok">已上傳，圖片處理完成後才會公開顯示</div>
-        <div v-else-if="state === 'fail'" class="c-err" role="alert">{{ msg }} <button v-if="last" type="button" class="c-btn" @click="upload(last!)">重新上傳</button></div>
+        <div v-else-if="state === 'fail'" class="c-err" role="alert">{{ msg }} <button v-if="last" type="button" class="c-btn" @click="upload(last)">重新上傳</button></div>
       </div>
     </div>
     <p class="c-mute">限 JPG、PNG、WebP，5 MB 以內。上傳後會移除位置等隱藏資訊（EXIF），請勿上傳含個人資料的照片。</p>

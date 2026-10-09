@@ -27,8 +27,24 @@ pub fn routes() -> Router<AppState> {
 }
 
 #[derive(Deserialize)]
-struct NewReport { reason: String, detail: Option<String>, item_id: Option<Uuid> }
-// ponytail: 未驗 Turnstile；限流見 ratelimit.rs。
+struct NewReport { reason: String, detail: Option<String>, item_id: Option<Uuid>, turnstile_token: Option<String> }
+
+/// Turnstile siteverify。未設 secret（僅 dev/test）略過。契約錯誤碼表：Turnstile 失敗 = 403 FORBIDDEN（不是 422，
+/// 因為欄位格式本身合法、是人機驗證不通過）；siteverify 連不上 = 503（fail closed，不放行）。secret 不寫入 log。
+pub async fn verify_turnstile(cfg: &crate::config::Config, token: Option<&str>, ip: &str) -> Result<(), AppError> {
+    let Some(secret) = cfg.turnstile_secret.as_deref() else { return Ok(()) };
+    let fail = || AppError::problem(403, "FORBIDDEN", "人機驗證失敗，請重新整理後再試");
+    let token = token.map(str::trim).filter(|t| !t.is_empty()).ok_or_else(fail)?;
+    let mut form = vec![("secret", secret), ("response", token)];
+    if ip != "unknown" { form.push(("remoteip", ip)); }
+    let res = reqwest::Client::new().post(&cfg.turnstile_verify_url).form(&form).timeout(std::time::Duration::from_secs(5)).send().await;
+    let v: Value = match res {
+        Ok(r) if r.status().is_success() => r.json().await.unwrap_or(Value::Null),
+        Ok(r) => { tracing::error!(status = %r.status(), "turnstile siteverify"); return Err(AppError::problem(503, "SERVICE_UNAVAILABLE", "人機驗證服務暫時無法使用")); }
+        Err(e) => { tracing::error!(error = %e.without_url(), "turnstile siteverify"); return Err(AppError::problem(503, "SERVICE_UNAVAILABLE", "人機驗證服務暫時無法使用")); }
+    };
+    if v["success"] == true { Ok(()) } else { Err(fail()) }
+}
 
 async fn create(State(st): State<AppState>, Path(slug): Path<String>, mut parts: Parts, Json(b): Json<NewReport>) -> Result<Response, AppError> {
     if !["scam", "inappropriate", "copyright", "personal_info", "other"].contains(&b.reason.as_str()) {
@@ -61,6 +77,7 @@ async fn create(State(st): State<AppState>, Path(slug): Path<String>, mut parts:
     }
     let ip = crate::config::client_ip(&parts, &crate::config::get());
     ratelimit::check(&st.pool, &format!("report_ip:{ip}"), 10, 3600).await?;
+    verify_turnstile(&crate::config::get(), b.turnstile_token.as_deref(), &ip).await?;
     if user.is_none() && guest.is_none() {
         // 匿名檢舉者以 IP 近似「同一檢舉者」：同清單 24 小時 1 筆
         ratelimit::check(&st.pool, &format!("report_wl:{wid}:{ip}"), 1, 86400).await?;

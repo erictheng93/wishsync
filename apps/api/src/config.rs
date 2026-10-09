@@ -2,7 +2,7 @@
 //! fail closed：APP_ENV 未設或非 dev/test 一律視為 production，缺機密或 <32 字元即 panic。
 use std::{net::SocketAddr, sync::OnceLock};
 
-#[derive(Clone, Debug)]
+#[derive(Clone)] // 刻意不 derive Debug：含機密，避免被 {:?} 印進日誌
 pub struct Config {
     pub is_prod: bool,
     pub app_url: String,
@@ -18,6 +18,12 @@ pub struct Config {
     /// Cloudflare API 根（測試指向 mock）
     pub cf_api_base: String,
     pub trusted_proxy_cloudflare: bool,
+    /// 監聽位址（預設回送；容器內需明確設 0.0.0.0:8080）
+    pub bind: String,
+    /// Turnstile secret；None（僅 dev/test）= 略過驗證。不得寫進 log。
+    pub turnstile_secret: Option<String>,
+    pub turnstile_verify_url: String,
+    pub s3: crate::uploads::S3,
 }
 
 static CONFIG: OnceLock<Config> = OnceLock::new();
@@ -49,6 +55,10 @@ impl Config {
             cf_email_api_token: var("CF_EMAIL_API_TOKEN"),
             cf_api_base: v("CF_API_BASE", "https://api.cloudflare.com/client/v4"),
             trusted_proxy_cloudflare: var("TRUSTED_PROXY").as_deref() == Some("cloudflare"),
+            bind: v("BIND", "127.0.0.1:8080"),
+            turnstile_secret: var("TURNSTILE_SECRET"),
+            turnstile_verify_url: v("TURNSTILE_VERIFY_URL", "https://challenges.cloudflare.com/turnstile/v0/siteverify"),
+            s3: crate::uploads::S3::dev(),
         }
     }
 
@@ -74,7 +84,26 @@ impl Config {
         c.unsub_secret = must("UNSUB_SECRET")?;
         let need = |k: &str| var(k).ok_or_else(|| format!("production 需設定 {k}"));
         need("CF_ACCOUNT_ID")?; need("CF_EMAIL_API_TOKEN")?; need("MAIL_FROM")?; need("APP_URL")?; need("API_BASE_URL")?;
+        // 不設會讓所有使用者看起來來自同一 IP（反向代理的位址），使每 IP 限流變成全域限流。
+        match var("TRUSTED_PROXY").as_deref() {
+            Some("cloudflare") => c.trusted_proxy_cloudflare = true,
+            Some("none") => c.trusted_proxy_cloudflare = false,
+            _ => return Err("production 必須明確設定 TRUSTED_PROXY=cloudflare|none（不設會讓所有使用者看起來來自同一 IP，使每 IP 限流變成全域限流）".into()),
+        }
+        need("TURNSTILE_SECRET")?;
+        c.s3 = crate::uploads::S3 {
+            endpoint: need("S3_ENDPOINT")?.trim_end_matches('/').into(), bucket: need("S3_BUCKET")?,
+            ak: need("S3_ACCESS_KEY")?, sk: need("S3_SECRET_KEY")?, public_base: need("S3_PUBLIC_BASE")?,
+            region: var("S3_REGION").unwrap_or_else(|| "us-east-1".into()),
+        };
         Ok(c)
+    }
+
+    /// TRUSTED_PROXY=cloudflare 但綁定到非回送位址 → API 可能被直接存取，CF-Connecting-IP 可被偽造。
+    pub fn bind_warning(&self) -> Option<String> {
+        let loopback = self.bind.parse::<SocketAddr>().map(|a| a.ip().is_loopback()).unwrap_or(false);
+        (self.trusted_proxy_cloudflare && !loopback).then(|| format!(
+            "TRUSTED_PROXY=cloudflare 但 BIND={} 非回送位址：若 API 可被直接存取，CF-Connecting-IP 可被偽造而繞過限流；請只允許經 Cloudflare Tunnel 存取。", self.bind))
     }
 
     pub fn secure_cookie(&self) -> &'static str { if self.is_prod { "; Secure" } else { "" } }
@@ -104,4 +133,9 @@ mod tests {
         assert!(!Config::dev().is_prod && Config::dev().secure_cookie().is_empty());
         assert!(ct_eq(b"abc", b"abc") && !ct_eq(b"abc", b"abd") && !ct_eq(b"abc", b"ab"));
     }
+}
+
+// 手寫 Debug：Config 含機密，不可被 {:?} 印出
+impl std::fmt::Debug for Config {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result { f.debug_struct("Config").finish_non_exhaustive() }
 }

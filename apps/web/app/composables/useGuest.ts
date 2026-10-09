@@ -43,7 +43,7 @@ export function useGuest() {
     const tk = getGuestToken()
     if (tk) headers['X-Guest-Token'] = tk
     try {
-      return await $fetch<T>(`${apiBase}/api/v1${path}`, { method: (opt.method ?? 'GET') as any, body: opt.body, headers, credentials: 'include' })
+      return await $fetch(`${apiBase}/api/v1${path}`, { method: (opt.method ?? 'GET') as any, body: opt.body, headers, credentials: 'include' }) as T
     } catch (e: any) {
       const d = e?.data ?? {}
       if (!e?.response) throw new ApiError(0, 'NETWORK', '網路不穩，再試一次')

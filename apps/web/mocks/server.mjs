@@ -1,5 +1,5 @@
 // 訪客端契約 mock（docs 04 §5）。node mocks/server.mjs  → http://localhost:8080
-// slug: demo=正常 / closed=已結束 / gone=410 / boom=500 / 其他=404。恢復權杖 "good" 有效。
+// slug: demo=正常 / closed=已結束 / gone=410 / boom=500 / sseoff=清單正常但 events 回 500（測輪詢備援）/ 其他=404。恢復權杖 "good" 有效。
 import http from 'node:http'
 import { randomBytes } from 'node:crypto'
 
@@ -31,11 +31,12 @@ http.createServer(async (req, res) => {
   if ((m = p.match(/^\/public\/wishlists\/([^/]+)$/))) {
     if (m[1] === 'boom') return err(res, 500, 'INTERNAL', '內部錯誤')
     if (m[1] === 'gone') return err(res, 410, 'WISHLIST_REMOVED', '已下架')
-    if (!['demo', 'closed'].includes(m[1])) return err(res, 404, 'NOT_FOUND', '找不到')
+    if (!['demo', 'closed', 'sseoff'].includes(m[1])) return err(res, 404, 'NOT_FOUND', '找不到')
     const list = items.map(view), done = list.filter(i => i.is_fully_claimed).length
     return send(res, 200, { slug: m[1], type: 'registry', status: m[1] === 'closed' ? 'closed' : 'active', title: '小愛的待產清單', description: '預產期 12 月，謝謝大家的心意', cover_image_url: null, event_date: '2026-12-20', id: 'w1', owner: { id: 'u1', display_name: '小愛' }, surprise_mode: false, claimers_visible: false, completion: { item_count: list.length, fulfilled_count: done, completion_pct: Math.round(items.reduce((a, i) => a + i.qty_claimed, 0) / items.reduce((a, i) => a + i.qty_needed, 0) * 100) }, items: list, updated_at: new Date().toISOString() })
   }
   if (p.match(/^\/public\/wishlists\/[^/]+\/events$/)) {
+    if (p.includes('/sseoff/')) return err(res, 500, 'INTERNAL', '內部錯誤')
     res.writeHead(200, { 'content-type': 'text/event-stream', 'cache-control': 'no-cache' }); res.write('retry: 5000\n: heartbeat\n\n')
     sse.add(res); req.on('close', () => sse.delete(res)); return
   }

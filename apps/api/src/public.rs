@@ -18,7 +18,7 @@ pub fn routes() -> Router<AppState> {
 }
 
 pub fn image_url(key: Option<&str>, status: &str) -> Option<String> {
-    key.filter(|_| status == "ready").map(|k| crate::uploads::S3::from_env().public_url(k))
+    key.filter(|_| status == "ready").map(|k| crate::uploads::S3::get().public_url(k))
 }
 
 #[derive(FromRow)]

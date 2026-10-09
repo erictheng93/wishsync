@@ -58,7 +58,7 @@ const WCOLS: &str = "id, type::text AS ty, status::text AS status, visibility::t
 
 impl W {
     fn json(&self) -> Value {
-        let img = uploads::S3::from_env();
+        let img = uploads::S3::get();
         json!({
             "id": self.id, "type": self.ty, "status": self.status, "visibility": self.visibility, "slug": self.slug,
             "title": self.title, "description": self.description,
@@ -218,7 +218,7 @@ impl I {
     fn json(&self, locked: bool) -> Value {
         json!({
             "id": self.id, "wishlist_id": self.wishlist_id, "title": self.title, "description": self.description, "brand": self.brand, "spec": self.spec,
-            "image_url": self.image_key.as_ref().filter(|_| self.image_status == "ready").map(|k| uploads::S3::from_env().public_url(k)),
+            "image_url": self.image_key.as_ref().filter(|_| self.image_status == "ready").map(|k| uploads::S3::get().public_url(k)),
             "image_status": self.image_status, "product_url": self.product_url, "unit_price_amount": self.unit_price_amount,
             "funding_mode": self.funding_mode, "priority": self.priority, "category": null, "urgency": null,
             "qty_needed": self.qty_needed, "qty_claimed": if locked { None } else { Some(self.qty_claimed) }, "qty_received": 0,

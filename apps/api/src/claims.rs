@@ -95,6 +95,12 @@ async fn create(State(st): State<AppState>, Path(item_id): Path<Uuid>, MaybeActo
     if let idempotency::Begin::Replay(s, b) = idempotency::begin(&mut tx, &scope, key, &hash).await? {
         return Ok(json_resp(s, &b, true));
     }
+    // 限流放在重播判斷之後：重播只回放已存的回應、不產生新認領，不消耗額度（也讓網路重試不會被誤擋）。
+    // 超限時 tx 隨 return 回滾，idempotency key 不會被占用，額度重置後可用同 key 重試。
+    // 計數與認領同一個 tx（不另佔連線，避免併發時 pool 耗盡死結；429 時計數一併回滾，只算成功放行的請求）。
+    ratelimit::check(&mut *tx, &format!("claim_post_ip:{}", peer.0), 30, 3600).await?;
+    let wl: Option<Uuid> = sqlx::query_scalar("SELECT wishlist_id FROM wishlist_items WHERE id = $1").bind(item_id).fetch_optional(&mut *tx).await?;
+    if let Some(w) = wl { ratelimit::check(&mut *tx, &format!("claim_post_wl:{w}:{}", peer.0), 15, 3600).await?; }
 
     // 身分：user / 既有 guest / 首次建立 guest（同交易，失敗一併 rollback）
     let (mut guest_id, mut user_id, mut new_token) = (None, None, None);
@@ -300,4 +306,28 @@ async fn apply(st: &AppState, id: Uuid, actor: Option<Actor>, p: PatchReq) -> Re
 
 async fn wishlist_of(tx: &mut Transaction<'_, Postgres>, item_id: Uuid) -> Result<Uuid, AppError> {
     Ok(sqlx::query_scalar("SELECT wishlist_id FROM wishlist_items WHERE id = $1").bind(item_id).fetch_one(&mut **tx).await?)
+}
+
+/// FR-08：把逾期的 reserved 認領設為 expired 並回補 qty_claimed，回傳釋放的認領數。
+/// 鎖序同 apply()：先鎖 item（依 id 排序）再動 claim；UPDATE ... WHERE status='reserved' 保證多實例 / 與取消競態時只回補一次。
+pub async fn expire_due(pool: &sqlx::PgPool) -> Result<usize, sqlx::Error> {
+    let mut tx = pool.begin().await?;
+    sqlx::query("SELECT id FROM wishlist_items WHERE id IN (SELECT item_id FROM claims WHERE status = 'reserved' AND expires_at <= now())
+                 ORDER BY id FOR UPDATE").execute(&mut *tx).await?;
+    let rows: Vec<(Uuid, i64)> = sqlx::query_as(
+        "WITH x AS (
+           UPDATE claims SET status = 'expired', expires_at = NULL
+           WHERE status = 'reserved' AND expires_at <= now() RETURNING id, item_id, qty),
+         r AS (
+           UPDATE wishlist_items i SET qty_claimed = i.qty_claimed - s.q
+           FROM (SELECT item_id, sum(qty)::int AS q FROM x GROUP BY item_id) s
+           WHERE i.id = s.item_id RETURNING i.wishlist_id),
+         a AS (
+           INSERT INTO audit_logs (actor_type, action, entity, entity_id, diff)
+           SELECT 'system'::actor_type, 'claim.expire', 'claims', id, jsonb_build_object('qty', qty) FROM x)
+         SELECT DISTINCT wishlist_id, (SELECT count(*) FROM x) FROM r")
+        .fetch_all(&mut *tx).await?;
+    for (w, _) in &rows { crate::dashboard::notify(&mut *tx, *w).await?; }
+    tx.commit().await?;
+    Ok(rows.first().map_or(0, |r| r.1 as usize))
 }

@@ -55,13 +55,17 @@ cd apps/web && npm install && npm run dev         # http://localhost:3000
 
 ```sh
 cargo test --manifest-path apps/api/Cargo.toml    # 每個測試使用獨立資料庫（sqlx::test）
-cd apps/web && npm run build
+cd apps/web && npm run typecheck && npm test && npm run build   # CI 的 web job 依序執行這三步
 ```
 
 ## 環境變數
 
-- 後端：`DATABASE_URL`、`BIND`（預設 `0.0.0.0:8080`）；其餘（SMTP、S3/R2、LINE Login）見 `apps/api/.env.example`
-- 前端：`NUXT_PUBLIC_API_BASE`（預設 `http://localhost:8080`）
+- 後端：`DATABASE_URL`；其餘（SMTP、LINE Login 等）見 `apps/api/.env.example`
+  - `BIND`：預設 `127.0.0.1:8080`（dev、production 皆是）。容器內部署需明確設 `BIND=0.0.0.0:8080`，且只讓 Cloudflare Tunnel / 內網可達。
+  - `TRUSTED_PROXY`：`cloudflare` 或 `none`。dev 預設 `none`；**production 必須明確設定**，未設或其他值會拒絕啟動（不設會讓所有使用者看起來來自同一 IP，使每 IP 限流變成全域限流）。設 `cloudflare` 時信任 `CF-Connecting-IP`，所以 API 不可被直接存取，否則該標頭可被偽造；若 `BIND` 不是回送位址，啟動時會印出 WARN。
+  - `TURNSTILE_SECRET`：production 必填；檢舉的 `turnstile_token` 會送 siteverify 驗證，失敗回 403 `FORBIDDEN`。dev/test 不設則略過驗證（接受任何 token，含前端的 `dev-bypass`）。`TURNSTILE_VERIFY_URL` 僅測試時覆寫。
+  - `S3_ENDPOINT`、`S3_BUCKET`、`S3_ACCESS_KEY`、`S3_SECRET_KEY`、`S3_PUBLIC_BASE`：production 全部必填，缺漏啟動即 panic 並指出缺哪個；dev 預設本機 MinIO。`S3_REGION` 選填。
+- 前端：`NUXT_PUBLIC_API_BASE`（預設 `http://localhost:8080`）；`NUXT_PUBLIC_TURNSTILE_SITE_KEY`（檢舉用 Cloudflare Turnstile；未設定時檢舉送 `dev-bypass`，僅限本機 mock）
 
 ## 部署
 
