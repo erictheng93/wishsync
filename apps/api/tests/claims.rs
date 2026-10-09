@@ -136,7 +136,11 @@ async fn idempotency_key_replay_and_conflict(pool: PgPool) {
     let (s2, h2, b2) = call(&app, post_claim(it, key, None, body.clone())).await;
     assert_eq!(s2, StatusCode::CREATED);
     assert_eq!(h2["idempotency-replayed"], "true");
-    assert_eq!(b1, b2); // 同 claim id、同 guest_token
+    // 重播：同 claim，但不再回明文 guest_token（DB 只存雜湊，idempotency_keys 也不得存）、也不 Set-Cookie
+    assert!(b1["guest_token"].is_string() && b2.get("guest_token").is_none() && !h2.contains_key("set-cookie"));
+    assert_eq!(b1["claim"], b2["claim"]);
+    let stored: i64 = sqlx::query_scalar("SELECT count(*) FROM idempotency_keys WHERE response_body::text LIKE '%guest_token%'").fetch_one(&pool).await.unwrap();
+    assert_eq!(stored, 0);
     let (n, q): (i64, i32) = sqlx::query_as("SELECT (SELECT count(*) FROM claims), qty_claimed FROM wishlist_items WHERE id = $1").bind(it).fetch_one(&pool).await.unwrap();
     assert_eq!((n, q), (1, 2));
 

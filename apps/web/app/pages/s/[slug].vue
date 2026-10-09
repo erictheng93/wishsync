@@ -8,8 +8,11 @@ const { api } = useGuest()
 
 // 不用 useFetch 的 error 拋出：404 / 410 在頁內顯示，並設正確 HTTP 狀態碼（410 需 noindex、不洩漏標題）
 const { data, error, refresh } = await useFetch<any>(`${apiBase}/api/v1/public/wishlists/${slug}`, { credentials: 'omit' })
+// 404 找不到 / 410 下架 / 其他（5xx、網路、逾時）= 暫時無法載入，回 503，避免爬蟲與快取把暫時性錯誤記成「不存在」
 const gone = computed(() => error.value?.statusCode === 410)
-if (error.value && import.meta.server) setResponseStatus(useRequestEvent()!, gone.value ? 410 : (error.value.statusCode ?? 500))
+const notFound = computed(() => error.value?.statusCode === 404)
+const failed = computed(() => !!error.value && !gone.value && !notFound.value)
+if (error.value && import.meta.server) setResponseStatus(useRequestEvent()!, gone.value ? 410 : notFound.value ? 404 : 503)
 
 if (data.value) {
   // 規格：docs 03 §5.6 meta 內容規則
@@ -25,7 +28,7 @@ if (data.value) {
     ogImageWidth: 1200, ogImageHeight: 630,
     ogType: 'website', ogUrl: () => `${origin}/s/${slug}`, ogLocale: 'zh_TW', twitterCard: 'summary_large_image',
   })
-} else useSeoMeta({ title: gone.value ? '此清單已被下架' : '找不到這份清單', robots: 'noindex' })
+} else useSeoMeta({ title: gone.value ? '此清單已被下架' : failed.value ? '暫時無法載入' : '找不到這份清單', robots: 'noindex' })
 
 const items = ref<any[]>(data.value?.items ?? [])
 watch(data, v => { if (v) items.value = v.items })
@@ -89,6 +92,7 @@ function dismissHint() { setPref('ws_hint_dismissed', '1'); lineHint.value = fal
   <GuestTop />
   <main class="g-wrap">
     <div v-if="gone" class="g-center"><h1>此清單已被下架</h1><p class="g-mute">這份清單因違反服務條款已被移除，目前無法瀏覽或認領。</p><NuxtLink to="/">回首頁</NuxtLink></div>
+    <div v-else-if="failed && !data" class="g-center"><h1>系統暫時無法載入，請稍後再試</h1><button class="g-btn" @click="refresh()">重新載入</button></div>
     <div v-else-if="!data" class="g-center"><h1>找不到這份清單</h1><NuxtLink to="/">回首頁</NuxtLink></div>
     <template v-else>
       <div v-if="!online" class="g-banner">目前離線，顯示的是上次載入的內容，認領功能暫停。</div>

@@ -1,5 +1,5 @@
 // 訪客端契約 mock（docs 04 §5）。node mocks/server.mjs  → http://localhost:8080
-// slug: demo=正常 / closed=已結束 / gone=410 / 其他=404。恢復權杖 "good" 有效。
+// slug: demo=正常 / closed=已結束 / gone=410 / boom=500 / 其他=404。恢復權杖 "good" 有效。
 import http from 'node:http'
 import { randomBytes } from 'node:crypto'
 
@@ -29,6 +29,7 @@ http.createServer(async (req, res) => {
   console.log(req.method, p)
 
   if ((m = p.match(/^\/public\/wishlists\/([^/]+)$/))) {
+    if (m[1] === 'boom') return err(res, 500, 'INTERNAL', '內部錯誤')
     if (m[1] === 'gone') return err(res, 410, 'WISHLIST_REMOVED', '已下架')
     if (!['demo', 'closed'].includes(m[1])) return err(res, 404, 'NOT_FOUND', '找不到')
     const list = items.map(view), done = list.filter(i => i.is_fully_claimed).length

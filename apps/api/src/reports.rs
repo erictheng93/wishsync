@@ -3,6 +3,7 @@ use crate::{
     admin::{audit, limit, page, PageQ, Staff},
     dashboard,
     error::AppError,
+    ratelimit,
     session::{hash_token, cookie_value, CurrentUser},
     AppState,
 };
@@ -27,7 +28,7 @@ pub fn routes() -> Router<AppState> {
 
 #[derive(Deserialize)]
 struct NewReport { reason: String, detail: Option<String>, item_id: Option<Uuid> }
-// ponytail: 未驗 Turnstile、未限流（契約要求），上線前由 edge / 中介層補。
+// ponytail: 未驗 Turnstile；限流見 ratelimit.rs。
 
 async fn create(State(st): State<AppState>, Path(slug): Path<String>, mut parts: Parts, Json(b): Json<NewReport>) -> Result<Response, AppError> {
     if !["scam", "inappropriate", "copyright", "personal_info", "other"].contains(&b.reason.as_str()) {
@@ -57,6 +58,12 @@ async fn create(State(st): State<AppState>, Path(slug): Path<String>, mut parts:
                AND reporter_user_id IS NOT DISTINCT FROM $2 AND reporter_guest_id IS NOT DISTINCT FROM $3 LIMIT 1")
             .bind(wid).bind(user).bind(guest).fetch_optional(&st.pool).await?;
         if let Some(id) = dup { return Ok((StatusCode::CREATED, Json(json!({ "id": id, "status": "open" }))).into_response()); }
+    }
+    let ip = crate::config::client_ip(&parts, &crate::config::get());
+    ratelimit::check(&st.pool, &format!("report_ip:{ip}"), 10, 3600).await?;
+    if user.is_none() && guest.is_none() {
+        // 匿名檢舉者以 IP 近似「同一檢舉者」：同清單 24 小時 1 筆
+        ratelimit::check(&st.pool, &format!("report_wl:{wid}:{ip}"), 1, 86400).await?;
     }
     let id: Uuid = sqlx::query_scalar(
         "INSERT INTO content_reports (wishlist_id, item_id, reason, detail, reporter_user_id, reporter_guest_id)

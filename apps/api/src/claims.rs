@@ -1,6 +1,6 @@
 //! 認領：POST /items/{id}/claims、PATCH/DELETE /claims/{id}（契約 4.1 / 4.2、F4 / F5）。
 //! 鎖序：wishlist_items（條件式 UPDATE / FOR UPDATE）→ claims。
-use crate::{error::AppError, guest::{self, Actor, MaybeActor}, idempotency, AppState};
+use crate::{error::AppError, guest::{self, Actor, MaybeActor}, idempotency, ratelimit, AppState};
 use axum::{
     body::Bytes,
     extract::{Path, State},
@@ -71,7 +71,7 @@ fn full(remaining: i32, want: i32) -> AppError {
 #[derive(Deserialize)]
 struct CreateReq { qty: i32, display_name: Option<String>, contact: Option<String>, email: Option<String>, note: Option<String> }
 
-async fn create(State(st): State<AppState>, Path(item_id): Path<Uuid>, MaybeActor(actor): MaybeActor, headers: HeaderMap, body: Bytes)
+async fn create(State(st): State<AppState>, Path(item_id): Path<Uuid>, MaybeActor(actor): MaybeActor, peer: ratelimit::Peer, headers: HeaderMap, body: Bytes)
     -> Result<Response, AppError> {
     let key = idempotency::key(&headers)?;
     let req: CreateReq = parse(&body)?;
@@ -98,6 +98,7 @@ async fn create(State(st): State<AppState>, Path(item_id): Path<Uuid>, MaybeActo
 
     // 身分：user / 既有 guest / 首次建立 guest（同交易，失敗一併 rollback）
     let (mut guest_id, mut user_id, mut new_token) = (None, None, None);
+    let created_guest = actor.is_none();
     let name: String = match actor {
         Some(Actor::User(u)) => {
             user_id = Some(u);
@@ -155,10 +156,26 @@ async fn create(State(st): State<AppState>, Path(item_id): Path<Uuid>, MaybeActo
     audit(&mut tx, actor, "claim.create", claim.id, json!({ "qty": req.qty })).await?;
     let mut resp = json!({ "claim": claim, "item": item_json(item_id, needed, claimed) });
     if let Some(t) = new_token { resp["guest_token"] = json!(t); }
-    idempotency::finish(&mut tx, &scope, key, 201, &resp).await?;
+    // 重播不得再給明文 token：存進 idempotency_keys 的版本移除 guest_token
+    let mut stored = resp.clone();
+    if let Some(o) = stored.as_object_mut() { o.remove("guest_token"); }
+    idempotency::finish(&mut tx, &scope, key, 201, &stored).await?;
     let wid = wishlist_of(&mut tx, item_id).await?;
-    // 訪客有留 Email → 確認信（恢復權杖於寄信時才產生，明文不落庫）
-    if let Some(g) = guest_id {
+    // 訪客有留 Email → 確認信（恢復權杖於寄信時才產生，明文不落庫）。
+    // 濫用限流：超限只是不寄信，認領本身照常成功。
+    let guest_email: Option<String> = match guest_id {
+        Some(g) => sqlx::query_scalar("SELECT email FROM guests WHERE id = $1 AND deleted_at IS NULL").bind(g).fetch_one(&mut *tx).await?,
+        None => None,
+    };
+    let send_mail = match (&guest_email, guest_id) {
+        (Some(e), Some(g)) => {
+            (!created_guest || ratelimit::allow(&st.pool, &format!("claim_ip:{}", peer.0), 20, 3600).await?)
+                && ratelimit::allow(&st.pool, &format!("claim_mail:{e}"), 3, 3600).await?
+                && ratelimit::allow(&st.pool, &format!("claim_guest:{g}"), 10, 86400).await?
+        }
+        _ => false,
+    };
+    if let (true, Some(g)) = (send_mail, guest_id) {
         sqlx::query("INSERT INTO notifications (guest_id, channel, kind, payload)
                      SELECT id, 'email', 'claim.confirmation', jsonb_build_object('wishlist_id', $2::uuid, 'claim_id', $3::uuid)
                        FROM guests WHERE id = $1 AND email IS NOT NULL AND deleted_at IS NULL")

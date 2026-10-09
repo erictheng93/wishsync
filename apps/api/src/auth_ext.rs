@@ -67,19 +67,16 @@ async fn register_verify(State(st): State<AppState>, headers: HeaderMap, Json(r)
     session_response(&st.pool, &headers, uid, is_new).await
 }
 
-fn client_ip(h: &HeaderMap) -> String {
-    let get = |n: &str| h.get(n).and_then(|v| v.to_str().ok()).map(|v| v.split(',').next().unwrap_or("").trim().to_string()).filter(|v| !v.is_empty());
-    get("cf-connecting-ip").or_else(|| get("x-forwarded-for")).unwrap_or_else(|| "unknown".into())
-}
 fn bad_credentials() -> AppError { AppError::problem(401, "INVALID_CREDENTIALS", "Email 或密碼錯誤") }
 
 #[derive(Deserialize)]
 struct LoginReq { email: String, password: String }
 
-// ponytail: IP 取自 CF-Connecting-IP / X-Forwarded-For（需在可信反向代理後）；失敗 5 次/email、30 次/IP（15 分鐘）。
-async fn login(State(st): State<AppState>, headers: HeaderMap, Json(r): Json<LoginReq>) -> Result<Response, AppError> {
+// IP 見 config::client_ip（TRUSTED_PROXY）；失敗 5 次/email、30 次/IP（15 分鐘）。
+async fn login(State(st): State<AppState>, parts: axum::http::request::Parts, Json(r): Json<LoginReq>) -> Result<Response, AppError> {
     let email = r.email.trim().to_lowercase();
-    let ip = client_ip(&headers);
+    let headers = parts.headers.clone();
+    let ip = crate::config::client_ip(&parts, &crate::config::get());
     let (by_email, by_ip): (i64, i64) = sqlx::query_as(
         "SELECT count(*) FILTER (WHERE email=$1), count(*) FILTER (WHERE ip=$2) FROM login_failures
          WHERE created_at > now() - interval '15 minutes' AND (email=$1 OR ip=$2)").bind(&email).bind(&ip).fetch_one(&st.pool).await?;

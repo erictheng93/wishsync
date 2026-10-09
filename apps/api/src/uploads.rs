@@ -1,7 +1,7 @@
 //! 圖片上傳：presigned PUT → incoming/（私有）→ confirm 時重編碼去 EXIF/GPS → 公開 key。
 //! 以手寫 SigV4 query presign 對接 S3 相容儲存（MinIO / R2），不引入 AWS SDK。
 use crate::{error::AppError, session::CurrentUser, AppState};
-use axum::{extract::Json, routing::post, Router};
+use axum::{extract::{Json, State}, routing::post, Router};
 use chrono::{DateTime, Duration, Utc};
 use hmac::{Hmac, Mac};
 use serde::Deserialize;
@@ -125,13 +125,14 @@ fn ext_of(ct: &str) -> Option<&'static str> {
     match ct { "image/jpeg" => Some("jpg"), "image/png" => Some("png"), "image/webp" => Some("webp"), _ => None }
 }
 
-async fn presign(user: CurrentUser, Json(r): Json<PresignReq>) -> Result<Json<Value>, AppError> {
+async fn presign(State(st): State<AppState>, user: CurrentUser, Json(r): Json<PresignReq>) -> Result<Json<Value>, AppError> {
     let dir = match r.purpose.as_str() { "cover" => "covers", "item" => "items",
         _ => return Err(AppError::invalid("/purpose", "ENUM", "purpose 必須為 cover 或 item")) };
     let ext = ext_of(&r.content_type).ok_or_else(|| AppError::invalid("/content_type", "ENUM", "只允許 image/jpeg、image/png、image/webp"))?;
     if r.content_length == 0 || r.content_length > MAX_BYTES {
         return Err(AppError::invalid("/content_length", "RANGE", "圖片大小須介於 1 byte 與 5 MB"));
     }
+    crate::ratelimit::check(&st.pool, &format!("presign:{}", user.id), 60, 3600).await?;
     ensure_bucket().await;
     let s3 = S3::from_env();
     let object_key = format!("{dir}/{}.{ext}", Uuid::new_v4());

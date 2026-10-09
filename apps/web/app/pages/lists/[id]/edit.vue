@@ -6,7 +6,7 @@ const id = route.params.id as string
 const { api } = useApi()
 const w = ref<any>(null)
 const items = ref<any[]>([])
-const loading = ref(true), err = ref(''), msg = ref('')
+const loading = ref(true), err = ref(''), msg = ref(''), stale = ref(false)
 const sheet = ref(false), editing = ref<any>(null)
 const del = ref<any>(null), delBusy = ref(false), delErr = ref('')
 const pubBusy = ref(false), pubErrs = ref<string[]>([])
@@ -20,7 +20,7 @@ async function load(quiet = false) {
     const r = await api(`/wishlists/${id}`)
     w.value = r.wishlist; items.value = r.items
     Object.assign(meta, { title: r.wishlist.title, description: r.wishlist.description ?? '', event_date: r.wishlist.event_date ?? '', show_claimer_names: r.wishlist.show_claimer_names })
-    err.value = ''
+    err.value = ''; stale.value = false
   } catch (e) { err.value = errMsg(e) } finally { loading.value = false }
   clearTimeout(poll)
   if (items.value.some(i => i.image_status === 'pending')) poll = setTimeout(() => load(true), 4000) // 圖片處理中輪詢
@@ -37,9 +37,10 @@ const shareUrl = computed(() => {
 function openItem(i: any = null) { editing.value = i; sheet.value = true }
 async function saved() { sheet.value = false; await load(true) }
 async function patchList(body: any, ok = '已儲存') {
-  msg.value = ''; err.value = ''
-  try { w.value = await api(`/wishlists/${id}`, { method: 'PATCH', body }); msg.value = ok; return true }
+  msg.value = ''; err.value = ''; stale.value = false
+  try { w.value = await api(`/wishlists/${id}`, { method: 'PATCH', body: { ...body, expected_updated_at: w.value?.updated_at } }); msg.value = ok; return true }
   catch (e: any) {
+    if (e.code === 'STALE_VERSION') { stale.value = true; err.value = '這份清單已在其他地方被修改，請重新載入'; return false }
     err.value = errMsg(e)
     if (e.code === 'WISHLIST_NOT_PUBLISHABLE') pubErrs.value = (e.errors || []).map((x: any) => x.detail)
     return false
@@ -84,7 +85,7 @@ const closed = computed(() => w.value && ['closed', 'archived'].includes(w.value
       <NuxtLink :to="`/lists/${id}/progress`" class="c-btn">進度</NuxtLink>
     </CreatorHeader>
     <p v-if="loading" class="c-mute" role="status">載入中…</p>
-    <p v-if="err" class="c-err" role="alert">{{ err }} <button class="c-btn" @click="load()">重試</button></p>
+    <p v-if="err" class="c-err" role="alert">{{ err }} <button class="c-btn" @click="load()">{{ stale ? '重新載入' : '重試' }}</button></p>
     <template v-if="w">
       <div v-if="hidden" class="c-card bad c-err" role="alert">這份清單已被下架{{ w.moderation_reason ? `。原因：${w.moderation_reason}` : '' }}。分享已停用，若有誤判請聯絡客服申訴。</div>
       <p v-if="closed" class="c-mute">清單已{{ w.status === 'closed' ? '結束' : '封存' }}，品項無法修改。</p>

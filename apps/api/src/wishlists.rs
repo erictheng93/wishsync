@@ -31,6 +31,16 @@ fn app_url() -> String { std::env::var("APP_URL").unwrap_or_else(|_| "http://loc
 pub fn completion_pct(claimed: i64, needed: i64) -> i64 { if needed <= 0 { 0 } else { (claimed * 100 + needed / 2) / needed } }
 fn forbidden(d: &str) -> AppError { AppError::problem(403, "FORBIDDEN", d) }
 fn closed() -> AppError { AppError::problem(409, "WISHLIST_CLOSED", "清單已關閉或封存，無法修改。") }
+fn stale() -> AppError { AppError::problem(409, "STALE_VERSION", "這份資料已在其他地方被修改，請重新載入後再試。") }
+fn surprise_locked_err() -> AppError { forbidden("驚喜模式期間無法刪除品項或調降數量。") }
+/// 樂觀並行控制：body 的 expected_updated_at（選填）；未帶 = None，維持舊行為。
+fn expected(m: &Map<String, Value>) -> R<Option<DateTime<Utc>>> {
+    match m.get("expected_updated_at") {
+        None | Some(Value::Null) => Ok(None),
+        Some(Value::String(s)) => s.parse().map(Some).map_err(|_| AppError::invalid("/expected_updated_at", "FORMAT", "expected_updated_at 須為 RFC 3339 時間")),
+        _ => Err(AppError::invalid("/expected_updated_at", "TYPE", "expected_updated_at 須為字串")),
+    }
+}
 fn today_tw() -> NaiveDate { (Utc::now() + Duration::hours(8)).date_naive() }
 
 // ---------- 清單 ----------
@@ -214,7 +224,9 @@ impl I {
             "qty_needed": self.qty_needed, "qty_claimed": if locked { None } else { Some(self.qty_claimed) }, "qty_received": 0,
             "target_points": null, "pledged_points": null, "funding_status": null, "funding_deadline": null, "fulfillment_type": null,
             "catalog_product_id": null, "price_snapshot_amount": null, "expired_at": null, "order_status": null,
-            "sort_order": self.sort_order, "created_at": self.created_at, "updated_at": self.updated_at,
+            "sort_order": self.sort_order, "created_at": self.created_at,
+            // 認領會推進品項 updated_at；鎖定期間遮蔽，避免由其變化推知有人認領
+            "updated_at": if locked { self.created_at } else { self.updated_at },
         })
     }
 }
@@ -232,7 +244,12 @@ async fn get_one(u: CurrentUser, State(st): State<AppState>, Path(id): Path<Uuid
 async fn update(u: CurrentUser, State(st): State<AppState>, Path(id): Path<Uuid>, Json(b): Json<Value>) -> R<Json<Value>> {
     let m = obj(&b)?;
     let mut w = load_owned(&st.pool, id, u.id).await?;
-    if w.status == "archived" { return Err(closed()); }
+    if w.status == "archived" {
+        // 重複封存為冪等（FR-15）：只帶 status=archived（與 expected_updated_at）時直接回目前狀態
+        if m.get("status").is_some_and(|v| v == "archived") && m.keys().all(|k| k == "status" || k == "expected_updated_at") { return Ok(Json(w.json())); }
+        return Err(closed());
+    }
+    let exp = expected(m)?;
     if let Some(v) = text(m, "title", 1, 100)? { w.title = v.unwrap_or_default(); }
     if let Some(v) = text(m, "description", 0, 2000)? { w.description = v; }
     if let Some(v) = image_key(m, "cover_image_key", "covers/")? { w.cover_image_status = if v.is_some() { "ready" } else { "none" }.into(); w.cover_image_key = v; }
@@ -263,17 +280,19 @@ async fn update(u: CurrentUser, State(st): State<AppState>, Path(id): Path<Uuid>
         }
         w.status = new.into();
     }
-    sqlx::query("UPDATE wishlists SET title=$2, description=$3, cover_image_key=$4, cover_image_status=$5::image_status, event_date=$6, visibility=$7::visibility,
+    let res = sqlx::query("UPDATE wishlists SET title=$2, description=$3, cover_image_key=$4, cover_image_status=$5::image_status, event_date=$6, visibility=$7::visibility,
                  show_claimer_names=$8, surprise_mode=$9, claim_ttl_hours=$10, status=$11::wishlist_status,
-                 closed_at = CASE WHEN $11 IN ('closed','archived') THEN coalesce(closed_at, now()) ELSE NULL END WHERE id=$1")
+                 closed_at = CASE WHEN $11 IN ('closed','archived') THEN coalesce(closed_at, now()) ELSE NULL END
+                 WHERE id=$1 AND ($12::timestamptz IS NULL OR updated_at=$12)")
         .bind(id).bind(&w.title).bind(&w.description).bind(&w.cover_image_key).bind(&w.cover_image_status).bind(w.event_date).bind(&w.visibility)
-        .bind(w.show_claimer_names).bind(w.surprise_mode).bind(w.claim_ttl_hours).bind(&w.status).execute(&st.pool).await?;
+        .bind(w.show_claimer_names).bind(w.surprise_mode).bind(w.claim_ttl_hours).bind(&w.status).bind(exp).execute(&st.pool).await?;
+    if res.rows_affected() == 0 { return Err(stale()); }
     Ok(Json(load_owned(&st.pool, id, u.id).await?.json()))
 }
 
 async fn archive(u: CurrentUser, State(st): State<AppState>, Path(id): Path<Uuid>) -> R<StatusCode> {
     load_owned(&st.pool, id, u.id).await?;
-    sqlx::query("UPDATE wishlists SET status='archived', closed_at = coalesce(closed_at, now()) WHERE id=$1").bind(id).execute(&st.pool).await?;
+    sqlx::query("UPDATE wishlists SET status='archived', closed_at = coalesce(closed_at, now()) WHERE id=$1 AND status<>'archived'").bind(id).execute(&st.pool).await?;
     Ok(StatusCode::NO_CONTENT)
 }
 
@@ -357,13 +376,25 @@ async fn item_update(u: CurrentUser, State(st): State<AppState>, Path(id): Path<
     let m = obj(&b)?;
     let (mut i, status, locked) = owned_item(&st.pool, id, u.id).await?;
     if matches!(status.as_str(), "closed" | "archived") { return Err(closed()); }
+    let old_qty = i.qty_needed;
+    // 鎖定期間品項的 updated_at 被遮蔽（見 I::json），故不做品項版本檢查
+    let exp = if locked { None } else { expected(m)? };
     apply_item(m, &mut i)?;
+    // 驚喜鎖定：不論有無認領，一律禁止調降（否則 QTY_BELOW_CLAIMED 會洩漏「有人認領」）
+    if locked && i.qty_needed < old_qty { return Err(surprise_locked_err()); }
     // qty_needed >= qty_claimed 在同一 UPDATE 內判斷，避免與認領競爭
     let res = sqlx::query("UPDATE wishlist_items SET title=$2, description=$3, brand=$4, spec=$5, image_key=$6, image_status=$7::image_status, product_url=$8,
-                 unit_price_amount=$9, priority=$10::item_priority, qty_needed=$11 WHERE id=$1 AND qty_claimed <= $11")
+                 unit_price_amount=$9, priority=$10::item_priority, qty_needed=$11 WHERE id=$1 AND qty_claimed <= $11 AND ($12::timestamptz IS NULL OR updated_at=$12)")
         .bind(id).bind(&i.title).bind(&i.description).bind(&i.brand).bind(&i.spec).bind(&i.image_key).bind(&i.image_status).bind(&i.product_url)
-        .bind(i.unit_price_amount).bind(&i.priority).bind(i.qty_needed).execute(&st.pool).await?;
-    if res.rows_affected() == 0 { return Err(AppError::problem(409, "QTY_BELOW_CLAIMED", "qty_needed 不可小於已認領數量。")); }
+        .bind(i.unit_price_amount).bind(&i.priority).bind(i.qty_needed).bind(exp).execute(&st.pool).await?;
+    if res.rows_affected() == 0 {
+        let cur: Option<(DateTime<Utc>, i32)> = sqlx::query_as("SELECT updated_at, qty_claimed FROM wishlist_items WHERE id=$1 AND deleted_at IS NULL").bind(id).fetch_optional(&st.pool).await?;
+        return Err(match cur {
+            None => AppError::NotFound,
+            Some((u, _)) if exp.is_some_and(|e| e != u) => stale(),
+            _ => AppError::problem(409, "QTY_BELOW_CLAIMED", "qty_needed 不可小於已認領數量。"),
+        });
+    }
     let row: I = sqlx::query_as(&format!("SELECT {ICOLS} FROM wishlist_items WHERE id=$1")).bind(id).fetch_one(&st.pool).await?;
     Ok(Json(row.json(locked)))
 }
@@ -372,7 +403,9 @@ async fn item_update(u: CurrentUser, State(st): State<AppState>, Path(id): Path<
 struct ForceQ { force: Option<bool> }
 
 async fn item_delete(u: CurrentUser, State(st): State<AppState>, Path(id): Path<Uuid>, Query(q): Query<ForceQ>) -> R<StatusCode> {
-    owned_item(&st.pool, id, u.id).await?;
+    let (_, _, locked) = owned_item(&st.pool, id, u.id).await?;
+    // 驚喜鎖定：一律禁止刪除，回應與有無認領無關
+    if locked { return Err(surprise_locked_err()); }
     let mut tx = st.pool.begin().await?;
     let active: i64 = sqlx::query_scalar("SELECT count(*) FROM claims WHERE item_id=$1 AND status IN ('reserved','purchased')").bind(id).fetch_one(&mut *tx).await?;
     if active > 0 {

@@ -43,6 +43,7 @@ docker compose up -d                 # PostGIS、MinIO（模擬 R2）、Mailpit�
 
 # 後端（啟動時自動套用 migration）
 export DATABASE_URL=postgres://wishsync:wishsync@localhost:5432/wishsync
+export APP_ENV=dev   # 必填：未設即視為 production（缺機密 / 密鑰 <32 字元會拒絕啟動，見 apps/api/.env.example）
 cargo run --manifest-path apps/api/Cargo.toml     # http://localhost:8080
 # 沒有 Rust：scripts/cargo.sh test
 
@@ -64,7 +65,16 @@ cd apps/web && npm run build
 
 ## 部署
 
-前端：`cd apps/web && npm run deploy`（Cloudflare Pages）。
+前端部署到 Cloudflare Pages，有兩種，差別在「建置時」的環境變數（`wrangler pages deploy` 不支援 `--config`，所以不用第二份 wrangler 設定）：
+
+| 指令（在 `apps/web`） | 建置時設定 | 行為 |
+|---|---|---|
+| `npm run deploy`（正式） | `NUXT_DEMO` 清空；API 預設 `https://api.wishsync.tw` | 分享連結走真實 API，`/s/demo` 不會有假資料 |
+| `npm run deploy:demo`（示範） | `NUXT_DEMO=1`、`NUXT_PUBLIC_API_BASE=` | 僅 `/s/demo` 有同源假資料，其餘分享連結失敗；**不要給真實使用者** |
+
+- 正式 API 網域不同時，建置前設 `NUXT_PUBLIC_API_BASE=https://...`，或改 `nuxt.config.ts` 預設值。
+- `wrangler.jsonc` 刻意不放 `vars`，避免執行期變數蓋掉建置設定。
+- 本機驗證：`npm run build` 後 `npx wrangler pages dev dist`（示範用 `npm run build:demo`）。
 
 ## 開發順序
 

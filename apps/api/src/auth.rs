@@ -32,9 +32,9 @@ pub fn routes() -> Router<AppState> {
 }
 
 pub(crate) fn env(k: &str, d: &str) -> String { std::env::var(k).unwrap_or_else(|_| d.to_string()) }
-fn pepper() -> String { env("OTP_PEPPER", "dev-pepper") }
-pub(crate) fn app_url() -> String { env("APP_URL", "http://localhost:3000").trim_end_matches('/').to_string() }
-pub(crate) fn secure() -> &'static str { if env("APP_ENV", "dev") == "dev" { "" } else { "; Secure" } }
+fn pepper() -> String { crate::config::get().otp_pepper }
+pub(crate) fn app_url() -> String { crate::config::get().app_url }
+pub(crate) fn secure() -> &'static str { crate::config::get().secure_cookie() }
 
 pub fn code_hash(code: &str, pepper: &str) -> Vec<u8> { Sha256::digest(format!("{code}{pepper}").as_bytes()).to_vec() }
 
@@ -100,19 +100,7 @@ pub(crate) fn rate_limited(secs: i64) -> AppError {
 }
 
 async fn send_mail(to: String, code: String, subject: &'static str) {
-    use lettre::{AsyncSmtpTransport, AsyncTransport, Message, Tokio1Executor};
-    let host = env("SMTP_HOST", "localhost");
-    let port: u16 = env("SMTP_PORT", "1025").parse().unwrap_or(1025);
-    let r: Result<(), String> = async {
-        let msg = Message::builder()
-            .from(env("MAIL_FROM", "WishSync <no-reply@wishsync.tw>").parse().map_err(|e| format!("{e}"))?)
-            .to(to.parse().map_err(|e| format!("{e}"))?)
-            .subject(subject)
-            .body(format!("您的驗證碼是 {code}，10 分鐘內有效。若非本人操作請忽略此信。"))
-            .map_err(|e| e.to_string())?;
-        AsyncSmtpTransport::<Tokio1Executor>::builder_dangerous(host).port(port).build().send(msg).await.map_err(|e| e.to_string())?;
-        Ok(())
-    }.await;
+    let r = crate::notify::send_mail(&crate::config::get(), &to, subject, &format!("您的驗證碼是 {code}，10 分鐘內有效。若非本人操作請忽略此信。")).await;
     if let Err(e) = r { tracing::error!(error = %e, "send otp mail failed"); }
 }
 
@@ -156,7 +144,7 @@ pub(crate) async fn consume_otp(pool: &PgPool, email: &str, code: &str, purpose:
          ORDER BY created_at DESC LIMIT 1").bind(email).bind(purpose).fetch_optional(pool).await?;
     let (cid, hash, attempts, pw, name) = ch.ok_or_else(otp_invalid)?;
     if attempts >= OTP_MAX_ATTEMPTS { return Err(otp_invalid()); }
-    if hash != code_hash(code, &pepper()) {
+    if !crate::config::ct_eq(&hash, &code_hash(code, &pepper())) {
         sqlx::query("UPDATE otp_challenges SET attempts = attempts + 1 WHERE id=$1").bind(cid).execute(pool).await?;
         return Err(otp_invalid());
     }
@@ -255,7 +243,7 @@ pub async fn line_fetch_profile(cfg: &LineCfg, code: &str, verifier: &str) -> Re
 }
 
 pub(crate) fn sign(payload: &str) -> String {
-    let mut m = <Hmac<Sha256> as Mac>::new_from_slice(env("OAUTH_SECRET", &pepper()).as_bytes()).unwrap();
+    let mut m = <Hmac<Sha256> as Mac>::new_from_slice(crate::config::get().oauth_secret.as_bytes()).unwrap();
     m.update(payload.as_bytes());
     hex::encode(m.finalize().into_bytes())
 }
@@ -296,10 +284,10 @@ struct CbQ { code: Option<String>, state: Option<String>, error: Option<String> 
 fn check_state(cookie_val: Option<&str>, state: Option<&str>) -> Option<(String, String)> {
     let c = cookie_val?;
     let (payload, sig) = c.rsplit_once('.')?;
-    if sign(payload) != sig { return None; }
+    if !crate::config::ct_eq(sign(payload).as_bytes(), sig.as_bytes()) { return None; }
     let mut it = payload.split('.');
     let (s, v, r) = (it.next()?, it.next()?, it.next()?);
-    if Some(s) != state { return None; }
+    if !crate::config::ct_eq(s.as_bytes(), state?.as_bytes()) { return None; }
     let redir = String::from_utf8(B64.decode(r).ok()?).ok()?;
     safe_redirect(&redir).then(|| (v.to_string(), redir))
 }

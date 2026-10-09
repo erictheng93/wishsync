@@ -14,8 +14,7 @@ pub fn routes() -> Router<AppState> {
 
 // ---------- 一鍵退訂（4.13）：token = base64url("u|g:<id>:<exp>") . hex(HMAC-SHA256) ----------
 fn mac(msg: &str) -> Hmac<Sha256> {
-    let key = std::env::var("UNSUB_SECRET").or_else(|_| std::env::var("OAUTH_SECRET")).unwrap_or_else(|_| "dev-oauth-secret".into());
-    let mut m = <Hmac<Sha256> as Mac>::new_from_slice(key.as_bytes()).unwrap();
+    let mut m = <Hmac<Sha256> as Mac>::new_from_slice(crate::config::get().unsub_secret.as_bytes()).unwrap();
     m.update(msg.as_bytes());
     m
 }
@@ -55,8 +54,7 @@ async fn unsubscribe(State(st): State<AppState>, Query(q): Query<UnsubQ>) -> Res
         }
         None => 0,
     };
-    let base = std::env::var("APP_URL").unwrap_or_else(|_| "http://localhost:3000".into());
-    let loc = format!("{}/unsubscribed?ok={ok}", base.trim_end_matches('/'));
+    let loc = format!("{}/unsubscribed?ok={ok}", crate::config::get().app_url);
     Ok((StatusCode::FOUND, [(header::LOCATION, loc)]).into_response())
 }
 

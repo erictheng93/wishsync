@@ -1,4 +1,5 @@
 pub mod account;
+pub mod config;
 pub mod admin;
 pub mod dashboard;
 pub mod error;
@@ -12,6 +13,7 @@ pub mod public;
 pub mod guest;
 pub mod claims;
 pub mod idempotency;
+pub mod ratelimit;
 pub mod session;
 
 use axum::Router;
@@ -43,7 +45,7 @@ pub fn app(state: AppState) -> Router {
 /// 前端（Pages）與 API 不同網域：只允許 APP_URL，並帶憑證。
 fn cors() -> tower_http::cors::CorsLayer {
     use axum::http::{header, HeaderName, Method};
-    let origin = std::env::var("APP_URL").unwrap_or("http://localhost:3000".into());
+    let origin = config::get().app_url;
     tower_http::cors::CorsLayer::new()
         .allow_origin(origin.parse::<axum::http::HeaderValue>().expect("APP_URL"))
         .allow_credentials(true)

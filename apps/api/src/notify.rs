@@ -1,6 +1,7 @@
 //! Email 通知 outbox：認領模組呼叫 `enqueue_claim`（寫 notifications，docs/04 4.10），
 //! 背景 worker `spawn_worker` 輪詢到期通知，經 SMTP（預設 Mailpit localhost:1025）寄出。
 //! 內容刻意不含品項與認領者，只寫「有 N 件新認領」，所以驚喜模式下天然不洩漏。
+use crate::config::Config;
 use lettre::{message::header::ContentType, AsyncSmtpTransport, AsyncTransport, Message, Tokio1Executor};
 use serde_json::Value;
 use sqlx::PgPool;
@@ -29,6 +30,27 @@ pub async fn enqueue_claim<'e, E: sqlx::PgExecutor<'e>>(ex: E, wishlist_id: Uuid
     Ok(())
 }
 
+/// 唯一寄信點。設了 CF_ACCOUNT_ID + CF_EMAIL_API_TOKEN 就走 Cloudflare Email Service REST API
+/// （production 啟動時強制要求）；否則 dev 走 SMTP → Mailpit。錯誤字串不含 token。
+pub async fn send_mail(cfg: &Config, to: &str, subject: &str, body: &str) -> Result<(), String> {
+    if let (Some(acct), Some(tok)) = (&cfg.cf_account_id, &cfg.cf_email_api_token) {
+        let url = format!("{}/accounts/{acct}/email/sending/send", cfg.cf_api_base.trim_end_matches('/'));
+        let r = reqwest::Client::builder().timeout(Duration::from_secs(15)).build().map_err(|e| e.without_url().to_string())?
+            .post(url).bearer_auth(tok)
+            .json(&serde_json::json!({ "from": cfg.mail_from, "to": to, "subject": subject, "text": body }))
+            .send().await.map_err(|e| e.without_url().to_string())?;
+        let status = r.status();
+        let v: Value = r.json().await.unwrap_or(Value::Null);
+        // 2xx 且 success != false 才算成功；永久退信也視為失敗
+        if status.is_success() && v["success"] != false && v["result"]["permanent_bounces"].as_array().is_none_or(|a| a.is_empty()) { return Ok(()); }
+        return Err(format!("cloudflare email {status}: {}", v["errors"]));
+    }
+    let msg = Message::builder().from(cfg.mail_from.parse().map_err(|e| format!("{e}"))?)
+        .to(to.parse().map_err(|e| format!("{e}"))?)
+        .subject(subject).header(ContentType::TEXT_PLAIN).body(body.to_string()).map_err(|e| e.to_string())?;
+    AsyncSmtpTransport::<Tokio1Executor>::builder_dangerous(cfg.smtp_host.clone()).port(cfg.smtp_port).build().send(msg).await.map(|_| ()).map_err(|e| e.to_string())
+}
+
 pub fn spawn_worker(pool: PgPool) {
     tokio::spawn(async move {
         loop {
@@ -49,10 +71,7 @@ pub async fn tick(pool: &PgPool) -> Result<usize, sqlx::Error> {
          RETURNING id, user_id, guest_id, channel::text, kind, payload, attempts")
         .fetch_all(pool).await?;
     if rows.is_empty() { return Ok(0); }
-    let host = std::env::var("SMTP_HOST").unwrap_or_else(|_| "localhost".into());
-    let port = std::env::var("SMTP_PORT").ok().and_then(|p| p.parse().ok()).unwrap_or(1025);
-    let from = std::env::var("MAIL_FROM").unwrap_or_else(|_| "WishSync <no-reply@wishsync.tw>".into());
-    let mailer = AsyncSmtpTransport::<Tokio1Executor>::builder_dangerous(host).port(port).build();
+    let cfg = crate::config::get();
     let n = rows.len();
     for (id, uid, gid, channel, kind, payload, attempts) in rows {
         let to: Option<String> = if channel != "email" { None } else if let Some(u) = uid {
@@ -70,7 +89,7 @@ pub async fn tick(pool: &PgPool) -> Result<usize, sqlx::Error> {
         };
         // 寄信時才產生：退訂連結；訪客確認信的一次性恢復權杖（每次寄信換發，30 天）
         let mut payload = payload;
-        let api = std::env::var("API_BASE_URL").unwrap_or_else(|_| "http://localhost:8080".into());
+        let api = cfg.api_base_url.clone();
         let sub = match (uid, gid) { (Some(u), _) => Some(('u', u)), (_, Some(g)) => Some(('g', g)), _ => None };
         if let Some((k, i)) = sub {
             payload["unsubscribe_url"] = format!("{}/api/v1/unsubscribe?token={}", api.trim_end_matches('/'), crate::account::unsub_token(k, i)).into();
@@ -82,12 +101,11 @@ pub async fn tick(pool: &PgPool) -> Result<usize, sqlx::Error> {
             payload["recovery_token"] = tok.into();
         }
         let (subject, body) = render(&kind, &title, &payload);
-        let sent = match Message::builder().from(from.parse().unwrap_or_else(|_| "no-reply@wishsync.tw".parse().unwrap()))
-            .to(match to.parse() { Ok(a) => a, Err(_) => { sqlx::query("UPDATE notifications SET status = 'failed', last_error = 'bad address' WHERE id = $1").bind(id).execute(pool).await?; continue; } })
-            .subject(subject).header(ContentType::TEXT_PLAIN).body(body) {
-            Ok(m) => mailer.send(m).await.map(|_| ()).map_err(|e| e.to_string()),
-            Err(e) => Err(e.to_string()),
-        };
+        if to.parse::<lettre::Address>().is_err() {
+            sqlx::query("UPDATE notifications SET status = 'failed', last_error = 'bad address' WHERE id = $1").bind(id).execute(pool).await?;
+            continue;
+        }
+        let sent = send_mail(&cfg, &to, &subject, &body).await;
         match sent {
             Ok(()) => { sqlx::query("UPDATE notifications SET status = 'sent', sent_at = now(), last_error = NULL WHERE id = $1").bind(id).execute(pool).await?; }
             Err(e) => {
@@ -102,7 +120,7 @@ pub async fn tick(pool: &PgPool) -> Result<usize, sqlx::Error> {
 /// 純函式：(主旨, 內文)。刻意只用數量，不帶品項 / 認領者。
 pub fn render(kind: &str, title: &str, payload: &Value) -> (String, String) {
     let n = payload.get("count").and_then(Value::as_i64).unwrap_or(1);
-    let base = std::env::var("APP_URL").or_else(|_| std::env::var("APP_BASE_URL")).unwrap_or_else(|_| "http://localhost:3000".into());
+    let base = crate::config::get().app_url;
     let manage = match payload.get("recovery_token").and_then(Value::as_str) { Some(t) => format!("{base}/me/claims#r={t}"), None => format!("{base}/me/claims") };
     let (subject, body) = match kind {
         "claim.digest" => (format!("【WishSync】《{title}》今日有 {n} 件新認領"), format!("你的清單《{title}》今日彙整：有 {n} 件新認領。\n登入查看：{base}/dashboard\n")),

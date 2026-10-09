@@ -19,6 +19,7 @@ rand = "0.8"
 base64 = "0.22"
 hmac = "0.12"
 hex = "0.4"
+subtle = "2"
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 lettre = { version = "0.11", default-features = false, features = ["builder", "smtp-transport", "tokio1"] }
 image = { version = "0.25", default-features = false, features = ["jpeg", "png", "webp"] }
