@@ -1,0 +1,119 @@
+<title>WishSync 主題比較</title>
+<style>
+/* 版面：三支手機並排，同一份分享頁內容，只換主題。外框跟隨檢視者主題；手機內是各款固定配色。 */
+:root{--bg:#f2f2f4;--fg:#1c1c1e;--mute:#6b6b72;--line:#d9d9de;--card:#fff}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121214;--fg:#f2f2f4;--mute:#9a9aa2;--line:#2b2b30;--card:#1b1b1f;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#121214;--fg:#f2f2f4;--mute:#9a9aa2;--line:#2b2b30;--card:#1b1b1f;color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font:15px/1.6 -apple-system,"PingFang TC","Noto Sans TC",sans-serif;padding-inline:16px;padding-block:32px}
+.wrap{max-width:1180px;margin:0 auto}
+h1{font-size:28px;margin:0 0 6px;text-wrap:balance}
+.lead{color:var(--mute);margin:0 0 28px;max-width:60ch}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:32px 24px}
+.opt{min-width:0;display:flex;flex-direction:column;gap:14px}
+.opt h2{font-size:18px;margin:0}
+.opt p{margin:0;color:var(--mute);font-size:14px}
+.sw{display:flex;gap:8px}
+.sw i{width:28px;height:28px;border-radius:50%;border:1px solid var(--line)}
+
+/* ---- 手機框 ---- */
+.phone{width:100%;max-width:340px;border-radius:34px;border:1px solid var(--line);overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.12);align-self:flex-start}
+.s{padding:22px 18px 26px;display:flex;flex-direction:column;gap:16px;min-height:600px}
+.s h3{margin:0;font-size:26px;line-height:1.2;text-wrap:balance}
+.s .meta{font-size:13px}
+.bar{height:6px;border-radius:99px;overflow:hidden}
+.bar b{display:block;height:100%;width:62%}
+.row{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.item{padding:14px;display:flex;flex-direction:column;gap:10px}
+.item .t{font-weight:600;font-size:16px}
+.btn{border:0;font:inherit;font-weight:600;padding:12px 16px;text-align:center;cursor:default}
+.tag{font-size:11px}
+.top{display:flex;justify-content:space-between;align-items:center;font-size:12px}
+
+/* 款式一：黑底白字 */
+.t1{background:#000;color:#fff}
+.t1 .meta,.t1 .tag,.t1 .top{color:#8e8e93;font-family:ui-monospace,"SF Mono",Menlo,monospace}
+.t1 h3{font-weight:700;letter-spacing:-.02em}
+.t1 .bar{background:#2a2a2d}.t1 .bar b{background:#fff}
+.t1 .item{border:1px solid #2a2a2d;border-radius:14px;background:#0a0a0a}
+.t1 .btn{background:#fff;color:#000;border-radius:10px}
+.t1 .btn.ghost{background:transparent;color:#fff;border:1px solid #3a3a3e}
+.t1 .num{font-family:ui-monospace,Menlo,monospace}
+
+/* 款式二：白底紅線，企業實驗室風 */
+.t2{background:#fff;color:#1a1a1a}
+.t2 .top{color:#c8102e;letter-spacing:.14em;text-transform:uppercase;font-weight:700;border-bottom:3px solid #c8102e;padding-bottom:10px}
+.t2 .meta,.t2 .tag{color:#666;letter-spacing:.08em;text-transform:uppercase}
+.t2 h3{font-weight:800;letter-spacing:.01em}
+.t2 .bar{background:#eee;border-radius:0}.t2 .bar b{background:repeating-linear-gradient(45deg,#c8102e 0 8px,#a30d25 8px 16px)}
+.t2 .item{border:1px solid #d8d8d8;border-left:4px solid #c8102e;border-radius:0}
+.t2 .btn{background:#c8102e;color:#fff;border-radius:0;letter-spacing:.14em;text-transform:uppercase;font-size:13px}
+.t2 .btn.ghost{background:#fff;color:#c8102e;border:1px solid #c8102e}
+.t2 .num{color:#c8102e;font-weight:700}
+
+/* 款式三：白底橘色，網路基礎設施風 */
+.t3{background:#fff;color:#222}
+.t3 .top{color:#6d6d6d}
+.t3 .meta,.t3 .tag{color:#6d6d6d}
+.t3 h3{font-weight:700;letter-spacing:-.01em}
+.t3 .bar{background:#fde8d4}.t3 .bar b{background:#f6821f}
+.t3 .item{border:1px solid #e6e6e6;border-radius:10px;background:#fff}
+.t3 .item.hot{background:#fff6ed;border-color:#fbcd9e}
+.t3 .btn{background:#f6821f;color:#fff;border-radius:8px}
+.t3 .btn.ghost{background:#fff;color:#c15f0a;border:1px solid #f6821f}
+.t3 .num{color:#c15f0a;font-weight:700}
+.t3 .pill{background:#fde8d4;color:#c15f0a;border-radius:99px;padding:2px 10px}
+</style>
+
+<div class="wrap">
+<h1>主題比較：同一份分享頁，三種外觀</h1>
+<p class="lead">下面是訪客打開 /s/{slug} 看到的畫面。三款內容完全相同，只換配色、字體、邊角與按鈕。選定後我再套用到整個前端（分享頁、認領流程、創建者介面、後台）。</p>
+
+<div class="grid">
+
+<section class="opt">
+  <h2>款式一　黑底白字</h2>
+  <div class="phone t1"><div class="s">
+    <div class="top"><span>WISHSYNC</span><span>/s/Kx8mQ2pL4a</span></div>
+    <h3>小美的新家願望清單</h3>
+    <div class="meta">喬遷日 11 月 23 日 · 3 件品項</div>
+    <div><div class="row"><span class="meta">完成度</span><span class="num">62%</span></div><div class="bar"><b></b></div></div>
+    <div class="item"><div class="row"><span class="t">Dyson 無線吸塵器</span><span class="tag">HIGH</span></div><div class="row"><span class="meta">已認領 0 / 1</span><span class="meta">NT$ 12,900</span></div><div class="btn">我來認領</div></div>
+    <div class="item"><div class="row"><span class="t">鑄鐵鍋 22cm</span><span class="tag">MED</span></div><div class="row"><span class="meta">已認領 1 / 2</span><span class="meta">NT$ 3,200</span></div><div class="btn ghost">我來認領</div></div>
+    <div class="item"><div class="row"><span class="t">純棉浴巾組</span><span class="tag">LOW</span></div><div class="row"><span class="meta">已認領 4 / 4</span><span class="meta">已滿</span></div></div>
+  </div></div>
+  <p>科技感、夜間好讀。強調色只有白，靠等寬字體與細邊框營造儀表板氣質。</p>
+  <div class="sw"><i style="background:#000"></i><i style="background:#fff"></i><i style="background:#2a2a2d"></i></div>
+</section>
+
+<section class="opt">
+  <h2>款式二　紅白實驗室</h2>
+  <div class="phone t2"><div class="s">
+    <div class="top"><span>WishSync</span><span>清單 Kx8mQ2</span></div>
+    <h3>小美的新家願望清單</h3>
+    <div class="meta">喬遷日 11 月 23 日 · 3 件品項</div>
+    <div><div class="row"><span class="meta">完成度</span><span class="num">62%</span></div><div class="bar"><b></b></div></div>
+    <div class="item"><div class="row"><span class="t">Dyson 無線吸塵器</span><span class="tag">優先 高</span></div><div class="row"><span class="meta">已認領 0 / 1</span><span class="meta">NT$ 12,900</span></div><div class="btn">我來認領</div></div>
+    <div class="item"><div class="row"><span class="t">鑄鐵鍋 22cm</span><span class="tag">優先 中</span></div><div class="row"><span class="meta">已認領 1 / 2</span><span class="meta">NT$ 3,200</span></div><div class="btn ghost">我來認領</div></div>
+    <div class="item"><div class="row"><span class="t">純棉浴巾組</span><span class="tag">優先 低</span></div><div class="row"><span class="meta">已認領 4 / 4</span><span class="meta">已滿</span></div></div>
+  </div></div>
+  <p>白為主、紅為輔。直角、粗體大寫標籤、警示斜紋進度條，企業實驗室的冷調感；只借用配色與氛圍，不使用任何現成標誌。</p>
+  <div class="sw"><i style="background:#fff"></i><i style="background:#c8102e"></i><i style="background:#1a1a1a"></i></div>
+</section>
+
+<section class="opt">
+  <h2>款式三　橘白基礎設施</h2>
+  <div class="phone t3"><div class="s">
+    <div class="top"><span>WishSync</span><span>/s/Kx8mQ2pL4a</span></div>
+    <h3>小美的新家願望清單</h3>
+    <div class="meta">喬遷日 11 月 23 日 · 3 件品項</div>
+    <div><div class="row"><span class="meta">完成度</span><span class="num">62%</span></div><div class="bar"><b></b></div></div>
+    <div class="item hot"><div class="row"><span class="t">Dyson 無線吸塵器</span><span class="tag pill">優先 高</span></div><div class="row"><span class="meta">已認領 0 / 1</span><span class="meta">NT$ 12,900</span></div><div class="btn">我來認領</div></div>
+    <div class="item"><div class="row"><span class="t">鑄鐵鍋 22cm</span><span class="tag">優先 中</span></div><div class="row"><span class="meta">已認領 1 / 2</span><span class="meta">NT$ 3,200</span></div><div class="btn ghost">我來認領</div></div>
+    <div class="item"><div class="row"><span class="t">純棉浴巾組</span><span class="tag">優先 低</span></div><div class="row"><span class="meta">已認領 4 / 4</span><span class="meta">已滿</span></div></div>
+  </div></div>
+  <p>親切、有活力。橘色只用在主按鈕、進度與高優先品項，其餘維持白與中性灰。</p>
+  <div class="sw"><i style="background:#fff"></i><i style="background:#f6821f"></i><i style="background:#fde8d4"></i></div>
+</section>
+
+</div>
+</div>

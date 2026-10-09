@@ -1,0 +1,7 @@
+{
+  "name": "wishsync-web",
+  "pages_build_output_dir": "./dist",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "vars": { "NUXT_PUBLIC_API_BASE": "", "NUXT_DEMO": "1" } // S1 預覽部署：同源假資料；正式環境改回 api 網域並移除 NUXT_DEMO
+}

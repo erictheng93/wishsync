@@ -1,0 +1,74 @@
+/* 創建者 / 後台（c- 前綴，款式二紅白實驗室，手機優先，480px 置中）：token 見 tokens.css */
+.c-page{max-width:480px;margin:0 auto;padding:0 20px 112px}
+.c-admin{max-width:880px}
+.c-head{display:flex;align-items:center;gap:4px;min-height:52px;position:sticky;top:0;z-index:20;margin:0 -20px 16px;padding:0 20px;background:var(--glass);border-bottom:3px solid var(--red)}
+.c-head h1{flex:1;font-size:18px;line-height:1.2;margin:0;letter-spacing:.1em;color:var(--red);text-transform:uppercase;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.c-card{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--red);padding:16px;margin:0 0 12px}
+.c-card.bad{border-left-color:var(--bad);background:var(--bad-bg)}
+.c-card>h2:first-child,.c-h2{font-size:18px;margin:0 0 12px}
+.c-row{display:flex;gap:8px;align-items:center}
+.c-row.wrap{flex-wrap:wrap}
+.c-mt{margin-top:8px}.c-mt12{margin-top:12px}.c-mb{margin-bottom:12px}.c-mb16{margin-bottom:16px}.c-m0{margin:0}
+.c-grow{flex:1;min-width:0}
+.c-mute{color:var(--mute);font-size:13px;letter-spacing:.06em}
+.c-small{font-size:12px}
+.c-err{color:var(--bad);font-size:14px;margin:4px 0}
+.c-ok{color:var(--ok);font-size:14px}
+.c-btn,a.c-btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;padding:0 14px;border:1px solid var(--red);background:var(--card);color:var(--red);font:inherit;font-size:14px;font-weight:700;letter-spacing:.12em;text-decoration:none;cursor:pointer;box-sizing:border-box;white-space:nowrap;transition:background var(--t) var(--ease),opacity var(--t) var(--ease)}
+.c-row.wrap>.c-btn.c-grow{flex:1 1 auto}
+.c-btn.primary,a.c-btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg);padding:0 22px;letter-spacing:.14em}
+.c-btn.primary:active{background:var(--accent-press);border-color:var(--accent-press)}
+.c-btn.danger,a.c-btn.danger{color:var(--bad);border-color:var(--bad)}
+.c-btn.block{display:flex;width:100%}
+.c-btn.plain{border-color:transparent;background:transparent}
+.c-btn.small{min-height:44px;font-size:12px}
+.c-btn[disabled]{opacity:.4;cursor:not-allowed}
+.c-field{display:block;margin:0 0 16px}
+.c-field>span{display:block;font-size:13px;letter-spacing:.08em;color:var(--mute);margin-bottom:6px}
+.c-field input,.c-field select,.c-field textarea,.c-input{width:100%;box-sizing:border-box;min-height:44px;padding:10px 14px;border:1px solid var(--line);background:var(--bg-alt);color:var(--fg);font:inherit}
+.c-field input:focus,.c-field select:focus,.c-field textarea:focus,.c-input:focus,.c-otp input:focus{outline:2px solid var(--red);outline-offset:0;border-color:var(--red)}
+.c-seg{display:flex;gap:0;margin:0 0 16px;border:1px solid var(--red)}
+.c-seg label{flex:1}
+.c-seg label{position:relative}
+.c-seg input{position:absolute;opacity:0;width:1px;min-height:0;height:1px;padding:0}
+.c-seg span{display:flex;align-items:center;justify-content:center;min-height:44px;font-size:14px;letter-spacing:.1em;color:var(--red);background:var(--card);cursor:pointer;transition:background var(--t) var(--ease)}
+.c-seg input:checked+span{background:var(--accent);color:var(--accent-fg);font-weight:700}
+.c-seg input:focus-visible+span{outline:2px solid var(--red);outline-offset:2px}
+.c-switch{display:flex;align-items:center;gap:12px;min-height:44px;margin:0 0 8px}
+.c-switch input{width:24px;height:24px;accent-color:var(--red)}
+.c-badge{display:inline-block;padding:0 8px;font-size:12px;line-height:20px;letter-spacing:.1em;border:1px solid var(--line);background:var(--card);color:var(--mute);white-space:nowrap}
+.c-badge.active,.c-badge.delivered,.c-badge.ready{color:var(--ok);border-color:var(--ok)}
+.c-badge.hidden,.c-badge.rejected,.c-badge.cancelled{color:var(--bad);border-color:var(--bad)}
+.c-thumb{width:56px;height:56px;background:var(--bg-alt);object-fit:cover;flex:none;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--mute);text-align:center;overflow:hidden}
+.c-bar{height:8px;background:var(--bg-alt);overflow:hidden}
+.c-bar>i{display:block;height:100%;background:var(--stripe)}
+.c-big{font-size:44px;font-weight:800;line-height:1.05;color:var(--red)}
+.c-mask{text-align:center;padding:20px;border:1px dashed var(--line);color:var(--mute);margin:0 0 12px}
+.c-fab{position:fixed;right:max(20px,calc(50% - 220px));bottom:calc(20px + env(safe-area-inset-bottom))}
+.c-bottom{position:fixed;left:0;right:0;bottom:0;padding:12px 20px calc(12px + env(safe-area-inset-bottom));background:var(--glass);border-top:1px solid var(--line);z-index:4}
+.c-bottom>div{max-width:480px;margin:0 auto;display:flex;gap:8px}
+dialog.c-sheet{border:0;border-top:3px solid var(--red);padding:24px 20px;width:100%;max-width:480px;margin:auto auto 0;background:var(--card);color:var(--fg);box-sizing:border-box;max-height:92vh}
+dialog.c-sheet[open]{animation:rise .25s var(--ease)}
+dialog.c-sheet::backdrop{background:var(--scrim)}
+dialog.c-sheet h2{margin:0 0 16px;font-size:20px;line-height:1.2}
+.c-tabs{display:flex;gap:4px;margin:0 0 16px;overflow-x:auto}
+.c-tabs .c-btn{border-color:var(--line);color:var(--mute);font-size:13px}
+.c-tabs .c-btn.on{border-color:var(--accent);background:var(--accent);color:var(--accent-fg)}
+.c-otp{display:flex;gap:8px;justify-content:center;margin:0 0 16px}
+.c-otp input{width:46px;height:56px;text-align:center;font-size:24px;font-weight:700;border:1px solid var(--line);background:var(--bg-alt);color:var(--fg);font-family:inherit}
+.c-center{text-align:center}
+.c-hero{padding:64px 0 24px;text-align:center}
+.c-page h1{margin:0}
+.c-list{margin:8px 0 0;padding:0;list-style:none}
+.c-card a:not(.c-btn){color:var(--fg)}
+dialog.c-sheet:focus-visible{outline:0}
+.c-row+.c-bar{margin-top:8px}
+.c-lbl{display:block;font-size:13px;letter-spacing:.08em;color:var(--mute);margin-bottom:6px}
+.c-pw{display:flex;gap:4px;align-items:stretch}.c-pw input{flex:1;min-width:0}
+.c-links{display:flex;justify-content:space-between;gap:12px;margin:0 0 16px;font-size:14px}
+.c-links a{color:var(--red);min-height:44px;display:inline-flex;align-items:center}
+.c-ok{color:var(--fg);border:1px solid var(--red);padding:10px 14px;margin:0 0 16px;font-size:14px}
+.c-file{position:relative;overflow:hidden}
+.c-file input{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer}
+.c-file:focus-within{outline:2px solid var(--red);outline-offset:2px}
+.c-file[aria-disabled=true]{opacity:.4}

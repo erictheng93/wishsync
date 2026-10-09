@@ -1,0 +1,73 @@
+# WishSync 願望清單（MVP）
+
+建立願望清單、用連結分享，親友免註冊即可認領品項，並確保不會重複認領（超賣防護）。
+
+## 結構
+
+| 路徑 | 內容 |
+|---|---|
+| `apps/web` | Nuxt 4 前端（Cloudflare Pages；`/s/[slug]` 為 SSR 分享頁，供 LINE / FB 預覽） |
+| `apps/api` | Rust（axum + sqlx）後端 |
+| `db/migrations` | PostgreSQL 16 + PostGIS 遷移（MVP 14 張表） |
+| `docs/` | PRD、使用者流程、線框、資料 schema 與 API 契約（v0.4） |
+| `scripts/cargo.sh` | 沒安裝 Rust 時，用 Docker 執行 cargo |
+
+## 本機開發
+
+### 安裝 Rust（建議，編譯比 Docker 快很多）
+
+```sh
+brew install rustup && rustup-init -y     # 或：curl https://sh.rustup.rs -sSf | sh
+source "$HOME/.cargo/env"
+cargo --version                            # 確認安裝成功
+```
+
+可選的加速設定：在 `apps/api/Cargo.toml` 加上
+
+```toml
+[profile.dev]
+debug = "line-tables-only"                 # 縮短連結時間
+```
+
+可選工具（`cargo binstall` 只用來下載現成工具的執行檔，不會加速專案本身的編譯）：
+
+```sh
+cargo install cargo-binstall
+cargo binstall sqlx-cli cargo-watch        # sqlx-cli：管理 migration；cargo-watch：存檔自動重啟
+```
+
+沒安裝 Rust 時，仍可用 `scripts/cargo.sh test`（Docker）執行，只是較慢。
+
+```sh
+docker compose up -d                 # PostGIS、MinIO（模擬 R2）、Mailpit（收 OTP 信：http://localhost:8025）
+
+# 後端（啟動時自動套用 migration）
+export DATABASE_URL=postgres://wishsync:wishsync@localhost:5432/wishsync
+cargo run --manifest-path apps/api/Cargo.toml     # http://localhost:8080
+# 沒有 Rust：scripts/cargo.sh test
+
+# 前端
+cd apps/web && npm install && npm run dev         # http://localhost:3000
+```
+
+## 測試
+
+```sh
+cargo test --manifest-path apps/api/Cargo.toml    # 每個測試使用獨立資料庫（sqlx::test）
+cd apps/web && npm run build
+```
+
+## 環境變數
+
+- 後端：`DATABASE_URL`、`BIND`（預設 `0.0.0.0:8080`）；其餘（SMTP、S3/R2、LINE Login）見 `apps/api/.env.example`
+- 前端：`NUXT_PUBLIC_API_BASE`（預設 `http://localhost:8080`）
+
+## 部署
+
+前端：`cd apps/web && npm run deploy`（Cloudflare Pages）。
+
+## 開發順序
+
+0. 骨架與 CI → 1. 技術原型 S1–S3（真實 Pages 帳號、LINE 預覽 / 內建瀏覽器 cookie / SSE，見 `docs/03` 第 14 節）
+→ 2. 垂直切片：公開分享頁 → 訪客認領 → 創建者登入與編輯 → 進度儀表板 / 驚喜模式 / 即時更新 → MVP 附加功能
+→ 3. 封閉測試 8 週，依 PRD 的 go / no-go 標準決定是否進入第二期。

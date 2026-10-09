@@ -1,0 +1,1761 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WishSync 主用戶流程（後端）</title>
+<style>
+:root{--bg:#ffffff;--fg:#1f2328;--muted:#59636e;--border:#d1d9e0;--accent:#0b7a75;--accent-soft:#e6f4f3;--warn:#b35900;--code-bg:#f6f8fa;--blue:#0a5cad;--blue-soft:#e3effb;--gray-soft:#eceff2;--zebra:#f6f8fa}
+@media (prefers-color-scheme: dark){:root{--bg:#0d1117;--fg:#e6edf3;--muted:#9198a1;--border:#3d444d;--accent:#3fb8b1;--accent-soft:#12302f;--warn:#e3963e;--code-bg:#161b22;--blue:#6cb2f5;--blue-soft:#14283f;--gray-soft:#21262d;--zebra:#131920}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.75 system-ui,"Noto Sans TC","PingFang TC",sans-serif}
+header.top{border-bottom:1px solid var(--border);padding:14px 24px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-left:240px}
+header.top .t{font-weight:700;font-size:1.05rem}
+header.top a{color:var(--accent);text-decoration:none}
+nav.toc{position:fixed;top:0;left:0;bottom:0;width:240px;overflow:auto;padding:18px 14px;border-right:1px solid var(--border);background:var(--bg);font-size:.86rem}
+nav.toc b{display:block;margin-bottom:8px;color:var(--accent)}
+nav.toc a{display:block;color:var(--muted);text-decoration:none;padding:3px 6px;border-radius:4px;line-height:1.5}
+nav.toc a:hover{background:var(--accent-soft);color:var(--accent)}
+nav.toc a.sub{padding-left:16px}
+main{margin-left:240px;padding:8px 24px 80px}
+.wrap{max-width:960px;margin:0 auto}
+h1{font-size:1.9rem;margin:24px 0 4px}
+h2{font-size:1.4rem;margin:44px 0 12px;padding-bottom:6px;border-bottom:2px solid var(--accent);scroll-margin-top:12px}
+h3{font-size:1.15rem;margin:34px 0 8px;color:var(--accent);scroll-margin-top:12px}
+h4{margin:18px 0 6px}
+p,li{overflow-wrap:anywhere}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:.92rem;display:block;overflow-x:auto}
+th,td{border:1px solid var(--border);padding:7px 10px;text-align:left;vertical-align:top}
+th{background:var(--accent-soft);white-space:nowrap}
+tbody tr:nth-child(even){background:var(--zebra)}
+code{background:var(--code-bg);padding:1px 5px;border-radius:4px;font-size:.88em;font-family:ui-monospace,Menlo,monospace}
+pre{background:var(--code-bg);border:1px solid var(--border);border-radius:6px;padding:10px 14px;overflow-x:auto;font-size:.85rem;line-height:1.55}
+pre code{background:none;padding:0}
+pre.mermaid{background:transparent;border:1px solid var(--border);text-align:center;padding:12px;line-height:1.3}
+.badge{display:inline-block;padding:0 8px;border-radius:10px;font-size:.78rem;font-weight:700;line-height:1.6;white-space:nowrap}
+.p0{background:var(--accent);color:#fff}.p1{background:var(--blue-soft);color:var(--blue);border:1px solid var(--blue)}.p2{background:var(--gray-soft);color:var(--muted);border:1px solid var(--border)}
+.callout{border-left:4px solid var(--accent);background:var(--accent-soft);padding:10px 16px;margin:14px 0;border-radius:0 6px 6px 0}
+.callout.warn{border-color:var(--warn);background:var(--code-bg)}
+.callout.warn b.h{color:var(--warn)}
+.meta td:first-child{white-space:nowrap;font-weight:600;background:var(--accent-soft)}
+.muted{color:var(--muted)}
+td.c{text-align:center}
+@media (max-width:860px){
+nav.toc{position:static;width:auto;border-right:0;border-bottom:1px solid var(--border);display:flex;flex-wrap:wrap;gap:2px 8px}
+nav.toc b{width:100%;margin:0}
+nav.toc a.sub{padding-left:6px}
+header.top,main{margin-left:0}
+header.top,main{padding-left:16px;padding-right:16px}
+}
+</style>
+</head>
+<body>
+<nav class="toc" aria-label="目錄">
+<b>目錄</b>
+<a href="#s1">1. 文件資訊</a>
+<a href="#s2">2. 系統脈絡圖</a>
+<a href="#s3">3. 角色與權限矩陣</a>
+<a href="#s4">4. 主流程總覽</a>
+<a href="#s5">5. 子流程</a>
+<a class="sub" href="#f1">F1 建立者登入</a>
+<a class="sub" href="#f2">F2 建立清單與品項</a>
+<a class="sub" href="#f3">F3 訪客開啟分享連結</a>
+<a class="sub" href="#f4">F4 數量型認領</a>
+<a class="sub" href="#f5">F5 認領狀態與取消</a>
+<a class="sub" href="#f6">F6 點數錢包與眾籌 (P2-A)</a>
+<a class="sub" href="#f6a">F6a 儲值</a>
+<a class="sub" href="#f6b">F6b 認捐</a>
+<a class="sub" href="#f6c">F6c 達標與下單</a>
+<a class="sub" href="#f6d">F6d 失敗與差額退點</a>
+<a class="sub" href="#f6e">F6e 截止與轉投</a>
+<a class="sub" href="#f6f">F6f 現金退款</a>
+<a class="sub" href="#f7">F7 完成度儀表板</a>
+<a class="sub" href="#f8">F8 清單關閉/封存</a>
+<a class="sub" href="#f9">F9 背景工作</a>
+<a class="sub" href="#f10">F10 救災模式 (P2-D)</a>
+<a class="sub" href="#f11">F11 自動儲值 (P2-A)</a>
+<a class="sub" href="#f12">F12 電子禮物卡 (P2-B)</a>
+<a class="sub" href="#f13">F13 回饋星星 (P2-B)</a>
+<a class="sub" href="#f14">F14 企業禮券 (P2-C)</a>
+<a class="sub" href="#f15">F15 檢舉與下架</a>
+<a class="sub" href="#f16">F16 Email 通知</a>
+<a class="sub" href="#f17">F17 帳號刪除與匯出</a>
+<a class="sub" href="#f18">F18 拒付處理 (P2-A)</a>
+<a class="sub" href="#f19">F19 電子發票 (P2-A)</a>
+<a href="#s6">6. 橫切關注點</a>
+<a class="sub" href="#s66">6.6 金流與敏感資料安全</a>
+<a class="sub" href="#s67">6.7 測試策略</a>
+<a class="sub" href="#s68">6.8 環境 / CI/CD / 備份</a>
+<a class="sub" href="#s69">6.9 行為分析事件</a>
+<a href="#s7">7. 錯誤碼總表</a>
+<a href="#s8">8. 待決問題</a>
+</nav>
+<header class="top"><span class="t">WishSync（心願同步）Master User Flow：後端工程師版</span><a href="index.html">← 文件索引</a></header>
+<main><div class="wrap">
+
+<h1>WishSync 主用戶流程（Master User Flow）</h1>
+<p class="muted">給後端 Rust 工程師。聚焦流程、狀態機、規則與交易邊界；完整 DDL 與 request/response JSON 見 Schema / API 文件。</p>
+
+<h2 id="s1">1. 文件資訊</h2>
+<table class="meta"><tbody>
+<tr><td>文件名稱</td><td>WishSync Master User Flow（後端版）</td></tr>
+<tr><td>版本</td><td>v0.4</td></tr>
+<tr><td>日期</td><td>2026-10-08</td></tr>
+<tr><td>狀態</td><td>Draft</td></tr>
+<tr><td>v0.4 變更</td><td>補齊上線前遺漏——行為分析、檢舉下架、MVP 營運後台、測試策略、環境與備份、MVP Email 通知、帳號刪除與資料匯出、信用卡拒付、電子發票、救災組織驗證（本文件新增 F15 到 F19、6.7 到 6.9，並更新 F2、F9、F10）。前端部署為 Cloudflare Pages（Pages Functions SSR），Workers 為備案。</td></tr>
+<tr><td>v0.3 變更</td><td>效仿星巴克，新增自動儲值（F11）、電子禮物卡（F12）、回饋星星（F13）、企業禮券（F14）；點數改為分批（point lots）管理。</td></tr>
+<tr><td>v0.2 變更</td><td>眾籌改為點數錢包與達標自動購買，移到 Phase 2。</td></tr>
+<tr><td>讀者</td><td>後端 Rust 工程師（axum + tokio + sqlx）；次要讀者：前端（Nuxt）工程師、QA、DevOps。</td></tr>
+<tr><td>範圍</td><td>建立者登入、清單/品項、公開分享頁、數量認領、認領狀態機、點數錢包與眾籌（P2）、儀表板、關閉/封存、背景工作，以及 P2 救災模式；橫切的認證、限流、可觀測性、降級、一致性原則。不含 UI 細節（線框圖）、完整欄位定義（Schema/API）、產品取捨（PRD）。</td></tr>
+<tr><td>分期</td><td><span class="badge p0">P0</span> MVP / Phase 1　<span class="badge p1">P1</span> Phase 1.5　<span class="badge p2">P2</span> Phase 2。未標註者皆為 P0。<b>眾籌、點數錢包、金流、自動下單與人工代購、禮物卡、星星、企業禮券、救災皆為 P2，MVP（P0）另含：檢舉下架與營運後台（F15）、Email 通知（F16）、帳號刪除與匯出（F17）。細分：P2-A 儲值錢包 + 點數眾籌 + 目錄 / 代購履約 + 自動儲值、拒付處理、電子發票（F6、F11、F18、F19）；P2-B 電子禮物卡 + 回饋星星（F12、F13）；P2-C 企業禮券（F14，初期由營運後台代建）；P2-D relief 救災（F10）。</b></td></tr>
+<tr><td>約定</td><td>API 前綴 <code>/api/v1</code>；錯誤一律 <code>application/problem+json</code>，含 <code>type/title/status/detail/code</code>，另附 <code>request_id</code> 擴充欄位；ID 為 UUID v7；金額 BIGINT（TWD 元）；時間 timestamptz，API 為 ISO 8601 UTC；slug 為 10 碼 base62。</td></tr>
+</tbody></table>
+<div class="callout"><b>鎖順序（全文件共通，避免 deadlock）：</b><code>wishlists</code> → <code>point_wallets</code> → <code>wishlist_items</code> → <code>claims</code> / <code>contributions</code> / <code>receipts</code> / <code>purchase_orders</code>（多個錢包依 wallet id 升冪、多個品項依 item id 升冪）。F4 等不涉及錢包的流程自然略過 wallet 層。任何交易若需多個鎖，一律依此順序取得。</div>
+
+<h2 id="s2">2. 系統脈絡圖</h2>
+<pre class="mermaid">
+flowchart LR
+  U["瀏覽器 / PWA<br/>含 LINE in-app browser"]
+  subgraph CF["Cloudflare"]
+    direction TB
+    WAF["WAF + Rate limit"]
+    CDN["CDN 快取<br/>公開 GET s-maxage 短 TTL"]
+    PAGES["Pages Functions SSR - Nuxt<br/>OG meta 給 LINE/FB 爬蟲"]
+    R2[("R2 物件儲存<br/>圖片")]
+  end
+  subgraph GCP["GCP asia-east1 彰化"]
+    direction TB
+    API["Rust API - axum + tokio + sqlx<br/>Cloud Run"]
+    PGB["PgBouncer<br/>transaction pooling"]
+    DB[("PostgreSQL + PostGIS<br/>Cloud SQL")]
+  end
+  MAIL["Email 供應商 Resend / SES<br/>OTP / 通知 MVP"]
+  PH["PostHog<br/>行為分析 無 PII"]
+  SEN["Sentry<br/>錯誤追蹤"]
+  INV["電子發票加值中心<br/>P2-A"]
+  PAY["金流商<br/>TapPay / 綠界 P2"]
+  MERCH["合作商家 API<br/>商品目錄下單 P2"]
+  STAFF["營運後台 /admin/*<br/>人工代購 / 退款審核 / 企業禮券 P2"]
+  GIFT["電子禮物卡 /gift /g/code<br/>LINE 分享 P2-B"]
+  REWARD["回饋星星 /rewards P2-B"]
+  CORP["企業禮券批次 + CSV 匯出<br/>P2-C"]
+  LINE["LINE Login<br/>+ Messaging API P1"]
+  GOOG["Google OAuth"]
+  U -->|"HTTPS"| WAF --> CDN
+  CDN -->|"app.wishsync.tw"| PAGES
+  CDN -->|"api.wishsync.tw 未命中"| API
+  PAGES -->|"SSR 取資料"| API
+  U -->|"presigned PUT 直傳"| R2
+  U -->|"公開圖片"| CDN
+  CDN -.-> R2
+  API -->|"sqlx"| PGB --> DB
+  API -->|"LISTEN/NOTIFY 直連"| DB
+  API -->|"presign / HEAD"| R2
+  API -->|"寄信"| MAIL
+  U -.->|"前端事件"| PH
+  API -.->|"伺服器事件"| PH
+  U -.->|"前端錯誤"| SEN
+  API -.->|"後端錯誤"| SEN
+  API -->|"開立 / 作廢 / 折讓"| INV
+  PAY -->|"webhook 驗簽"| WAF
+  API -->|"回查 / 退款"| PAY
+  API -->|"下單 / 狀態輪詢"| MERCH
+  STAFF -->|"HTTPS + ws_session"| WAF
+  U -->|"禮物卡連結 / 星星"| GIFT
+  GIFT --> WAF
+  REWARD -.-> API
+  STAFF --> CORP -.-> API
+  API -->|"OAuth / push"| LINE
+  API -->|"OAuth"| GOOG
+</pre>
+<ul>
+<li>單一 Rust 服務 + 單一 Postgres；MVP 不引入 Redis、不拆微服務。背景工作、job queue、SSE 扇出皆用 Postgres。</li>
+<li>Cloud Run 預設可從 <code>*.run.app</code> 直接存取而繞過 Cloudflare；必須限制 ingress 或要求 Cloudflare 以 Transform Rule 注入的 <code>X-Origin-Auth</code> 密鑰標頭，否則 WAF 與限流形同虛設。</li>
+<li>真實 client IP 只信任由 Cloudflare 帶入的 <code>CF-Connecting-IP</code>（且已通過 <code>X-Origin-Auth</code> 檢查）。</li>
+<li>金流 webhook（<code>POST /webhooks/payments/{provider}</code>）經 Cloudflare 進入；WAF 對此路徑放行金流商來源並排除一般 IP 限流，改由應用層驗簽保護。營運後台為 Pages 上的 <code>/admin/orders</code>，API 端以 <code>users.is_staff</code> 授權。</li>
+<li>LISTEN/NOTIFY 需要 session 級連線，必須<strong>直連</strong> Postgres，不可經 PgBouncer transaction pooling。</li>
+</ul>
+
+<h2 id="s3">3. 角色與權限矩陣</h2>
+<p>角色說明：<b>guest</b> 免註冊訪客，以 guest_token 識別；<b>owner</b> 清單建立者（登入，<code>ws_session</code>）；<b>org owner / coordinator / volunteer</b> 為 <code>org_role</code>（P2，皆為登入使用者）；<b>staff</b> 為 <code>users.is_staff</code> 的平台營運人員（<strong>MVP 起</strong>：檢舉與下架、清單 / 使用者查詢、系統旗標；P2 加人工代購、退款審核、企業禮券、組織驗證，皆在同一個 /admin 殼內）；<b>系統</b> 為背景 job。● 允許　○ 有條件（見備註）　— 不允許。</p>
+<table>
+<thead><tr><th>動作</th><th>guest</th><th>owner</th><th>org owner</th><th>coordinator</th><th>volunteer</th><th>staff</th><th>系統</th><th>備註</th></tr></thead>
+<tbody>
+<tr><td>瀏覽公開清單 / 訂閱 SSE</td><td class="c">●</td><td class="c">●</td><td class="c">●</td><td class="c">●</td><td class="c">●</td><td class="c">●</td><td class="c">—</td><td>依 visibility：link 知道 slug 即可；private 僅 owner；public 為 relief</td></tr>
+<tr><td>建立 / 編輯 / 發佈 / 關閉 personal、registry 清單</td><td class="c">—</td><td class="c">●</td><td class="c">—</td><td class="c">—</td><td class="c">—</td><td class="c">—</td><td class="c">—</td><td>僅清單 owner_id 本人</td></tr>
+<tr><td>管理品項、上傳圖片</td><td class="c">—</td><td class="c">●</td><td class="c">●</td><td class="c">●</td><td class="c">—</td><td class="c">—</td><td class="c">—</td><td>relief 品項依 org 角色</td></tr>
+<tr><td>數量認領</td><td class="c">●</td><td class="c">○</td><td class="c">○</td><td class="c">○</td><td class="c">○</td><td class="c">—</td><td class="c">—</td><td>登入者也以 guest 身分操作；技術上不禁止自己認領自己的清單。眾籌認捐需登入，見下方錢包列</td></tr>
+<tr><td>改量 / 取消自己的認領</td><td class="c">●</td><td class="c">—</td><td class="c">—</td><td class="c">—</td><td class="c">—</td><td class="c">—</td><td class="c">—</td><td>憑 guest_token；非本人一律 404</td></tr>
+<tr><td>標記 purchased（已購買）</td><td class="c">○</td><td class="c">—</td><td class="c">—</td><td class="c">—</td><td class="c">—</td><td class="c">—</td><td class="c">—</td><td>僅認領者本人</td></tr>
+<tr><td>標記 delivered（已送達 / 已收到）</td><td class="c">○</td><td class="c">●</td><td class="c">●</td><td class="c">●</td><td class="c">○</td><td class="c">—</td><td class="c">—</td><td>guest 限本人認領；volunteer 透過 receipts 間接觸發</td></tr>
+<tr><td>取消他人認領</td><td class="c">—</td><td class="c">○</td><td class="c">●</td><td class="c">●</td><td class="c">—</td><td class="c">—</td><td class="c">—</td><td>驚喜模式解鎖前 owner 不可（看不到）</td></tr>
+<tr><td>檢舉清單（免登入，Turnstile）<span class="badge p0">P0</span></td><td class="c">●</td><td class="c">●</td><td class="c">●</td><td class="c">●</td><td class="c">●</td><td class="c">●</td><td class="c">—</td><td>F15</td></tr>
+<tr><td>營運後台（MVP）：檢舉佇列、清單下架 / 恢復、清單與使用者查詢、系統旗標（唯讀模式） <span class="badge p0">P0</span></td><td class="c">—</td><td class="c">—</td><td class="c">—</td><td class="c">—</td><td class="c">—</td><td class="c">●</td><td class="c">—</td><td>非 staff 一律 <code>STAFF_ONLY</code> 403；動作寫 audit_logs（actor_type=staff）</td></tr>
+<tr><td>刪除自己的帳號、匯出自己的資料、設定通知 <span class="badge p0">P0</span></td><td class="c">—</td><td class="c">●</td><td class="c">●</td><td class="c">●</td><td class="c">●</td><td class="c">●</td><td class="c">—</td><td>F17；訪客用 <code>DELETE /guest/me</code> 清除自己的暱稱與聯絡方式（guest ●）</td></tr>
+<tr><td>審核救災組織驗證 <span class="badge p2">P2-D</span></td><td class="c">—</td><td class="c">—</td><td class="c">—</td><td class="c">—</td><td class="c">—</td><td class="c">●</td><td class="c">—</td><td>F10</td></tr>
+<tr><td>儲值、認捐、撤回、轉投、申請現金退款、查看我的認捐 <code>GET /wallet/contributions</code>（需登入）<span class="badge p2">P2</span></td><td class="c">—</td><td class="c">●</td><td class="c">●</td><td class="c">●</td><td class="c">●</td><td class="c">●</td><td class="c">—</td><td>以「登入使用者」身分，不分角色；只能動自己的錢包與 contributions；建立者不能動用別人的點數</td></tr>
+<tr><td>購買 / 退款禮物卡、兌換禮物卡、自動儲值設定、星星查詢與兌換（需登入）<span class="badge p2">P2-A/B</span></td><td class="c">—</td><td class="c">●</td><td class="c">●</td><td class="c">●</td><td class="c">●</td><td class="c">●</td><td class="c">—</td><td>以登入使用者身分；只能動自己的錢包 / 卡片 / 星星。預覽 <code>GET /public/gift-cards/{code}</code> 無需登入（訪客可看，兌換才需登入）</td></tr>
+<tr><td>企業禮券：建企業帳號、建批次、開票 / 入帳 / 發放 / 作廢、匯出 CSV <span class="badge p2">P2-C</span></td><td class="c">—</td><td class="c">—</td><td class="c">—</td><td class="c">—</td><td class="c">—</td><td class="c">●</td><td class="c">—</td><td>非 staff 一律 <code>STAFF_ONLY</code> 403；CSV 只能匯出一次</td></tr>
+<tr><td>設定收件地址、查看自己清單的訂單進度 <span class="badge p2">P2</span></td><td class="c">—</td><td class="c">●</td><td class="c">—</td><td class="c">—</td><td class="c">—</td><td class="c">—</td><td class="c">—</td><td>地址欄位級加密；驚喜模式解鎖前訂單僅回彙總</td></tr>
+<tr><td>營運後台：處理訂單（人工代購填單號 / 金額 / 物流）、審核現金退款 <span class="badge p2">P2</span></td><td class="c">—</td><td class="c">—</td><td class="c">—</td><td class="c">—</td><td class="c">—</td><td class="c">●</td><td class="c">—</td><td>非 staff 一律 <code>STAFF_ONLY</code> 403；所有操作寫 audit_logs</td></tr>
+<tr><td>金流 webhook 入帳、達標自動 captured、下單 job、退點、自動儲值扣款、星星入帳、批次 / 星星到期 <span class="badge p2">P2</span></td><td class="c">—</td><td class="c">—</td><td class="c">—</td><td class="c">—</td><td class="c">—</td><td class="c">—</td><td class="c">●</td><td>webhook 以簽章認證，視為系統身分</td></tr>
+<tr><td>看完成度儀表板</td><td class="c">—</td><td class="c">●</td><td class="c">●</td><td class="c">●</td><td class="c">○</td><td class="c">—</td><td class="c">—</td><td>驚喜模式解鎖前遮罩認領者；volunteer 唯讀</td></tr>
+<tr><td>建立 org、邀請 / 變更成員角色</td><td class="c">—</td><td class="c">○</td><td class="c">●</td><td class="c">—</td><td class="c">—</td><td class="c">—</td><td class="c">—</td><td>任何登入者可建立 org 並成為 org owner；成員管理僅 org owner</td></tr>
+<tr><td>建立 / 編輯據點 site</td><td class="c">—</td><td class="c">—</td><td class="c">●</td><td class="c">●</td><td class="c">—</td><td class="c">—</td><td class="c">—</td><td>P2</td></tr>
+<tr><td>登記實收 receipts</td><td class="c">—</td><td class="c">—</td><td class="c">●</td><td class="c">●</td><td class="c">●</td><td class="c">—</td><td class="c">—</td><td>P2；需 Idempotency-Key</td></tr>
+<tr><td>地圖 / 需求彙總查詢</td><td class="c">●</td><td class="c">●</td><td class="c">●</td><td class="c">●</td><td class="c">●</td><td class="c">—</td><td class="c">—</td><td>P2；公開</td></tr>
+<tr><td>claim 逾期轉 expired、對帳、清理、通知寄送</td><td class="c">—</td><td class="c">—</td><td class="c">—</td><td class="c">—</td><td class="c">—</td><td class="c">—</td><td class="c">●</td><td>audit_logs 的 actor_type = system</td></tr>
+<tr><td>讀取 audit_logs</td><td class="c">—</td><td class="c">—</td><td class="c">—</td><td class="c">—</td><td class="c">—</td><td class="c">—</td><td class="c">●</td><td>v1 無對外 API，僅內部查詢</td></tr>
+</tbody></table>
+<p><b>授權實作原則：</b>授權條件寫進 SQL 的 WHERE（例如 <code>WHERE id=$1 AND owner_id=$2</code>），查無列一律回 <code>NOT_FOUND</code>，不回 <code>FORBIDDEN</code>，避免洩漏資源存在與否；只有「已登入但角色不足」（如 volunteer 想建立據點）才回 <code>FORBIDDEN</code>。</p>
+
+<h2 id="s4">4. 主流程總覽</h2>
+<pre class="mermaid">
+flowchart TD
+  A["建立者登入 F1<br/>Email OTP / LINE / Google"] --> B["建立清單與品項 F2<br/>status = draft"]
+  B --> C["發佈 F2<br/>draft 轉 active, 取得 slug"]
+  C --> D["分享連結<br/>LINE / FB / 簡訊 /s/slug"]
+  D --> E["訪客開啟 F3<br/>SSR + OG, 免註冊"]
+  E --> F{"品項 funding_mode"}
+  F -->|"quantity"| G["數量認領 F4<br/>claim = reserved, 發 guest_token"]
+  F -->|"crowdfund P2"| H["點數認捐 F6b P2<br/>扣錢包 contribution = pledged"]
+  G --> G2["訪客標記已購買 F5<br/>purchased"]
+  W["儲值點數 F6a P2<br/>金流 webhook 入帳"] --> H
+  H --> H2["達標 funded F6c<br/>contributions = captured"]
+  H2 --> H3["自動下單 / 人工代購<br/>purchase_orders"]
+  H3 --> H4["運送 shipped 到 delivered<br/>funding_status = fulfilled"]
+  H -. "截止未達標 F6e<br/>expired 7 天選擇 退回或轉投" .-> W
+  G2 --> I["送達 F5<br/>delivered"]
+  G --> T
+  H --> T
+  I --> T["建立者追蹤 F7<br/>儀表板 + SSE 即時更新"]
+  H4 --> T
+  T --> J["清單關閉 F8<br/>closed 後認領回 409 WISHLIST_CLOSED"]
+  J --> K["封存 F8<br/>archived"]
+  G -. "取消 / 逾期回補 qty_claimed" .-> E
+  X["F9 背景工作<br/>逾期 / 對帳 / 清理 / 通知"] -.-> G
+  X -.-> T
+</pre>
+<p>主流程的資料不變量：<code>0 ≤ qty_claimed ≤ qty_needed</code>（quantity 品項）；<code>qty_claimed</code> = 該品項狀態屬 reserved/purchased/delivered 的 claims 數量加總；crowdfund 品項（P2）：<code>0 ≤ pledged_points ≤ target_points</code>，<code>pledged_points</code> = pledged + captured 的 contributions 點數加總；每個錢包 <code>balance = Σ point_ledger.delta</code> 且 ≥ 0。定義見 F6。</p>
+
+<h2 id="s5">5. 子流程</h2>
+<p>各子流程統一格式：時序圖、前置條件、步驟、API、交易邊界、例外與錯誤碼、冪等性。</p>
+
+<h3 id="f1">F1 建立者登入 <span class="badge p0">P0</span></h3>
+<h4>F1-a Email OTP</h4>
+<pre class="mermaid">
+sequenceDiagram
+  autonumber
+  participant B as 瀏覽器
+  participant A as Rust API
+  participant D as PostgreSQL
+  participant M as Email 供應商
+  B->>A: POST /auth/otp/request (email)
+  A->>A: 正規化 email, 檢查限流
+  A->>D: BEGIN, 作廢舊 challenge, INSERT otp_challenge (code_hash, expires_at +10min), COMMIT
+  A-->>B: 202 Accepted (不論 email 是否存在)
+  A->>M: 寄送 6 碼 OTP (commit 後, 逾時 3s, 失敗只記 log)
+  B->>A: POST /auth/otp/verify (email, code)
+  A->>D: BEGIN, SELECT challenge FOR UPDATE
+  alt 過期或 attempts 已達 5
+    A->>D: COMMIT
+    A-->>B: 401 OTP_INVALID 或 429 RATE_LIMITED
+  else code 錯誤
+    A->>D: attempts = attempts + 1, COMMIT (失敗計數必須落盤)
+    A-->>B: 401 OTP_INVALID
+  else code 正確
+    A->>D: consumed_at = now(), upsert users + auth_identities(email)
+    A->>D: INSERT sessions (token_hash)
+    A->>D: COMMIT
+    A-->>B: 200 + Set-Cookie ws_session (HttpOnly Secure SameSite=Lax)
+  end
+</pre>
+<table class="meta"><tbody>
+<tr><td>前置條件</td><td>無（公開端點）。</td></tr>
+<tr><td>規則</td><td>OTP 為 CSPRNG 產生的 6 位數字；DB 只存 <code>HMAC-SHA256(pepper, challenge_id || code)</code>；有效 10 分鐘；單一 challenge 最多 5 次嘗試，第 5 次錯誤即作廢；新請求會作廢該 email 先前未使用的 challenge；比對用 constant-time。</td></tr>
+<tr><td>限流</td><td>每 email 重送冷卻 60 秒、每小時 5 次；每 IP 每小時 20 次（Cloudflare 邊緣另有 5 次/分鐘/IP）。email 維度的限流<strong>以 DB 計數</strong>（數 otp_challenges 近 1 小時列數），不可只靠 in-memory，避免多 instance 失效。</td></tr>
+<tr><td>步驟</td><td>1) request：回應固定 202 且回應時間盡量一致，避免帳號枚舉。2) verify：成功後 upsert <code>users</code> 與 <code>auth_identities(provider=email, provider_uid=lower(email))</code>，建立 session：32 bytes 隨機 token，DB 存 SHA-256 hash，cookie <code>ws_session</code> 效期 30 天（滑動續期）。3) 成功後回傳使用者摘要，前端導向 <code>/dashboard</code>。</td></tr>
+<tr><td>API</td><td><code>POST /auth/otp/request</code>、<code>POST /auth/otp/verify</code>、<code>GET /me</code>、<code>POST /auth/logout</code></td></tr>
+<tr><td>交易邊界</td><td>request：單一短交易（作廢舊 + 新增 challenge），<strong>寄信在 COMMIT 之後</strong>，不在交易內呼叫外部服務。verify：<code>SELECT ... FOR UPDATE</code> 鎖 challenge 列；<strong>失敗路徑也要 COMMIT</strong>（attempts 遞增），不可 ROLLBACK；成功路徑在同一交易完成 consumed、users/identities upsert、sessions 新增。</td></tr>
+<tr><td>例外 / 錯誤碼</td><td><code>VALIDATION_FAILED</code> 422（email 格式、code 非 6 碼數字）；<code>OTP_INVALID</code> 401（不區分錯誤 / 過期 / 已使用 / 已作廢）；<code>RATE_LIMITED</code> 429（附 <code>Retry-After</code>）；寄信失敗不影響 202，使用者可重送。</td></tr>
+<tr><td>冪等性</td><td>request 非嚴格冪等（每次產生新 challenge，受冷卻限制）；verify 同一 code 第二次回 <code>OTP_INVALID</code>（已 consumed）。兩者不要求 Idempotency-Key。</td></tr>
+</tbody></table>
+
+<h4>F1-b LINE / Google OAuth（Authorization Code + PKCE + state）</h4>
+<pre class="mermaid">
+sequenceDiagram
+  autonumber
+  participant B as 瀏覽器
+  participant A as Rust API
+  participant P as LINE / Google
+  participant D as PostgreSQL
+  B->>A: GET /auth/oauth/line/start?return_to=/dashboard
+  A->>A: 產生 state, code_verifier, nonce, 驗證 return_to 白名單
+  A-->>B: 302 到 provider (code_challenge S256, state, nonce) + Set-Cookie ws_oauth (加密簽章, 10 分鐘)
+  B->>P: 使用者授權
+  P-->>B: 302 回 /auth/oauth/line/callback (code, state)
+  B->>A: GET callback (帶 ws_oauth cookie)
+  A->>A: 比對 state, 取出 code_verifier
+  A->>P: 以 code + code_verifier 換 token (後端對後端)
+  P-->>A: id_token + access_token
+  A->>A: 驗證 id_token 簽章, iss, aud, exp, nonce
+  A->>D: BEGIN, upsert users + auth_identities, INSERT sessions, COMMIT
+  A-->>B: 302 return_to + Set-Cookie ws_session, 清除 ws_oauth
+</pre>
+<table class="meta"><tbody>
+<tr><td>前置條件</td><td>provider 的 client id/secret、redirect URI 已設定；callback 為頂層 GET 導覽，因此 SameSite=Lax 的 <code>ws_oauth</code> cookie 會被帶上。</td></tr>
+<tr><td>規則</td><td><code>state</code> 32 bytes 隨機；<code>code_verifier</code> 43~128 字元；challenge method 固定 S256。state/verifier/nonce 放在加密簽章的 <code>ws_oauth</code> cookie，不需要 server 端儲存。<code>return_to</code> 只接受站內相對路徑（防 open redirect）。LINE 以 <code>sub</code>（LINE userId）為 provider_uid，email 可能為空；Google 以 <code>sub</code> 為 provider_uid，僅在 <code>email_verified=true</code> 時才與既有同 email 的 user 連結。</td></tr>
+<tr><td>API</td><td><code>GET /auth/oauth/{provider}/start</code>、<code>GET /auth/oauth/{provider}/callback</code>（provider = line | google）</td></tr>
+<tr><td>交易邊界</td><td>換 token 與驗 id_token 在交易<strong>之外</strong>；之後單一交易：upsert users/auth_identities（<code>ON CONFLICT (provider, provider_uid)</code>）+ INSERT sessions。</td></tr>
+<tr><td>例外 / 錯誤碼</td><td>state 不符或 cookie 遺失：<code>OAUTH_STATE_INVALID</code> 400；使用者拒絕授權或 provider 回 error：302 回 <code>/login?error=...</code>；換 token 失敗或 id_token 驗證失敗：<code>OAUTH_PROVIDER_ERROR</code> 502；callback 因是瀏覽器導覽，錯誤以 302 帶參數回前端，不直接顯示 JSON。</td></tr>
+<tr><td>冪等性</td><td>authorization code 一次性；callback 重放會因 provider 拒絕而失敗，不會建立重複 session。identities 的 UNIQUE 約束確保不會產生重複 user。</td></tr>
+</tbody></table>
+
+<h3 id="f2">F2 建立清單與品項 <span class="badge p0">P0</span></h3>
+<pre class="mermaid">
+sequenceDiagram
+  autonumber
+  participant B as 瀏覽器 /w/new
+  participant A as Rust API
+  participant D as PostgreSQL
+  participant R as R2
+  B->>A: POST /wishlists (title, wishlist_type, surprise_mode, event_date...)
+  A->>D: BEGIN, 產生 slug, INSERT wishlists (status=draft), INSERT audit_logs, COMMIT
+  A-->>B: 201 (id, slug, status=draft)
+  B->>A: POST /uploads/presign (content_type, size_bytes, purpose)
+  A->>A: 驗證型別與大小, 產生 object_key u/user_id/uuid.ext
+  A-->>B: 200 (upload_url, object_key, headers, expires_in=300)
+  B->>R: PUT upload_url (圖片位元組, 直傳)
+  R-->>B: 200
+  B->>A: POST /wishlists/{id}/items (name, funding_mode, qty_needed, image_key...)
+  A->>R: HEAD object_key (確認存在, 大小, 型別)
+  A->>D: BEGIN, 鎖 wishlist 檢查擁有者與狀態, INSERT wishlist_items (position = max+1), COMMIT
+  A-->>B: 201 item
+  B->>A: PUT /wishlists/{id}/shipping-address (P2, 僅含眾籌品項時)
+  B->>A: PATCH /wishlists/{id} (status=active)
+  A->>D: BEGIN, SELECT wishlist FOR UPDATE, 發佈前檢查
+  A->>D: UPDATE status=active, published_at=now(), INSERT audit_logs, COMMIT
+  A-->>B: 200 (status=active)
+  A->>A: commit 後非同步 purge CDN tag
+</pre>
+<table class="meta"><tbody>
+<tr><td>前置條件</td><td>已登入（<code>ws_session</code>）。</td></tr>
+<tr><td>slug 產生</td><td>10 碼 base62（0-9A-Za-z），用 CSPRNG 並以 rejection sampling 避免 modulo bias；<code>wishlists.slug</code> UNIQUE。<code>INSERT ... ON CONFLICT (slug) DO NOTHING</code>，無列回傳就重產，最多 3 次，仍失敗回 500（機率可忽略：62^10 ≈ 8.4e17）。slug 於建立時產生、發佈後不可變更。draft 的公開端點一律回 404。</td></tr>
+<tr><td>圖片上傳</td><td>1) <code>POST /uploads/presign</code> 驗證 content_type ∈ {image/jpeg, image/png, image/webp}（限此三種）、size ≤ 5 MB、每使用者每小時 ≤ 60 次；回傳 5 分鐘有效的 R2 presigned PUT（簽入 Content-Type 與 Content-Length，使超額檔案被 R2 拒絕）。2) 瀏覽器直傳 R2，API 不經手位元組。3) 儲存品項/封面時，API 檢查 <code>image_key</code> 前綴屬於當前使用者（<code>u/{user_id}/</code>），並 HEAD 確認物件存在、大小與型別，才寫入 DB（DB 只存 object key）。4) <strong>伺服器端去除 EXIF（含 GPS 座標）後才公開</strong>（避免孕婦 / 家庭住址外洩）：上傳先落在不公開的前綴 <code>raw/u/{user_id}/…</code>，品項的 <code>image_status</code> 為 pending；F9 的 <code>process_images</code> job 下載後重新編碼（先套用方向旋轉，再移除全部中繼資料，長邊縮至 2048 px，輸出 webp / jpeg）寫入公開前綴 <code>pub/…</code>，更新 <code>image_key</code>、<code>image_status=ready</code> 並刪除原檔；處理失敗標 failed 並通知建立者重傳。公開 API 只輸出 ready 的圖片（pending 時前端顯示佔位圖）。也可改用 Cloudflare Images 轉檔，流程等價。前端上傳區提示「請勿上傳含個資的照片」。公開讀取經 Cloudflare CDN 的自訂網域；未被引用的孤兒物件由 F9 週期清理。</td></tr>
+<tr><td>品項規則</td><td><code>funding_mode</code> 為 quantity 或 crowdfund，建立後只要有任何 claim/contribution 即不可改（<code>ITEM_HAS_CLAIMS</code>）。<b>MVP 只能選 quantity</b>，選 crowdfund 回 <code>VALIDATION_FAILED</code>；<span class="badge p2">P2</span> 起 crowdfund 品項 <code>qty_needed</code> 固定 1，並需 <code>fulfillment_type</code>（catalog 需 <code>catalog_product_id</code>；concierge 需預估價），<code>target_points</code>、<code>price_snapshot_amount</code> 由伺服器計算，<code>funding_deadline</code> 預設 event_date 23:59 Asia/Taipei（可由建立者提前，不可晚於 event_date）。relief 品項需 <code>relief_category</code> 與 <code>relief_urgency</code>；personal/registry 可設 <code>item_priority</code>。<code>qty_needed</code> 調降不得低於當前 <code>qty_claimed</code>（<code>QTY_BELOW_CLAIMED</code>）。刪除含有效 claims/contributions 的品項回 <code>ITEM_HAS_CLAIMS</code>。排序以 <code>POST /wishlists/{id}/items/reorder</code> 一次提交完整 ID 陣列，單一交易更新 position。</td></tr>
+<tr><td>發佈檢查 draft→active</td><td>至少 1 個品項；<span class="badge p2">P2</span> 含 crowdfund 品項時須已填收件地址（<code>PUT /wishlists/{id}/shipping-address</code>，否則 <code>SHIPPING_ADDRESS_REQUIRED</code>）且 catalog 商品仍上架有庫存（否則 <code>CATALOG_PRODUCT_UNAVAILABLE</code>）；其餘不符回 <code>WISHLIST_NOT_PUBLISHABLE</code>；<code>surprise_mode=true</code> 時 <code>event_date</code> 必填且不得早於今日；所有 image_key 仍存在。發佈後 active 不可退回 draft（避免已分享連結變 404）。</td></tr>
+<tr><td>API</td><td><code>POST /wishlists</code>、<code>GET /wishlists</code>、<code>GET /wishlists/{id}</code>、<code>PATCH /wishlists/{id}</code>、<code>DELETE /wishlists/{id}</code>（語意見 F8）、<code>POST /wishlists/{id}/items</code>、<code>PATCH /items/{item_id}</code>、<code>DELETE /items/{item_id}</code>、<code>POST /wishlists/{id}/items/reorder</code>、<code>POST /uploads/presign</code>；<span class="badge p2">P2</span> <code>PUT /wishlists/{id}/shipping-address</code>、<code>GET /catalog/products</code>、<code>GET /catalog/products/{id}</code></td></tr>
+<tr><td>交易邊界</td><td>建立清單：單交易（INSERT + audit）。新增/修改品項：交易內先 <code>SELECT ... FROM wishlists WHERE id=$1 AND owner_id=$2 FOR UPDATE</code>（序列化同一清單的編輯，也使 position 計算安全），R2 HEAD 在交易之外先做。PATCH 品項修改 <code>qty_needed</code> 時鎖 item 列再比對 <code>qty_claimed</code>。shipping-address（P2）為 upsert（<code>wishlist_id</code> UNIQUE），欄位於應用層加密後寫入。發佈：<code>FOR UPDATE</code> 鎖 wishlist，檢查與狀態更新同交易，CDN purge 在 COMMIT 後。</td></tr>
+<tr><td>例外 / 錯誤碼</td><td><code>VALIDATION_FAILED</code> 422、<code>UNAUTHORIZED</code> 401、<code>NOT_FOUND</code> 404（非擁有者）、<code>WISHLIST_NOT_PUBLISHABLE</code> 409、<code>SHIPPING_ADDRESS_REQUIRED</code> 409、<code>CATALOG_PRODUCT_UNAVAILABLE</code> 409、<code>ITEM_HAS_CLAIMS</code> 409、<code>QTY_BELOW_CLAIMED</code> 409、<code>WISHLIST_CLOSED</code> 409（closed/archived 後不可新增品項）、<code>RATE_LIMITED</code> 429。</td></tr>
+<tr><td>冪等性</td><td>規格僅強制 claims / contributions / receipts 需 Idempotency-Key。建議 <code>POST /wishlists</code> 與 <code>POST .../items</code> 也<strong>接受</strong>（非必填）Idempotency-Key，避免行動網路重送造成重複清單；PATCH/PUT/DELETE 天生冪等（同樣內容重送結果相同）。</td></tr>
+</tbody></table>
+
+<h3 id="f3">F3 訪客開啟分享連結 <span class="badge p0">P0</span></h3>
+<pre class="mermaid">
+sequenceDiagram
+  autonumber
+  participant V as 訪客 / LINE-FB 爬蟲
+  participant P as Cloudflare Pages SSR
+  participant C as Cloudflare CDN
+  participant A as Rust API
+  participant D as PostgreSQL
+  V->>P: GET /s/slug
+  P->>C: GET /api/v1/public/wishlists/slug
+  alt CDN 命中
+    C-->>P: 200 (age 少於 s-maxage)
+  else 未命中或過期
+    C->>A: 轉發 (不帶 cookie)
+    A->>D: 單一 SELECT 取清單 + 品項彙總欄位
+    A->>A: 組 DTO: 隱私欄位遮罩, 驚喜模式處理
+    A-->>C: 200 + Cache-Control public, s-maxage=10, stale-while-revalidate=30 + Cache-Tag wl-id + ETag
+  end
+  C-->>P: JSON
+  P-->>V: HTML (SSR) 含 og:title, og:image, og:description
+  V->>A: GET /public/wishlists/slug/events (SSE, 不經快取)
+  A-->>V: event stream: 每 20s 註解心跳, item.updated, wishlist.updated
+  V->>A: GET /guest/me (有 token 才呼叫, private no-store)
+  A-->>V: 我的認領
+</pre>
+<table class="meta"><tbody>
+<tr><td>前置條件</td><td>清單 status ∈ {active, closed} 且 visibility = link（或 relief 的 public）。draft / private / archived 對外一律 <code>NOT_FOUND</code>，與「slug 不存在」不可區分。</td></tr>
+<tr><td>快取策略</td><td>
+<ul>
+<li><code>GET /public/wishlists/{slug}</code>：<code>Cache-Control: public, s-maxage=10, stale-while-revalidate=30, stale-if-error=600</code>；relief 尖峰時由設定檔調為 s-maxage=30~60。回應<strong>不得</strong>含 <code>Set-Cookie</code>（否則 Cloudflare 不快取），也不得依 cookie 或 guest_token 變化內容（所有「我的」資料走 <code>/guest/me</code>）。</li>
+<li>404 快取 5 秒（吸收掃描流量，又不致讓剛發佈的清單長時間 404）。</li>
+<li>失效：擁有者 PATCH 清單 / 品項、發佈、關閉、封存，於 COMMIT 後以 <code>Cache-Tag: wl-{wishlist_id}</code> 呼叫 Cloudflare purge-by-tag（走 F9 outbox 非同步重試，purge 失敗不影響主請求；最差情況 10 秒 TTL 自然過期）。</li>
+<li>認領 / 認捐造成的計數變化<strong>不</strong> purge（頻率高），靠 10 秒 TTL + SSE 補足即時性。</li>
+<li>帶 <code>ETag</code> 支援 If-None-Match 回 304。</li>
+</ul></td></tr>
+<tr><td>隱私欄位遮罩</td><td>公開 DTO 永遠<strong>不含</strong>：owner 的 email 與 contact（owner 僅輸出 <code>owner.id</code> 與暱稱）、任何 guest 的 contact、收件地址、捐贈者與錢包資訊、audit_logs。每品項只輸出 <code>qty_needed</code>、<code>qty_claimed</code>，（crowdfund，P2）<code>target_points</code>、<code>pledged_points</code>、<code>funding_status</code>、<code>funding_deadline</code> 與參與人數；捐贈者姓名不公開。認領者暱稱僅在 <code>show_claimer_names=true</code> 且<strong>非</strong>（<code>surprise_mode</code> 且 now &lt; 解鎖時間）時輸出。遮罩在 DTO 組裝層以型別強制（輸出用專屬 <code>PublicWishlistDto</code>，不從 DB row 直接序列化）。</td></tr>
+<tr><td>display_status（P2）</td><td>眾籌品項在公開 API 與 SSE <code>item.updated</code> 多回傳衍生欄位 <code>display_status</code> ∈ open | funded | ordered | shipped | delivered | expired，前端徽章直接使用，不自行推導。推導規則（由 <code>funding_status</code> + <code>purchase_orders.status</code>）：
+<table><thead><tr><th>funding_status</th><th>purchase_orders.status</th><th>display_status</th></tr></thead><tbody>
+<tr><td>open</td><td>—</td><td>open</td></tr>
+<tr><td>expired</td><td>—</td><td>expired</td></tr>
+<tr><td>funded</td><td>pending 或無</td><td>funded</td></tr>
+<tr><td>funded</td><td>placed</td><td>ordered</td></tr>
+<tr><td>funded</td><td>shipped</td><td>shipped</td></tr>
+<tr><td>fulfilled</td><td>delivered</td><td>delivered</td></tr>
+</tbody></table>
+failed / cancelled 的訂單已觸發退點，品項回 open 或 expired，故不另有對外狀態。display_status 不含訂單金額、單號與收件資訊。</td></tr>
+<tr><td>驚喜模式</td><td>公開頁仍顯示 x/y，讓其他送禮者避免重複；驚喜模式遮罩的是<strong>建立者端</strong>（F7 dashboard 與通知），非公開頁。公開頁顯示「這是驚喜清單」提示；公開 DTO 回傳 <code>id</code>、<code>owner.id</code>、<code>surprise_mode</code>；前端以 <code>GET /me</code> 的 user id 比對 <code>owner.id</code>，若是建立者本人且 <code>surprise_mode=true</code> 則顯示「驚喜模式中」遮罩並隱藏認領數（回應仍可被 CDN 共用，因為不依使用者變化）。此為軟性防護，見待決問題。</td></tr>
+<tr><td>SSE</td><td><code>text/event-stream</code>、<code>Cache-Control: no-cache</code>、<code>X-Accel-Buffering: no</code>；事件 <code>item.updated</code>（payload：item_id、qty_claimed、qty_needed，（P2）pledged_points、target_points、funding_status、display_status，無個資）與 <code>wishlist.updated</code>（status、title 變更）；每 20 秒送註解心跳防 idle timeout；不支援 replay，斷線重連（EventSource 自動）後前端重抓一次快照。每 IP 同時最多 5 條連線。多 instance 扇出：各 instance 維持一條直連 Postgres 的 <code>LISTEN ws_events</code>，交易內以 <code>pg_notify</code>（COMMIT 才送達）發佈，instance 轉送給本機訂閱者。Cloud Run request timeout 設 3600 秒，client 自動重連。</td></tr>
+<tr><td>OG 預覽</td><td>LINE / FB 爬蟲不執行 JS，故 <code>/s/{slug}</code> 必須在 Pages SSR 輸出 meta：<code>og:title</code>、<code>og:description</code>（含完成度文字）、<code>og:image</code>（封面圖，經 CDN，建議 1200x630）、<code>og:url</code>。爬蟲 UA 命中同一份快取，不另走特殊路徑。</td></tr>
+<tr><td>API</td><td><code>GET /public/wishlists/{slug}</code>、<code>GET /public/wishlists/{slug}/events</code>、<code>GET /guest/me</code></td></tr>
+<tr><td>交易邊界</td><td>純讀取，不開顯式交易；以單一查詢（或同一 snapshot 的 REPEATABLE READ READ ONLY 交易）取清單與品項，避免讀到不一致的 qty_claimed。SSE 連線不持有 DB 連線（僅共用 LISTEN 連線）。</td></tr>
+<tr><td>例外 / 錯誤碼</td><td><code>NOT_FOUND</code> 404；<code>RATE_LIMITED</code> 429；<code>SERVICE_UNAVAILABLE</code> 503（連線池耗盡，附 Retry-After）；SSE 連線數超限回 429。</td></tr>
+<tr><td>冪等性</td><td>GET 天生冪等。</td></tr>
+</tbody></table>
+
+<h3 id="f4">F4 數量型認領（重點）<span class="badge p0">P0</span></h3>
+<h4>F4-a 正常流程</h4>
+<pre class="mermaid">
+sequenceDiagram
+  autonumber
+  participant B as 瀏覽器 /s/slug
+  participant A as Rust API
+  participant D as PostgreSQL
+  participant S as SSE 訂閱者
+  B->>A: POST /items/item_id/claims + Idempotency-Key + X-Guest-Token (若有)
+  A->>A: 中介層: 限流, 解析 guest_token (header 優先於 cookie ws_guest), 驗證 body
+  A->>D: BEGIN
+  A->>D: INSERT idempotency_keys ON CONFLICT DO NOTHING
+  alt 該 key 已存在 (已提交)
+    A-->>B: 重播原回應 (同 status 與 body)
+  else 首次
+    A->>D: SELECT wishlists JOIN items FOR SHARE (檢查 status=active, funding_mode=quantity)
+    alt 無有效 token
+      A->>D: INSERT guests (guest_token_hash, display_name, contact)
+    else token 有效
+      A->>D: SELECT guests WHERE guest_token_hash = sha256(token)
+    end
+    A->>D: UPDATE wishlist_items SET qty_claimed = qty_claimed + n WHERE id AND qty_claimed + n 不超過 qty_needed RETURNING
+    alt 0 rows
+      A->>D: ROLLBACK
+      A-->>B: 409 ITEM_FULLY_CLAIMED
+    else 1 row
+      A->>D: INSERT claims (status=reserved, quantity=n, expires_at)
+      A->>D: INSERT audit_logs (claim.create)
+      A->>D: pg_notify ws_events (item.updated)
+      A->>D: UPDATE idempotency_keys 寫入回應
+      A->>D: COMMIT
+      A-->>B: 201 claim + guest_token (僅新 guest) + Set-Cookie ws_guest
+      D-->>S: NOTIFY 送達各 instance 後推送 item.updated
+    end
+  end
+</pre>
+
+<h4>F4-b 併發：兩人同時搶最後一個（qty_needed=3, qty_claimed=2, 各認領 1）</h4>
+<pre class="mermaid">
+sequenceDiagram
+  autonumber
+  participant G1 as 訪客 A
+  participant G2 as 訪客 B
+  participant API as Rust API (任一 instance)
+  participant DB as PostgreSQL (READ COMMITTED)
+  G1->>API: POST claims (qty=1, key=K1)
+  G2->>API: POST claims (qty=1, key=K2)
+  API->>DB: A: BEGIN, INSERT idempotency K1, SELECT wishlist FOR SHARE, 取得 guest
+  API->>DB: B: BEGIN, INSERT idempotency K2, SELECT wishlist FOR SHARE, 取得 guest
+  Note over DB: FOR SHARE 彼此相容, 不互相阻塞
+  API->>DB: A: UPDATE item SET qty_claimed = qty_claimed + 1 WHERE qty_claimed + 1 不超過 qty_needed
+  Note over DB: A 取得 item 列鎖, 2 變 3, 回傳 1 row
+  API->>DB: B: 同一個 UPDATE
+  Note over DB: B 在列鎖上等待 (lock_timeout 2s)
+  API->>DB: A: INSERT claims, INSERT audit_logs, pg_notify, COMMIT
+  Note over DB: 鎖釋放. B 以最新列版本重新評估 WHERE: 3+1 超過 3, 不成立
+  DB-->>API: B: 0 rows
+  API->>DB: B: ROLLBACK (idempotency K2 一併回滾)
+  API-->>G1: 201 Created
+  API-->>G2: 409 ITEM_FULLY_CLAIMED
+  Note over G2: 前端收到 SSE item.updated 顯示已認領完, 可改認領其他品項. B 用同一個 K2 重試會得到同一個 409 (重新評估)
+</pre>
+<p>關鍵：不使用 <code>SELECT ... FOR UPDATE</code> 再於應用層判斷（多一次來回、鎖持有更久）；條件判斷與遞增合為<strong>單一原子 UPDATE</strong>，由 Postgres 在 READ COMMITTED 下對被阻塞者重新評估 WHERE（EvalPlanQual）。不需要 SERIALIZABLE，也不需要樂觀版本號重試迴圈。</p>
+<pre><code>UPDATE wishlist_items
+   SET qty_claimed = qty_claimed + $2, updated_at = now()
+ WHERE id = $1 AND funding_mode = 'quantity'
+   AND qty_claimed + $2 &lt;= qty_needed
+RETURNING qty_claimed, qty_needed;
+-- 0 rows 時再 SELECT 判斷原因: 不存在 =&gt; NOT_FOUND, funding_mode 不符 =&gt; FUNDING_MODE_MISMATCH, 其餘 =&gt; ITEM_FULLY_CLAIMED
+-- 防線: CHECK (qty_claimed &gt;= 0 AND qty_claimed &lt;= qty_needed) 於 DB 層, 即使 bug 也不會超額</code></pre>
+
+<table class="meta"><tbody>
+<tr><td>前置條件</td><td>清單 status = active（由 FOR SHARE 讀取確認）；品項 funding_mode = quantity；請求帶 <code>Idempotency-Key</code>（UUID）。</td></tr>
+<tr><td>Request 要點</td><td>body 含 <code>quantity</code>（整數 ≥ 1，≤ 99）、首次認領必填 <code>nickname</code>（1~30 字）、選填 <code>contact</code>（≤ 100 字，自由文字，僅 owner 可見）、選填 <code>note</code>。完整欄位見 Schema/API 文件。</td></tr>
+<tr><td>guest_token 發放</td><td>無有效 token 時：產生 32 bytes CSPRNG token，base64url 編碼；DB <code>guests.guest_token_hash</code> 只存 SHA-256（UNIQUE index，查詢即 constant-time 等效）；回應 body 回傳明文一次，同時 <code>Set-Cookie: ws_guest=…; HttpOnly; Secure; SameSite=Lax; Max-Age=15552000</code>（180 天，滑動），前端另存 localStorage 並於之後請求帶 <code>X-Guest-Token</code>（LINE in-app browser cookie 不穩的備援）。</td></tr>
+<tr><td>guest_token 驗證</td><td>優先序：<code>X-Guest-Token</code> header &gt; <code>ws_guest</code> cookie。取 SHA-256 查 <code>guests</code>。<strong>建立型端點</strong>遇到未知 token：視為新訪客並簽發新 token（回應含 <code>guest_token_replaced:true</code> 讓前端提示）。<strong>修改型端點</strong>（PATCH/DELETE）遇到缺少/未知 token 回 <code>UNAUTHORIZED</code>。<code>guests.last_seen_at</code> 每小時最多更新一次，避免熱點寫入。</td></tr>
+<tr><td>步驟</td><td>1) 中介層限流與 token 解析。2) BEGIN；寫入 idempotency 占位（ON CONFLICT DO NOTHING，見下）。3) <code>FOR SHARE</code> 讀 wishlist 狀態。4) 取得/建立 guest。5) 檢查「同一 guest 對同品項已有有效 claim」→ <code>CLAIM_ALREADY_EXISTS</code>（改量走 PATCH）；每 guest 每清單有效 claim 上限 30。6) 條件式 UPDATE。7) INSERT claims：status=reserved，<code>expires_at</code> = now() + 清單的 <code>claim_ttl_hours</code>（personal/registry 預設 NULL＝不逾期；relief 預設 48 小時）。8) INSERT audit_logs。9) <code>pg_notify</code>。10) 寫回 idempotency 回應。11) COMMIT。</td></tr>
+<tr><td>API</td><td><code>POST /items/{item_id}/claims</code>；之後 <code>GET /guest/me</code>、<code>PATCH /guest/me</code>（改暱稱）；改量 / 變更狀態見 F5。</td></tr>
+<tr><td>交易邊界</td><td>BEGIN…COMMIT 內：idempotency 占位、<code>FOR SHARE</code> 讀 wishlist、guest upsert、條件式 UPDATE、INSERT claims、INSERT audit_logs、<code>pg_notify</code>、寫回 idempotency。<strong>交易內禁止</strong>任何外部 I/O（寄信、HTTP）。目標交易時間 &lt; 10 ms，因為熱門品項的 item 列鎖是序列化點。設 <code>lock_timeout=2s</code>、<code>statement_timeout=5s</code>。為什麼用 <code>FOR SHARE</code> 讀 wishlist：許多認領可同時持有 share lock（互不阻塞），而 F8 關閉清單的 <code>UPDATE wishlists</code> 會等待進行中的認領完成，之後的認領必看到 closed，沒有「關閉後仍成功認領」的競態。SSE 的 <code>pg_notify</code> 在 COMMIT 才送達，回滾則不送。</td></tr>
+<tr><td>例外 / 錯誤碼</td><td><code>ITEM_FULLY_CLAIMED</code> 409（回應附 <code>remaining</code> 剩餘數量，前端可建議改認領較少數量）；<code>WISHLIST_CLOSED</code> 409；<code>FUNDING_MODE_MISMATCH</code> 409；<code>CLAIM_ALREADY_EXISTS</code> 409；<code>VALIDATION_FAILED</code> 422；<code>IDEMPOTENCY_KEY_REQUIRED</code> 400；<code>IDEMPOTENCY_CONFLICT</code> 409（同 key 但請求內容不同）；<code>NOT_FOUND</code> 404；<code>RATE_LIMITED</code> 429；<code>SERVICE_UNAVAILABLE</code> 503（lock_timeout 或連線池耗盡）；<code>READ_ONLY_MODE</code> 503。</td></tr>
+<tr><td>冪等性</td><td>
+<ul>
+<li><code>idempotency_keys</code> 以 <code>(key, scope)</code> 為唯一鍵，scope = <code>hash(actor || method || route_template)</code>，另存 <code>request_hash</code>（body 的 SHA-256）、<code>response_status</code>、<code>response_body</code>、<code>expires_at = now()+24h</code>。</li>
+<li><strong>占位與業務寫入同一交易</strong>：<code>INSERT … ON CONFLICT DO NOTHING</code>。同 key 的並發請求會在唯一索引上等待，第一個 COMMIT 後第二個看到衝突，改為讀取並重播已存的回應；因此不需要 in_progress 狀態或獨立鎖。</li>
+<li>同 key 但 request_hash 不同：<code>IDEMPOTENCY_CONFLICT</code> 409。</li>
+<li>只儲存 2xx 回應；失敗（交易回滾）不留痕，同 key 重送會重新評估（可能轉為成功，例如別人取消後釋出名額）。</li>
+<li>新 guest 的首次回應含明文 guest_token。重播時需要同一個 token，否則第一次回應遺失的使用者將拿不到 token。因此該欄位以應用層金鑰（AES-256-GCM）加密後存入 <code>response_body</code>，重播時解密；24 小時後隨清理 job 刪除。</li>
+</ul></td></tr>
+</tbody></table>
+
+<h4>F4 對 audit_logs 與 SSE 的約定</h4>
+<ul>
+<li><code>audit_logs</code> 每筆：<code>actor_type</code>（guest | user | system）、<code>actor_id</code>、<code>action</code>（<code>claim.create</code> / <code>claim.update</code> / <code>claim.cancel</code> / <code>contribution.*</code> / <code>wishlist.*</code> / <code>receipt.create</code> / <code>system.expire_claim</code> / <code>system.reconcile</code>）、<code>entity_type</code>、<code>entity_id</code>、<code>before</code>/<code>after</code>（jsonb，不含 contact 與 token）、<code>request_id</code>、<code>ip_hash</code>（HMAC，非明文）。與業務寫入同交易，append-only（應用程式帳號只授予 INSERT）。</li>
+<li>SSE 事件 payload 只含數字與 ID，不含暱稱與 contact；驚喜模式不影響公開事件（公開頁本來就顯示 x/y）。</li>
+</ul>
+
+<h3 id="f5">F5 認領狀態變更與取消 <span class="badge p0">P0</span></h3>
+<pre class="mermaid">
+stateDiagram-v2
+  [*] --> reserved : 建立認領 F4
+  reserved --> purchased : 認領者本人
+  reserved --> delivered : owner 或 coordinator 或 認領者
+  purchased --> delivered : owner 或 coordinator 或 認領者
+  reserved --> cancelled : 認領者 或 owner 或 coordinator
+  purchased --> cancelled : 認領者 或 owner 或 coordinator
+  delivered --> cancelled : 僅 owner 或 coordinator 更正誤標
+  reserved --> expired : 系統 job 僅限有 expires_at
+  cancelled --> [*]
+  expired --> [*]
+  delivered --> [*]
+</pre>
+<table>
+<thead><tr><th>轉換</th><th>誰可觸發</th><th>條件 / 副作用</th></tr></thead>
+<tbody>
+<tr><td>(新) → reserved</td><td>guest</td><td>F4；<code>qty_claimed += n</code></td></tr>
+<tr><td>reserved → purchased</td><td>認領者本人</td><td>清除 <code>expires_at</code>（已購買不再逾期）；寫 <code>purchased_at</code></td></tr>
+<tr><td>reserved / purchased → delivered</td><td>認領者本人、owner、org coordinator/owner</td><td>寫 <code>delivered_at</code>；不改 qty_claimed（delivered 仍計入）。驚喜模式解鎖前 owner 看不到 claims，故實際上只有認領者可標。relief 由 receipts 流程（F10）觸發</td></tr>
+<tr><td>reserved / purchased → cancelled</td><td>認領者本人、owner、coordinator</td><td><strong>回補</strong>：<code>qty_claimed -= claim.quantity</code>；owner 取消時 audit 記錄原因；P1 通知認領者</td></tr>
+<tr><td>delivered → cancelled</td><td>owner、coordinator</td><td>更正誤標；同樣回補。認領者本人不可（避免送出後反悔）</td></tr>
+<tr><td>reserved → expired</td><td>系統（F9）</td><td>僅 <code>expires_at &lt;= now()</code>；回補 qty_claimed；personal/registry 預設不設 expires_at 故不會發生</td></tr>
+<tr><td>cancelled / expired → 其他</td><td>無</td><td>終態；訪客想再認領需重新 POST 新 claim（新 Idempotency-Key）</td></tr>
+</tbody></table>
+<table class="meta"><tbody>
+<tr><td>前置條件</td><td>認領者操作需有效 guest_token 且 claim 屬於該 guest；owner/coordinator 操作需 <code>ws_session</code> 且為該清單（或 org）有權者。</td></tr>
+<tr><td>API</td><td><code>PATCH /claims/{claim_id}</code>（body：<code>status</code> 目標狀態，或 <code>quantity</code> 改量，二擇一）；<code>DELETE /claims/{claim_id}</code>（等同 PATCH status=cancelled，回 204；claim 列保留，不實體刪除）。</td></tr>
+<tr><td>改量</td><td>PATCH <code>quantity</code>（僅 reserved 可改）：delta = 新 − 舊。delta &gt; 0 使用與 F4 相同的條件式 UPDATE（不足回 <code>ITEM_FULLY_CLAIMED</code>）；delta &lt; 0 直接回補。</td></tr>
+<tr><td>交易邊界</td><td>BEGIN → <code>SELECT item_id FROM claims WHERE id=$1</code>（不加鎖）→ 依鎖順序 <code>SELECT … FROM wishlist_items WHERE id=$item FOR UPDATE</code> → <code>SELECT … FROM claims WHERE id=$1 FOR UPDATE</code> → 驗證轉換合法與授權 → <code>UPDATE claims SET status…</code> → 若為 cancelled/expired 或減量：<code>UPDATE wishlist_items SET qty_claimed = qty_claimed - $n WHERE id=$item AND qty_claimed &gt;= $n</code>（0 rows 代表計數損毀，ROLLBACK 並告警，見對帳）→ INSERT audit_logs（含 before/after status）→ <code>pg_notify</code> → COMMIT。先鎖 item 再鎖 claim，與 F4、F9 同序，避免 deadlock。</td></tr>
+<tr><td>例外 / 錯誤碼</td><td><code>INVALID_STATE_TRANSITION</code> 409（含非法轉換，如 cancelled → purchased）；<code>UNAUTHORIZED</code> 401（缺 guest_token）；<code>NOT_FOUND</code> 404（claim 不屬於該 guest；不洩漏存在性）；<code>FORBIDDEN</code> 403（已登入但無權，如 volunteer 取消他人認領）；<code>WISHLIST_CLOSED</code> 409（清單 closed/archived 後，guest 不可再改量或取消，owner/coordinator 仍可標 delivered 與取消）；<code>ITEM_FULLY_CLAIMED</code> 409（增量失敗）；<code>VALIDATION_FAILED</code> 422。</td></tr>
+<tr><td>冪等性</td><td>PATCH/DELETE 以「目標狀態」語意設計：目標狀態與現況相同 → 直接回 200（含目前資料），不重複回補、不重複寫 audit。不強制 Idempotency-Key；改量 PATCH 若需要精準重送保護，客戶端應送「新的絕對 quantity」而非 delta，伺服器自行計算差額，因此重送天然安全。</td></tr>
+</tbody></table>
+
+<h3 id="f6">F6 點數錢包與眾籌 <span class="badge p2">P2</span> <span class="muted">P2-A</span></h3>
+<p>眾籌的核心規則（v0.2）：捐贈者先<strong>儲值點數</strong>，再把點數<strong>認捐</strong>到某個眾籌品項；品項集滿 <code>target_points</code> 後，平台<strong>自動用這些點數購買</strong>該品項並寄給清單建立者。<strong>受捐者（建立者）永遠不持有點數</strong>，沒有錢包可領，也不能提領。MVP（<span class="badge p0">P0</span>）只有數量型認領，建立品項時 <code>funding_mode</code> 只能是 quantity，選 crowdfund 回 <code>VALIDATION_FAILED</code>（功能旗標 <code>crowdfund_enabled</code>）；本節全部為 <span class="badge p2">P2</span>。</p>
+<table>
+<thead><tr><th>規則</th><th>內容</th></tr></thead>
+<tbody>
+<tr><td>點數</td><td>1 點 = NT$1，整數，BIGINT。儲值需<strong>登入</strong>（錢包跨裝置、退款、開發票）。訪客仍可免登入做數量認領。</td></tr>
+<tr><td>點數去向</td><td>點數只能用在心願品項：認捐到眾籌品項 → 達標後由平台購買該品項。<strong>永遠不能提領成現金給受捐者</strong>（也不給收卡者）；不可在錢包之間轉讓（禮物卡是「購買禮券贈送」，不是餘額互轉）。點數來源有三種（見下方批次）。</td></tr>
+<tr><td>點數批次（D23）</td><td>錢包內點數依來源分批：<code>point_lots(id, wallet_id, source, source_ref_id, original_points, remaining_points CHECK &gt;= 0, cash_refundable, expires_at, created_at)</code>。
+<table><thead><tr><th>source</th><th>來源</th><th>cash_refundable</th><th>期限</th><th>預收款</th></tr></thead><tbody>
+<tr><td><code>topup</code></td><td>儲值（含自動儲值，F6a / F11）</td><td>true</td><td>無</td><td>是，納入履約保證</td></tr>
+<tr><td><code>gift_card</code></td><td>禮物卡兌入（F12 / F14）</td><td>false</td><td>無</td><td>是，納入履約保證</td></tr>
+<tr><td><code>reward_bonus</code></td><td>星星兌換的平台贊助點數（F13）</td><td>false</td><td>90 天</td><td>否</td></tr>
+<tr><td><code>adjustment</code></td><td>營運調整 / 拒絕退款退回</td><td>依調整原因</td><td>無</td><td>—</td></tr>
+</tbody></table>
+<code>point_wallets.balance</code> = Σ <code>lots.remaining_points</code>（快取）；<code>GET /wallet</code> 另回 <code>refundable_points</code>、<code>gift_points</code>、<code>bonus_points</code>、<code>bonus_expiring_soon</code>。<br>
+<strong>認捐扣點順序</strong>：reward_bonus（最早到期優先）→ gift_card → topup（各批次內依 created_at 升冪）。扣自哪些批次記錄在 <code>contribution_lot_allocations(contribution_id, lot_id, points)</code>。<strong>released 時退回原批次</strong>；若原 reward_bonus 批次已過期，該部分作廢（寫 <code>expire</code> ledger，不退入錢包）。<code>point_ledger</code> 每筆帶 <code>lot_id</code>，entry_type 新增 <code>gift_claim</code>、<code>reward_bonus</code>、<code>expire</code>。</td></tr>
+<tr><td>硬上限</td><td>每個眾籌品項 <code>pledged_points ≤ target_points</code>（DB CHECK + 條件式 UPDATE），不允許超額。</td></tr>
+<tr><td><code>target_points</code></td><td>由伺服器計算（客戶端不可指定）。<code>target_points</code> 公式（已決）：catalog = <code>price_amount + shipping_fee_amount</code>（不收服務費、不加緩衝，平台收入來自商家分潤）；concierge = 商品價 + 運費 + ceil(商品價 × <code>concierge_fee_rate</code>) + ceil(商品價 × <code>concierge_buffer_rate</code>)，例：10,000 + 200 + 800 + 1,000 = 12,000 點。 catalog 價格記入 <code>wishlist_items.price_snapshot_amount</code>；concierge 的商品價為建立者填的預估價。</td></tr>
+<tr><td><code>pledged_points</code></td><td>品項上的快取欄位 = 該品項 contributions 中狀態為 <strong>pledged + captured</strong> 的 points 加總（released / reallocated 不計）。達標後仍等於 target。</td></tr>
+<tr><td>法規阻斷項</td><td>平台預收儲值款與售出的禮物卡屬「商品(服務)禮券」範疇，須履約保證（儲值金由銀行足額保證或信託，作法參考台灣既有儲值卡，細節由律師確認）、不得記載使用期限。<strong>履約保證範圍</strong>：儲值點數 + 未兌換禮物卡 + 已兌換未使用的 gift_card 點數；reward_bonus 與星星為無償贈與，除外並可設期限（條款載明）。點數僅限本平台購買心願品項（單一用途），且不得用戶間轉讓，以避免落入電子支付機構管理條例的儲值 / 轉帳業務。禮物卡兌換後不可退現金、只能用於心願品項，需律師確認是否符合禮券定型化契約規範，不符則退款對象改為原購買者。企業禮券開立三聯式發票；發票開立時點（儲值、購卡或兌換）需會計師確認。<strong>上線前須律師與會計師審閱，列為 P2 上線阻斷項。</strong>不得動用儲值款孳息。後端提供 <code>wallet_liability_points</code>（topup 與 gift_card 批次餘額 + 未兌換禮物卡面額 + pledged / captured 未兌換點數，不含 reward_bonus）供財務對履約保證額度。</td></tr>
+<tr><td>公開設定</td><td><code>GET /config/public</code>（P2，無需登入，可 CDN 快取，如 s-maxage=300）回傳 <code>concierge_fee_rate</code>（0.08）、<code>concierge_buffer_rate</code>（0.10）、<code>topup_min_amount</code>（100）、<code>topup_max_amount</code>（50000）、<code>topup_presets</code>（[500,1000,2000,5000]）、<code>concierge_sla_business_days</code>（3）、<code>reallocation_window_days</code>（7），以及禮物卡欄位：<code>gift_card_face_values</code>（[300,500,1000,2000,3000]）、<code>gift_card_max_quantity</code>（10）、<code>gift_card_themes</code>（[{id, name, image_url}]）。前端用它預覽 <code>target_points</code> 與儲值金額選項；<strong>實際 target_points 與儲值上下限一律以後端計算 / 檢查為準</strong>。數值來自後端設定，不寫死在程式。</td></tr>
+<tr><td>鎖順序（本節）</td><td>wishlists → point_wallets → point_lots（依扣點順序 / id 升冪）→ wishlist_items → contributions → purchase_orders。F12 兌換為 gift_cards → point_wallets → point_lots；F13 兌換為 reward_accounts → point_wallets → point_lots。多個錢包一起鎖時依 wallet id 升冪；多個品項依 item id 升冪。</td></tr>
+</tbody></table>
+
+<h4>狀態機總覽</h4>
+<pre class="mermaid">
+stateDiagram-v2
+  [*] --> pledged : 捐贈者認捐 F6b
+  pledged --> captured : 品項達標 funded
+  pledged --> released : 撤回 或 截止後選擇退回 或 7 天自動退回
+  pledged --> reallocated : 截止後轉投其他 open 品項
+  captured --> released : 購買失敗 退回點數
+  captured --> [*] : 訂單 delivered 完成消費
+  released --> [*]
+  reallocated --> [*]
+</pre>
+<table>
+<thead><tr><th>contribution_status</th><th>意義</th><th>點數位置</th><th>誰 / 何時觸發</th></tr></thead>
+<tbody>
+<tr><td><code>pledged</code></td><td>已認捐，品項尚未達標</td><td>已從錢包扣除，保留在品項</td><td>捐贈者 POST</td></tr>
+<tr><td><code>captured</code></td><td>品項達標，點數已鎖定用於購買</td><td>鎖定給 purchase_order</td><td>系統（達標那筆認捐的同一交易）</td></tr>
+<tr><td><code>released</code></td><td>點數已退回捐贈者錢包</td><td>錢包</td><td>捐贈者（open 或 expired 期間撤回）、系統（購買失敗、7 天期滿）</td></tr>
+<tr><td><code>reallocated</code></td><td>已轉投另一品項（另建一筆新的 pledged，原筆記 <code>reallocated_to_item_id</code>）</td><td>新品項</td><td>捐贈者（expired 後 7 天內）</td></tr>
+</tbody></table>
+<pre class="mermaid">
+stateDiagram-v2
+  [*] --> open : 品項發佈
+  open --> funded : pledged_points 等於 target_points
+  open --> expired : funding_deadline 到 或 清單被關閉
+  funded --> fulfilled : 訂單 delivered
+  funded --> open : 購買失敗 且尚未到期
+  funded --> expired : 購買失敗 且已過期
+  expired --> [*]
+  fulfilled --> [*]
+</pre>
+<table>
+<thead><tr><th>funding_status</th><th>可認捐</th><th>說明</th></tr></thead>
+<tbody>
+<tr><td><code>open</code></td><td>是（至 funding_deadline）</td><td>預設 <code>funding_deadline</code> = event_date 23:59 Asia/Taipei</td></tr>
+<tr><td><code>funded</code></td><td>否，<code>ITEM_FUNDED</code></td><td>已達標，訂單處理中</td></tr>
+<tr><td><code>expired</code></td><td>否，<code>FUNDING_EXPIRED</code></td><td>截止未達標（或購買失敗後已過期）；<code>expired_at</code> 起 7 天選擇期（F6e）</td></tr>
+<tr><td><code>fulfilled</code></td><td>否，<code>ITEM_FUNDED</code></td><td>包裹已送達</td></tr>
+</tbody></table>
+
+<h4 id="f6a">F6a 儲值</h4>
+<pre class="mermaid">
+sequenceDiagram
+  autonumber
+  participant B as 瀏覽器 /wallet
+  participant A as Rust API
+  participant D as PostgreSQL
+  participant P as 金流商 TapPay 或 綠界
+  B->>A: POST /wallet/topups (amount, method) + Idempotency-Key + ws_session
+  A->>D: BEGIN, INSERT topups (pending, provider_txn_id = 我方產生的交易編號, amount), COMMIT
+  A-->>B: 201 金流前端參數 (TapPay prime 設定 或 綠界表單參數)
+  B->>P: 使用者在金流商頁面或 SDK 付款 (卡號不經過我方)
+  P->>A: POST /webhooks/payments/provider (簽章, provider_txn_id, 狀態, 金額)
+  A->>A: 驗簽 (原始 body, constant-time), 失敗回 401 並記錄
+  A->>D: BEGIN, SELECT topups WHERE provider_txn_id FOR UPDATE
+  alt 已是 paid
+    A->>D: COMMIT (無動作)
+    A-->>P: 200 (冪等重放)
+  else 金額與 topups.amount 不符
+    A->>D: status=failed, 記 audit_logs 與告警, COMMIT
+    A-->>P: 200
+  else 付款成功
+    A->>D: UPDATE topups status=paid, paid_at
+    A->>D: 鎖 point_wallets, INSERT point_lots (topup, cash_refundable=true), balance += amount
+    A->>D: INSERT point_ledger (topup, +amount, lot_id, balance_after), INSERT audit_logs
+    A->>D: COMMIT
+    A-->>P: 200 (綠界回 1|OK)
+  end
+  B->>A: GET /wallet (輪詢或 SSE 後重抓)
+  A-->>B: 新餘額 + 最近 ledger
+</pre>
+<table class="meta"><tbody>
+<tr><td>前置條件</td><td>已登入；<code>amount</code> 為整數，單筆範圍取自設定（<code>topup_min_amount</code> 100 ~ <code>topup_max_amount</code> 50000，同 <code>GET /config/public</code>），每使用者每日上限另由設定控制，需法遵確認。</td></tr>
+<tr><td>步驟</td><td>1) 依 method 選定 provider，建立 pending 的 topups（記錄 provider），<code>provider_txn_id</code>（UNIQUE）即我方送給金流商的交易編號。2) 前端依回傳參數完成付款。3) 金流商 webhook 回呼；<strong>金額與狀態只信任伺服器端的 topups 列與驗簽後的回呼</strong>，不信任前端回報。4) 成功後同一交易完成 topups → paid、錢包加點、寫 ledger。5) 同交易建立 pending 的 <code>invoices</code> 與 outbox（見 F19，開立時點待會計師確認），COMMIT 後由 job 開立發票與通知。</td></tr>
+<tr><td>API</td><td><code>GET /wallet</code>、<code>POST /wallet/topups</code>（body <code>{amount, method}</code>，method ∈ card | line_pay | apple_pay；<strong>provider（tappay | ecpay）由後端依 method 與設定決定，前端不傳</strong>）、<code>POST /webhooks/payments/{provider}</code>（provider = tappay | ecpay；無 ws_session，以簽章認證）</td></tr>
+<tr><td>交易邊界</td><td>建立 topups：單一短交易。Webhook：BEGIN → <code>SELECT … FOR UPDATE</code> topups → 狀態與金額檢查 → UPDATE topups → 鎖 wallet → <code>balance += amount</code> → INSERT ledger → INSERT audit → COMMIT。呼叫金流商 API（如 TapPay Pay by Prime、Record 回查）在交易之外。</td></tr>
+<tr><td>例外 / 錯誤碼</td><td><code>VALIDATION_FAILED</code> 422（金額超出範圍）；<code>PAYMENT_FAILED</code> 402（同步付款被拒，如 TapPay 授權失敗）；<code>TOPUP_LIMIT_EXCEEDED</code> 409（新帳號每日額度）；<code>UNAUTHORIZED</code> 401（未登入，或 webhook 驗簽失敗）；<code>RATE_LIMITED</code> 429；<code>READ_ONLY_MODE</code> 503。</td></tr>
+<tr><td>冪等性</td><td>建立 topups 需 Idempotency-Key。<strong>Webhook 冪等以 <code>provider_txn_id</code> 為準</strong>：重複回呼（金流商會重送）看到 paid 即直接回 200，不重複加點；<code>point_ledger</code> 對 (wallet_id, entry_type, ref_type, ref_id, lot_id) 建 UNIQUE 作為第二道防線。回呼先於 COMMIT 到達時，FOR UPDATE 會等待而非重複處理。Webhook 一律回 2xx（除驗簽失敗），避免金流商無限重送。補償：F9 的 <code>reconcile_topups</code> 對 pending 超過 30 分鐘者主動向金流商查詢。</td></tr>
+</tbody></table>
+
+<h4 id="f6b">F6b 認捐（D18 交易）</h4>
+<pre class="mermaid">
+sequenceDiagram
+  autonumber
+  participant GA as 捐贈者 A (剩餘 10 點要投 10)
+  participant GB as 捐贈者 B (要投 6)
+  participant API as Rust API
+  participant DB as PostgreSQL (READ COMMITTED)
+  Note over DB: 品項 target_points=100, pledged_points=90, funding_status=open
+  GA->>API: POST /items/item_id/contributions (points=10, key=KA)
+  GB->>API: POST /items/item_id/contributions (points=6, key=KB)
+  API->>DB: A: BEGIN, 占位 idempotency KA, 讀 wishlist FOR SHARE
+  API->>DB: B: BEGIN, 占位 idempotency KB, 讀 wishlist FOR SHARE
+  API->>DB: A: 鎖 wallet_A, 依序扣批次 (bonus, gift_card, topup), 寫 allocations
+  API->>DB: B: 鎖 wallet_B, 依序扣批次, 寫 allocations
+  Note over DB: 兩人錢包不同, 互不阻塞. 同一人雙擊則在自己的 wallet 列上序列化
+  API->>DB: A: UPDATE items SET pledged_points += 10, funding_status = CASE 達標 THEN funded WHERE open 且 pledged_points + 10 不超過 target
+  Note over DB: A 取得 item 列鎖, 90 變 100, funding_status 變 funded, 回傳 1 row
+  API->>DB: B: 同一個 UPDATE (points=6)
+  Note over DB: B 在 item 列鎖上等待 (lock_timeout 2s)
+  API->>DB: A: INSERT contributions, INSERT ledger pledge, 達標: contributions 轉 captured, INSERT purchase_orders pending, COMMIT
+  Note over DB: 鎖釋放. B 重新評估 WHERE: 已非 open 且 106 超過 100, 不成立
+  DB-->>API: B: 0 rows
+  API->>DB: B: ROLLBACK (wallet_B 扣的 6 點與 idempotency KB 一併回滾)
+  API-->>GA: 201 (品項已達標, 訂單建立中)
+  API-->>GB: 409 ITEM_FUNDED (若僅是超過剩餘則 CROWDFUND_TARGET_EXCEEDED 附 remaining_points)
+  Note over GB: 前端依 SSE item.updated 更新, 快選金額自動帶入 remaining_points
+</pre>
+<pre><code>-- 步驟 ② 條件式 UPDATE (與 F4 同樣的單一原子語句)
+UPDATE wishlist_items
+   SET pledged_points = pledged_points + $2,
+       funding_status = CASE WHEN pledged_points + $2 = target_points THEN 'funded' ELSE funding_status END,
+       updated_at = now()
+ WHERE id = $1 AND funding_mode = 'crowdfund'
+   AND funding_status = 'open' AND funding_deadline &gt; now()
+   AND pledged_points + $2 &lt;= target_points
+RETURNING pledged_points, target_points, funding_status;
+-- 0 rows 時再 SELECT 判斷: funded/fulfilled =&gt; ITEM_FUNDED, expired =&gt; FUNDING_EXPIRED, 其餘 =&gt; CROWDFUND_TARGET_EXCEEDED (附 remaining_points)
+
+-- 錢包扣點 (步驟 ①): 先鎖 wallet, 再依扣點順序逐批次扣
+SELECT id, remaining_points FROM point_lots
+ WHERE wallet_id = $1 AND remaining_points &gt; 0 AND (expires_at IS NULL OR expires_at &gt; now())
+ ORDER BY (source = 'reward_bonus') DESC, expires_at NULLS LAST, (source = 'gift_card') DESC, created_at
+   FOR UPDATE;
+-- 應用層累加到足夠 points; 加總不足 =&gt; INSUFFICIENT_POINTS (ROLLBACK)
+UPDATE point_lots SET remaining_points = remaining_points - $n WHERE id = $lot AND remaining_points &gt;= $n;
+UPDATE point_wallets SET balance = balance - $points WHERE id = $1 AND balance &gt;= $points;
+-- 每批次各 INSERT contribution_lot_allocations(contribution_id, lot_id, n) 與 point_ledger(pledge, -n, lot_id)</code></pre>
+<table class="meta"><tbody>
+<tr><td>前置條件</td><td>已登入（<code>ws_session</code>）；清單 active；品項 funding_mode = crowdfund；請求帶 Idempotency-Key；body：<code>points</code>（整數 ≥ 1）、選填 <code>message</code>（≤ 200 字）、<code>is_anonymous</code>。</td></tr>
+<tr><td>交易邊界（BEGIN…COMMIT 內依序）</td><td>
+0) idempotency 占位（<code>INSERT … ON CONFLICT DO NOTHING</code>，已存在則重播）；<code>FOR SHARE</code> 讀 wishlist 確認 active（與 F8 關閉互斥）。<br>
+① <strong>鎖 wallet 列</strong>，鎖定並依序扣可用批次（reward_bonus 最早到期 → gift_card → topup，只取 <code>expires_at IS NULL OR expires_at &gt; now()</code> 的批次，即使到期 job 尚未執行），<code>balance -= points</code>；批次加總不足 → <code>INSUFFICIENT_POINTS</code> 409。<br>
+② 條件式 UPDATE 品項（上方 SQL）；0 rows → <code>CROWDFUND_TARGET_EXCEEDED</code> 或 <code>ITEM_FUNDED</code>。<br>
+③ INSERT contributions（status=pledged）。<br>
+④ INSERT <code>contribution_lot_allocations</code>（每批次一筆，Σ points = contribution.points）與 point_ledger（entry_type=pledge，<strong>每批次一筆</strong>，delta = −該批次扣點，帶 lot_id，ref_type=contribution，ref_id）。<br>
+⑤ 若 balance 因此低於 wallet_auto_topups.threshold_points 且已啟用：INSERT outbox_events(auto_topup)（F11）。若 RETURNING 的 funding_status = funded（即 pledged_points = target_points）：同交易內 <code>UPDATE contributions SET status='captured' WHERE item_id=$1 AND status='pledged'</code>、INSERT outbox_events(earn_stars, 每筆 contribution)（F13）、INSERT purchase_orders（status=pending，amount = target_points，快照收件地址並加密，item_id UNIQUE）、INSERT audit_logs、<code>pg_notify</code>。<br>
+⑥ 寫回 idempotency 回應 → COMMIT。COMMIT 後 in-process 嘗試觸發下單 job（失敗則由 F9 每分鐘 tick 補上）。<br>
+鎖順序 wishlist(FOR SHARE) → wallet → item → contributions；交易內<strong>禁止</strong>呼叫商家 API 或金流商。
+</td></tr>
+<tr><td>撤回</td><td><code>DELETE /contributions/{id}</code>：BEGIN → 鎖 wallet → 鎖 item → 鎖 contribution → 僅 <code>status='pledged'</code> 且（item <code>funding_status='open'</code>，或 <code>'expired'</code> 且 <code>now() &lt; expired_at + 7 天</code>）才可，其餘（含已 captured、選擇期已過）一律 <code>CONTRIBUTION_LOCKED</code>→ status=released、<code>pledged_points -= points</code>、依 allocations <strong>退回原批次</strong>（<code>remaining_points += n</code>，ledger release 每批次一筆；原 reward_bonus 批次已過期者該部分不退，寫 <code>expire</code> ledger）、<code>balance +=</code> 實際退回的點數→ COMMIT。目標狀態已是 released 時回 200 不重複退點。</td></tr>
+<tr><td>API</td><td><code>POST /items/{item_id}/contributions</code>、<code>DELETE /contributions/{id}</code>、<code>GET /wallet</code>、<code>GET /wallet/contributions?status=&amp;cursor=</code>（我的認捐列表：含品項、清單標題、funding_status 與 display_status，cursor 分頁，只回本人資料）</td></tr>
+<tr><td>例外 / 錯誤碼</td><td><code>INSUFFICIENT_POINTS</code> 409；<code>CROWDFUND_TARGET_EXCEEDED</code> 409（附 <code>remaining_points</code>）；<code>ITEM_FUNDED</code> 409；<code>FUNDING_EXPIRED</code> 409（對 expired 品項認捐）；<code>CONTRIBUTION_LOCKED</code> 409；<code>FUNDING_MODE_MISMATCH</code> 409；<code>WISHLIST_CLOSED</code> 409；<code>UNAUTHORIZED</code> 401；<code>VALIDATION_FAILED</code> 422；<code>IDEMPOTENCY_KEY_REQUIRED</code> 400；<code>IDEMPOTENCY_CONFLICT</code> 409；<code>SERVICE_UNAVAILABLE</code> 503（lock_timeout）；<code>READ_ONLY_MODE</code> 503。</td></tr>
+<tr><td>冪等性</td><td>Idempotency-Key 同 F4（占位與業務寫入同交易）；重播回原 201。回滾的失敗不留痕，重送會重新評估。</td></tr>
+</tbody></table>
+
+<h4 id="f6c">F6c 達標 → captured → 訂單 → 下單</h4>
+<pre class="mermaid">
+sequenceDiagram
+  autonumber
+  participant J as 下單 job (SKIP LOCKED)
+  participant D as PostgreSQL
+  participant M as 合作商家 API
+  participant S as 營運人員 staff /admin/orders
+  participant O as 建立者 owner
+  Note over D: F6b 達標交易已建立 purchase_orders (pending) 並鎖定 contributions
+  alt fulfillment_type = catalog
+    J->>D: BEGIN, SELECT order pending FOR UPDATE SKIP LOCKED, 標記 attempt 與租約, COMMIT
+    J->>M: 查商品價格與庫存, 下單 (我方 order id 當商家端冪等參照)
+    alt 價格加運費不超過 target 且有庫存
+      M-->>J: 成功 merchant_order_id
+      J->>D: UPDATE order status=placed, merchant_order_id, amount=實際金額
+    else 缺貨 或 漲價超過緩衝 或 商家拒單
+      J->>D: 進入 F6d 購買失敗流程
+    end
+  else fulfillment_type = concierge
+    D-->>S: GET /admin/orders?status=pending&fulfillment_type=concierge
+    S->>S: 人工到商店購買
+    S->>D: PATCH /admin/orders/id (status=placed, merchant_order_id, amount=實際花費, tracking_no)
+  end
+  J->>M: 定期輪詢商家訂單狀態 (F9)
+  M-->>J: shipped / delivered
+  J->>D: UPDATE order status=shipped 或 delivered, tracking_no
+  D->>D: delivered 時 item.funding_status=fulfilled, pg_notify item.updated
+  O->>D: GET /wishlists/id/orders (收件人看進度)
+</pre>
+<pre class="mermaid">
+stateDiagram-v2
+  [*] --> pending : 達標建立
+  pending --> placed : 商家下單成功 或 staff 填單號
+  pending --> failed : 缺貨 漲價 拒單 重試耗盡
+  pending --> cancelled : staff 或 系統取消
+  placed --> shipped : 商家出貨
+  placed --> failed : 商家事後取消
+  placed --> cancelled : staff 取消
+  shipped --> delivered : 商家 staff 確認送達
+  failed --> [*] : 觸發 F6d 退點
+  cancelled --> [*] : 觸發 F6d 退點
+  delivered --> [*]
+</pre>
+<table class="meta"><tbody>
+<tr><td>前置條件</td><td>品項 funding_status = funded 且 purchase_orders 已存在；清單已填 <code>shipping_addresses</code>（發佈檢查保證）。</td></tr>
+<tr><td>規則</td><td>
+<ul>
+<li><b>catalog</b>：下單 job 用 <code>purchase_orders</code> 本身當佇列（<code>status='pending'</code> 且 <code>next_attempt_at ≤ now()</code>，<code>FOR UPDATE SKIP LOCKED</code>）。下單時以<strong>即時價格</strong>（price_amount + shipping_fee_amount）與 <code>target_points</code> 比較：不超過才下單，差額於 F6d 退回。暫時性錯誤（逾時、5xx）指數退避 1m / 5m / 30m / 2h，重試前先以我方 order id 向商家查詢是否已建單，避免重複下單；耗盡重試 → failed。</li>
+<li><b>concierge</b>：不呼叫外部 API，訂單停在 pending 進入營運後台佇列；staff 購買後 PATCH 為 placed 並填 <code>merchant_order_id</code>、實際花費 <code>amount</code>（初值為 target_points；staff 以 PATCH body 的 <code>amount</code> 回報實際花費，body 另含 <code>status</code>、<code>merchant_order_id</code>、<code>tracking_no</code>、<code>failure_reason</code>；不得大於 target_points，超過須改 <code>status=failed</code> 走 F6d；小於 target 即觸發 F6d 差額按比例退回）、<code>operator_user_id</code>（經手人，自動帶入）。</li>
+<li>出貨 / 送達：商家狀態輪詢（F9）或 staff 手動 PATCH；delivered 時品項 <code>funding_status = fulfilled</code>。</li>
+<li>收件地址：<code>shipping_addresses</code> 欄位級加密，只有建立者與履約作業（下單 job、is_staff）可讀；下單時複製加密快照到 <code>purchase_orders.shipping_address_snapshot</code>，delivered 30 天後清除快照。捐贈者與公開 API 永遠看不到。</li>
+<li>通知（驚喜模式）：出貨 / 送達通知<strong>只發給捐贈者</strong>；建立者在 <code>unlock_at</code> 前不收到任何含品項或捐贈者資訊的通知，只在儀表板看彙總（已下單 N / 運送中 M）。</li>
+<li>驚喜模式：解鎖前建立者的 <code>GET /wishlists/{id}/orders</code> 只回彙總數字（已下單 N 件、運送中 M 件），不含品項對應與捐贈者；包裹送達本身即揭曉。</li>
+</ul></td></tr>
+<tr><td>API</td><td><code>GET /wishlists/{id}/orders</code>、<code>PUT /wishlists/{id}/shipping-address</code>、<code>GET /catalog/products</code>、<code>GET /catalog/products/{id}</code>、<code>GET /admin/orders</code>、<code>PATCH /admin/orders/{id}</code>（需 <code>users.is_staff</code>）</td></tr>
+<tr><td>交易邊界</td><td>達標交易見 F6b ⑤。下單 job：短交易取列與租約 → 交易外呼叫商家 → 短交易回寫 placed / failed（鎖序 item → order）。staff PATCH：BEGIN → 鎖 order（先 item 後 order）→ 驗證狀態轉換 → UPDATE → audit_logs（含 operator）→ notify → COMMIT。</td></tr>
+<tr><td>例外 / 錯誤碼</td><td><code>STAFF_ONLY</code> 403；<code>INVALID_STATE_TRANSITION</code> 409；<code>CATALOG_PRODUCT_UNAVAILABLE</code> 409（建立 / 發佈品項時商品下架或缺貨，下單時失敗則走 F6d 而非回給使用者）；<code>SHIPPING_ADDRESS_REQUIRED</code> 409；<code>VALIDATION_FAILED</code> 422；<code>NOT_FOUND</code> 404。</td></tr>
+<tr><td>冪等性</td><td>達標只會發生一次（<code>purchase_orders.item_id</code> UNIQUE + 條件式 UPDATE 僅一筆成為 funded）。下單以我方 order id 為商家端冪等鍵。PATCH 目標狀態與現況相同回 200 不重複副作用。</td></tr>
+</tbody></table>
+
+<h4 id="f6d">F6d 購買失敗退點與差額按比例退回</h4>
+<pre class="mermaid">
+sequenceDiagram
+  autonumber
+  participant X as 下單 job 或 staff
+  participant A as Rust API
+  participant D as PostgreSQL
+  X->>A: 訂單 failed / cancelled 或 placed 時實際金額低於 target
+  A->>D: BEGIN, 讀 wishlist, 依 wallet id 升冪鎖相關 wallets
+  A->>D: 鎖 item, 鎖 order, 鎖該品項的 captured contributions
+  alt 購買失敗 (failed 或 cancelled)
+    A->>D: contributions captured 轉 released, 依 allocations 退回原批次 (過期 bonus 作廢), 各 wallet balance 增加, INSERT ledger release
+    A->>D: item.pledged_points = 0, funding_status 回 open (未過期) 或 expired (已過期, 寫 expired_at)
+    A->>D: INSERT audit_logs, outbox 通知建立者與捐贈者
+  else 實際花費低於 target (差額 R)
+    A->>D: 依認捐比例用最大餘數法分配 R, 份額依逆序 topup, gift_card, reward_bonus 退回原批次, 各 wallet balance 增加, INSERT ledger release (ref = order)
+    A->>D: contributions 仍為 captured (已消費部分 = points 減 share)
+  end
+  A->>D: COMMIT
+</pre>
+<table class="meta"><tbody>
+<tr><td>失敗退點</td><td>觸發：下單失敗（缺貨、漲價超過緩衝、商家拒單、重試耗盡）、訂單 cancelled。同一交易內：所有 captured contributions → released，點數退回<strong>各捐贈者錢包</strong>（ledger release +points），<code>pledged_points</code> 歸零，<code>funding_status</code> 回 <code>open</code>（<code>funding_deadline</code> 尚未到）或 <code>expired</code>（已到期，進入 F6e 的 7 天選擇期，記 <code>expired_at = now()</code>）。通知建立者（驚喜模式：不含捐贈者資訊）與全體捐贈者。</td></tr>
+<tr><td>差額按比例退回</td><td>代購實際花費 <code>actual</code> 低於 <code>target_points</code>，差額 <code>R = target − actual</code>。第 i 位的理想退款 = <code>R × points_i / target</code>。<strong>最大餘數法</strong>：先各取 floor，剩餘點數（R − Σfloor）逐點分給小數部分最大者，平手時依 <code>contributions.created_at</code> 較早、再依 id；保證總和恰為 R 且每人為整數。例：R=7，捐贈 50 / 30 / 20（target=100）→ 理想 3.5 / 2.1 / 1.4 → floor 3 / 2 / 1（合計 6）→ 餘 1 點給餘數 .5 者 → 4 / 2 / 1。ledger 以 <code>ref_type='purchase_order'</code>、<code>ref_id=order id</code> 記 release，並以 (wallet_id, entry_type, ref_type, ref_id, lot_id) 的 UNIQUE 約束保證重跑不重複。每人的差額份額（最大餘數法）依<strong>逆序 topup → gift_card → reward_bonus</strong> 退回該人的 allocations 批次（優先補回可退現金的批次；reward_bonus 批次若已過期該部分作廢）。整筆 released 則依 allocations 全數退回原批次。各人已退回的差額累計於 <code>contributions.refunded_points</code>（contribution 仍為 captured）。</td></tr>
+<tr><td>交易邊界</td><td>單一交易處理一個品項的全部 contributions（預期 ≤ 100 位）：依鎖序 wishlist → wallets（id 升冪）→ item → contributions → order。若單品項捐贈者超過 500，改為分批交易並以 ledger UNIQUE 約束讓每批可重跑。</td></tr>
+<tr><td>例外 / 錯誤碼</td><td>屬系統流程，不直接回給使用者；失敗時重試並告警（<code>refund_stuck</code>）。staff 以 PATCH 觸發時回 <code>INVALID_STATE_TRANSITION</code> 409 / <code>STAFF_ONLY</code> 403。</td></tr>
+<tr><td>冪等性</td><td>狀態轉換為目標狀態語意（已 released 的 contribution 跳過）；ledger UNIQUE 防重複入帳。</td></tr>
+</tbody></table>
+
+<h4 id="f6e">F6e 截止未達標：expired、7 天選擇期、轉投、自動退回</h4>
+<pre class="mermaid">
+sequenceDiagram
+  autonumber
+  participant J as funding_deadline job
+  participant D as PostgreSQL
+  participant G as 捐贈者
+  participant A as Rust API
+  J->>D: 每分鐘掃 open 且 funding_deadline 已到的品項
+  J->>D: 每品項 BEGIN, 鎖 item, funding_status=expired, expired_at=now(), COMMIT
+  J->>G: 通知: 7 天內選擇退回錢包 (預設) 或轉投同清單其他品項
+  alt 捐贈者選擇退回
+    G->>A: DELETE /contributions/id
+    A->>D: pledged 轉 released, 依 allocations 退回原批次, ledger release
+  else 捐贈者選擇轉投
+    G->>A: POST /contributions/id/reallocate (target_item_id)
+    A->>D: BEGIN, 依 item id 升冪鎖來源與目標, 驗證目標同清單且 open 且剩餘足夠
+    A->>D: 來源 pledged_points -= p, 目標條件式 UPDATE pledged_points += p
+    A->>D: 原筆 reallocated (reallocated_to_item_id), INSERT 新 contribution pledged, 若目標因此達標則走 F6b 達標處理, COMMIT
+  else 7 天內未選擇
+    J->>D: 掃 expired_at + 7 天已到, 剩餘 pledged 轉 released, 依 allocations 退回原批次, ledger release
+    J->>G: 通知已自動退回
+  end
+</pre>
+<table class="meta"><tbody>
+<tr><td>規則</td><td>截止時 contributions 仍是 <code>pledged</code>，點數仍保留在品項（不自動退），讓捐贈者有 7 天選擇：<b>退回錢包（預設）</b>或<b>轉投</b>同清單其他 <code>funding_status='open'</code> 的眾籌品項。轉投以整筆為單位（不拆分），目標品項同樣受硬上限限制，剩餘不足 → <code>REALLOCATION_NOT_ALLOWED</code>。轉投不改變錢包餘額，故不寫 ledger，但新舊 contribution 以 <code>reallocated_to_item_id</code> 串接以供追溯。清單被關閉 / 封存時，該清單所有 open 眾籌品項同交易轉 expired（<code>expired_at = now()</code>），捐贈者同樣有 7 天選擇期。</td></tr>
+<tr><td>API</td><td><code>DELETE /contributions/{id}</code>、<code>POST /contributions/{id}/reallocate</code>、<code>GET /wallet</code>、<code>GET /wallet/contributions</code>（捐贈者在此看到各筆 expired 倒數與可選動作）</td></tr>
+<tr><td>交易邊界</td><td>deadline job：每品項一個短交易（<code>FOR UPDATE SKIP LOCKED</code> 鎖 item，重新檢查條件）。reallocate：鎖序 wallet（可省略，餘額不變）→ items（id 升冪）→ contribution，同一交易完成舊筆 reallocated、新筆 pledged、兩品項 pledged_points 增減；達標時沿用 F6b ⑤ 的共用函式。自動退回：每品項一個交易，逐筆 released + 退點 + ledger。</td></tr>
+<tr><td>例外 / 錯誤碼</td><td><code>REALLOCATION_NOT_ALLOWED</code> 409（目標不在同清單、非 open、超過剩餘；或來源非 expired、已超過 7 天）；<code>CONTRIBUTION_LOCKED</code> 409（已 captured 或選擇期已過）；<code>ITEM_FUNDED</code> 409；<code>FUNDING_EXPIRED</code> 409（對 expired 品項新認捐）；<code>NOT_FOUND</code> 404（非本人的 contribution）；<code>UNAUTHORIZED</code> 401。</td></tr>
+<tr><td>冪等性</td><td>reallocate / DELETE 以目標狀態為準：已 reallocated 或 released 重送回 200 並回傳當前結果。自動退回 job 條件式更新（<code>status='pledged'</code>）可安全重跑。</td></tr>
+</tbody></table>
+
+<h4 id="f6f">F6f 現金退款申請</h4>
+<pre class="mermaid">
+sequenceDiagram
+  autonumber
+  participant G as 捐贈者 /wallet
+  participant A as Rust API
+  participant D as PostgreSQL
+  participant S as 營運 / 財務 staff
+  G->>A: POST /wallet/cash-refunds (amount) + Idempotency-Key + ws_session
+  A->>D: BEGIN, 鎖 wallet 與 cash_refundable 批次, 可退點數不足回 NOT_CASH_REFUNDABLE
+  A->>D: 扣 topup 批次 remaining_points 與 balance, INSERT point_ledger (cash_refund, -amount, lot_id), INSERT cash_refund_requests (requested), INSERT audit_logs, COMMIT
+  A-->>G: 201 (status=requested)
+  S->>A: GET /admin/cash-refunds?status=requested
+  S->>A: PATCH /admin/cash-refunds/id (status=processing), 並向金流商執行原路退款
+  alt 退款完成
+    S->>A: PATCH /admin/cash-refunds/id (status=completed)
+  else 拒絕或失敗
+    S->>A: PATCH /admin/cash-refunds/id (status=rejected, reject_reason)
+    A->>D: 同交易: status=rejected, 鎖 wallet, balance += amount, INSERT ledger adjustment, audit_logs
+  end
+</pre>
+<table class="meta"><tbody>
+<tr><td>規則</td><td>只能退 <strong><code>cash_refundable</code> 批次</strong>（topup）的剩餘點數，即 <code>refundable_points</code>；gift_card 與 reward_bonus 批次不可退現金，申請金額超過 refundable_points → <code>NOT_CASH_REFUNDABLE</code> 409。已鎖定在 pledged / captured 的點數不可退。申請當下即從 topup 批次扣點（避免申請後又拿去認捐，優先扣最舊批次），ledger 帶 lot_id，拒絕時以 <code>adjustment</code> 退回原批次。退款應原路退回付款工具（依 topups 對應，金額分配細節待財務確認）。點數無使用期限，故不因時間限制退款。</td></tr>
+<tr><td>API</td><td><code>POST /wallet/cash-refunds</code>、<code>GET /wallet</code>；後台審核：<code>GET /admin/cash-refunds?status=</code>、<code>PATCH /admin/cash-refunds/{id}</code>（body <code>{status: processing | completed | rejected, reject_reason}</code>，僅 <code>is_staff</code>，否則 <code>STAFF_ONLY</code> 403）。</td></tr>
+<tr><td>交易邊界</td><td>單一交易：鎖 wallet → 條件式扣點 → ledger → cash_refund_requests → audit。呼叫金流商退款 API 在交易之外，由 staff 觸發後再開短交易更新狀態。</td></tr>
+<tr><td>例外 / 錯誤碼</td><td><code>NOT_CASH_REFUNDABLE</code> 409；<code>INSUFFICIENT_POINTS</code> 409；<code>VALIDATION_FAILED</code> 422；<code>UNAUTHORIZED</code> 401；<code>IDEMPOTENCY_KEY_REQUIRED</code> 400；<code>STAFF_ONLY</code> 403（後台）；<code>RATE_LIMITED</code> 429。</td></tr>
+<tr><td>冪等性</td><td>POST 必帶 Idempotency-Key（金額操作）；後台狀態更新以目標狀態為準。</td></tr>
+</tbody></table>
+
+<h3 id="f7">F7 建立者完成度儀表板 <span class="badge p0">P0</span></h3>
+<pre class="mermaid">
+sequenceDiagram
+  autonumber
+  participant O as owner /w/id/progress
+  participant A as Rust API
+  participant D as PostgreSQL
+  O->>A: GET /wishlists/id/dashboard (ws_session)
+  A->>D: 以 owner_id 驗證並讀 wishlists (surprise_mode, event_date, show_claimer_names)
+  A->>D: 讀取 wishlist_items 快取欄位, 彙總完成度
+  A->>A: 計算 unlock_at = event_date 00:00 Asia/Taipei, 判斷 masked = surprise_mode 且 now 早於 unlock_at
+  alt masked = true
+    A->>D: 只讀取彙總, 不 JOIN claims/guests/contributions 身分欄位
+    A-->>O: 完成度 + 訂單狀態彙總 (已下單 N 件, 運送中 M 件) + masked=true + unlock_at
+  else masked = false
+    A->>D: 讀 claims JOIN guests (暱稱, contact), contributions (捐贈者暱稱, 匿名者顯示匿名朋友), purchase_orders
+    A-->>O: 完成度 + 認領明細 + 認捐明細 + 每品項訂單狀態 + masked=false
+  end
+</pre>
+<table class="meta"><tbody>
+<tr><td>前置條件</td><td>owner 登入；清單屬於該使用者（或 relief 的 org 成員）。回應 <code>Cache-Control: private, no-store</code>。</td></tr>
+<tr><td>彙總定義</td><td>
+<ul>
+<li><code>claimed_pct</code>（quantity 品項）= Σ min(qty_claimed, qty_needed) / Σ qty_needed。</li>
+<li><code>funded_pct</code>（crowdfund 品項，P2）= Σ pledged_points / Σ target_points（硬上限，不會超過 100%）。</li>
+<li><code>items_done / items_total</code>：quantity 品項 qty_claimed ≥ qty_needed，或 crowdfund 品項 <code>funding_status</code> ∈ {funded, fulfilled} 視為完成。</li>
+<li><code>delivered_pct</code> = delivered 狀態 claims 數量 / Σ qty_needed。</li>
+<li><code>completion_pct</code>（總覽主數字）= items_done / items_total。</li>
+<li>狀態分布：reserved / purchased / delivered 件數；眾籌品項的訂單狀態（pending / placed / shipped / delivered / failed）。建立者不經手款項，沒有「待確認款項」。</li>
+</ul>
+全部由 wishlist_items 的快取欄位 + 一次 GROUP BY 完成，不掃 claims 全表。</td></tr>
+<tr><td>驚喜模式遮罩</td><td><code>surprise_mode = true</code> 且 now &lt; <code>unlock_at</code>（預設 event_date 當天 00:00 Asia/Taipei）時：回應<strong>只含彙總數字</strong>（completion_pct、items_done、整體 claimed_pct / funded_pct）；每品項的 <code>qty_claimed</code> / <code>pledged_points</code> 回 <code>null</code>，<strong>不含</strong>任何 claim 與認領者暱稱 / contact、狀態分布。眾籌僅回「已下單 N 件 / 運送中 M 件」等訂單狀態彙總，不含品項對應與捐贈者；包裹送達本身即揭曉。遮罩在 SQL 與 DTO 層做（遮罩時根本不查 guests / claims 身分欄位），不是回傳後讓前端藏。到期後自動解鎖，不需 job；解鎖後捐贈者 <code>is_anonymous=true</code> 者仍只顯示「匿名朋友」。解鎖前 owner 對 claim 的任何寫入（取消、標 delivered）一律 <code>FORBIDDEN</code>。</td></tr>
+<tr><td>即時性</td><td>前端訂閱同一個公開 SSE，收到 <code>item.updated</code> 後重抓 dashboard（避免把明細塞進公開事件）。</td></tr>
+<tr><td>API</td><td><code>GET /wishlists/{id}/dashboard</code>（另用 <code>PATCH /claims/{id}</code> 操作）</td></tr>
+<tr><td>交易邊界</td><td>唯讀；同一次請求內多個查詢放在 <code>BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY</code> 以取得一致快照。</td></tr>
+<tr><td>例外 / 錯誤碼</td><td><code>UNAUTHORIZED</code> 401、<code>NOT_FOUND</code> 404、<code>FORBIDDEN</code> 403（volunteer 以外的 org 角色檢查）。</td></tr>
+<tr><td>冪等性</td><td>GET，天生冪等。</td></tr>
+</tbody></table>
+
+<h3 id="f8">F8 清單關閉 / 封存 <span class="badge p0">P0</span></h3>
+<pre class="mermaid">
+stateDiagram-v2
+  [*] --> draft : POST /wishlists
+  draft --> active : 發佈 PATCH status=active
+  active --> closed : owner 關閉 PATCH status=closed
+  closed --> active : owner 重新開啟
+  closed --> archived : owner 封存 或 DELETE
+  draft --> archived : DELETE 無資料的草稿
+  archived --> [*]
+</pre>
+<pre class="mermaid">
+sequenceDiagram
+  autonumber
+  participant O as owner
+  participant A as Rust API
+  participant D as PostgreSQL
+  participant G as 訪客
+  O->>A: PATCH /wishlists/id (status=closed)
+  A->>D: BEGIN, SELECT wishlist WHERE owner_id FOR UPDATE
+  Note over D: 等待所有持有 FOR SHARE 的進行中認領完成
+  A->>D: UPDATE status=closed, closed_at=now(), INSERT audit_logs, pg_notify wishlist.updated
+  A->>D: COMMIT
+  A-->>O: 200
+  A->>A: commit 後 purge CDN tag wl-id
+  G->>A: POST /items/item_id/claims
+  A->>D: BEGIN, FOR SHARE 讀到 status=closed
+  A-->>G: 409 WISHLIST_CLOSED (ROLLBACK)
+</pre>
+<table>
+<thead><tr><th>狀態</th><th>公開頁</th><th>新認領 / 認捐</th><th>既有 claim / contribution</th><th>owner 編輯</th></tr></thead>
+<tbody>
+<tr><td>draft</td><td>404</td><td>不可（404）</td><td>—</td><td>可</td></tr>
+<tr><td>active</td><td>正常</td><td>可</td><td>可</td><td>可</td></tr>
+<tr><td>closed</td><td>唯讀，顯示「已結束」</td><td>409 <code>WISHLIST_CLOSED</code></td><td>owner/coordinator 可標 delivered、cancel；guest 不可改量/取消認領。眾籌（P2）：open 品項隨清單關閉轉 expired，捐贈者進入 7 天選擇期；funded 的訂單照常履約</td><td>僅標題 / 描述；不可增刪品項</td></tr>
+<tr><td>archived</td><td>404，owner 列表預設隱藏（可用篩選查看）</td><td>409 <code>WISHLIST_CLOSED</code></td><td>全部唯讀</td><td>不可</td></tr>
+</tbody></table>
+<table class="meta"><tbody>
+<tr><td>前置條件</td><td>owner 登入且為清單擁有者。</td></tr>
+<tr><td>規則</td><td>允許轉換：draft→active、active→closed、closed→active（重新開啟，owner 反悔用，須 expires_at 已過的 reserved claim 不復活）、closed→archived、draft→archived。其他一律 <code>INVALID_STATE_TRANSITION</code>。<code>DELETE /wishlists/{id}</code> 語意為封存：draft 且無任何資料時實體刪除（連同 R2 物件由 F9 清理），其餘設為 archived 並寫 <code>deleted_at</code>，保留 claims 供稽核與對帳。archived 資料保留 90 天後匿名化（刪除 guests.contact 與暱稱），期限待決。可選 <code>closes_at</code> 由 F9 自動關閉（待決）。</td></tr>
+<tr><td>API</td><td><code>PATCH /wishlists/{id}</code>（body 含 <code>status</code>）、<code>DELETE /wishlists/{id}</code></td></tr>
+<tr><td>交易邊界</td><td><code>SELECT … FOR UPDATE</code> 鎖 wishlist（會等待 F4 持有的 <code>FOR SHARE</code>）→ 驗證轉換 → UPDATE status 與時間戳 →（P2，closed / archived 時）同交易將該清單 <code>funding_status='open'</code> 的眾籌品項轉 <code>expired</code> 並寫 <code>expired_at</code>（捐贈者進入 7 天選擇期，見 F6e）→ INSERT audit_logs → <code>pg_notify('ws_events','wishlist.updated')</code> → COMMIT；CDN purge 與 R2 清理在 COMMIT 後透過 outbox/job。</td></tr>
+<tr><td>例外 / 錯誤碼</td><td><code>WISHLIST_CLOSED</code> 409（對 claim/contribution 建立與 guest 改動）；<code>INVALID_STATE_TRANSITION</code> 409；<code>NOT_FOUND</code> 404；<code>UNAUTHORIZED</code> 401。</td></tr>
+<tr><td>冪等性</td><td>目標狀態等於現況 → 200 無動作（不寫第二筆 audit）。</td></tr>
+</tbody></table>
+
+<h3 id="f9">F9 背景工作 <span class="badge p0">P0</span></h3>
+<p>原則：不引入 Redis 或外部 queue；以 Postgres 為唯一狀態來源，工作用 <code>SELECT … FOR UPDATE SKIP LOCKED</code> 搶列，多 instance 可同時跑且不重複處理。</p>
+<pre class="mermaid">
+sequenceDiagram
+  autonumber
+  participant CS as Cloud Scheduler 每分鐘
+  participant A as Rust API (instance N)
+  participant D as PostgreSQL
+  participant M as Email / LINE
+  CS->>A: POST /internal/jobs/tick (OIDC 身分驗證)
+  A->>D: pg_try_advisory_lock 取得各 job 的排程鎖 (搶不到就略過)
+  Note over A,D: job 1 逾期 reserved 轉 expired
+  A->>D: SELECT DISTINCT item_id 有逾期 claim 的品項 LIMIT 50
+  loop 每個 item
+    A->>D: BEGIN, SELECT item FOR UPDATE SKIP LOCKED
+    A->>D: UPDATE claims SET status=expired WHERE item_id 且 reserved 且 expires_at 已到 RETURNING quantity
+    A->>D: UPDATE items SET qty_claimed = qty_claimed - SUM(quantity), INSERT audit_logs (system), pg_notify, COMMIT
+  end
+  Note over A,D: job 2 outbox 寄送 (P1)
+  A->>D: BEGIN, SELECT notifications 待寄 LIMIT 20 FOR UPDATE SKIP LOCKED
+  A->>D: UPDATE status=sending, locked_until=now()+2min, COMMIT
+  A->>M: 寄送 (交易之外)
+  alt 成功
+    A->>D: UPDATE status=sent, sent_at
+  else 失敗
+    A->>D: attempts+1, next_attempt_at 指數退避, 超過 5 次標 failed
+  end
+</pre>
+<table>
+<thead><tr><th>Job</th><th>頻率</th><th>內容</th><th>併發安全</th></tr></thead>
+<tbody>
+<tr><td><code>expire_claims</code></td><td>每分鐘</td><td>reserved 且 <code>expires_at &lt;= now()</code> → expired，回補 qty_claimed。<code>expires_at</code> 於 claim 建立時由清單 <code>claim_ttl_hours</code> 計算：personal / registry 預設 NULL（不逾期），relief 預設 48 小時；purchased 後清除。可由 owner 於清單設定覆寫。</td><td>先挑 item，再 <code>FOR UPDATE SKIP LOCKED</code> 鎖 item，再更新 claims（與 F4/F5 同鎖序）；交易內重新檢查條件，因此與使用者同時 purchased / cancel 不衝突</td></tr>
+<tr><td><code>cleanup_idempotency</code></td><td>每小時</td><td>刪除 <code>expires_at &lt; now()</code>（24 小時）的 idempotency_keys，每批 5000 列（<code>DELETE … WHERE ctid IN (SELECT ctid … LIMIT 5000)</code>）迴圈至無列；<code>expires_at</code> 有索引。量大時改為按日分區 DROP PARTITION。</td><td>advisory lock 保證單一執行者</td></tr>
+<tr><td><code>cleanup_misc</code></td><td>每小時</td><td>刪除過期 sessions、已 consumed 或過期超過 1 天的 otp_challenges。</td><td>同上</td></tr>
+<tr><td><code>dispatch_notifications</code> <span class="badge p0">P0</span></td><td>每分鐘 + 事件後立即嘗試</td><td>MVP Email 通知（F16）。Outbox pattern：業務交易內 INSERT <code>notifications</code>（status=pending，<code>scheduled_at</code>，<code>dedupe_key</code> UNIQUE），COMMIT 後才由 job 寄送；至少一次送達，以 <code>dedupe_key</code> 與供應商端 idempotency 降低重複。退避 1m / 5m / 30m / 2h / 6h，第 5 次失敗標 failed 並告警。<strong>彙整寄送</strong>：每日 09:00 Asia/Taipei 處理 <code>owner_digest</code>，於寄送時才計算件數並組信（驚喜模式只寫 N 件新認領）。LINE 僅用 Messaging API push（<span class="badge p1">P1</span>；<strong>LINE Notify 已於 2025-03-31 終止，不得使用</strong>），需好友關係，未加入則降級為 email。</td><td><code>SKIP LOCKED</code> 搶列；<code>locked_until</code> 租約，崩潰後逾期可被重新搶</td></tr>
+<tr><td><code>process_images</code> <span class="badge p0">P0</span></td><td>每分鐘 + 上傳完成後立即嘗試</td><td>處理 <code>image_status='pending'</code> 的圖片：下載 raw、去除 EXIF（含 GPS）、轉向、縮圖、重新編碼、寫入公開前綴、更新 image_key、刪除原檔、purge CDN。失敗重試 3 次後標 failed。</td><td><code>SKIP LOCKED</code>；輸出 key 由 item id 與內容 hash 決定，重跑覆寫同一物件</td></tr>
+<tr><td><code>issue_invoices</code> <span class="badge p2">P2-A</span></td><td>每分鐘 + 入帳後立即嘗試</td><td>處理 <code>invoices.status='pending'</code>（開立）與作廢 / 折讓事件，呼叫電子發票加值中心；指數退避，超過 5 次告警並保持 pending（不影響點數入帳）。</td><td>SKIP LOCKED；以 invoice id 作加值中心端冪等參照</td></tr>
+<tr><td><code>purge_cdn</code></td><td>事件後立即 + 每分鐘重試</td><td>清單變更時 outbox 內 INSERT 一筆 purge 任務（同 notifications 機制，channel = cdn），失敗重試。</td><td>同上</td></tr>
+<tr><td><code>due_reminders</code> <span class="badge p1">P1</span></td><td>每日 09:00 Asia/Taipei</td><td>活動日前 3 天 / 1 天，對仍為 reserved 的認領者（有 contact 為 email 才可寄）與 owner 產生提醒。relief 的 expires_at 前 12 小時提醒認領者。</td><td>透過 notifications 的 dedupe_key（claim_id + 類型 + 日期）</td></tr>
+<tr><td><code>scan_funding_deadline</code> <span class="badge p2">P2</span></td><td>每分鐘</td><td><code>funding_status='open' AND funding_deadline &lt;= now()</code> → <code>expired</code>，寫 <code>expired_at</code>，outbox 通知捐贈者（7 天選擇期）。</td><td>先挑 item，再 <code>FOR UPDATE SKIP LOCKED</code> 鎖 item，交易內重新檢查條件</td></tr>
+<tr><td><code>release_expired_pledges</code> <span class="badge p2">P2</span></td><td>每 10 分鐘</td><td><code>expired_at + 7 天</code> 已到、仍為 pledged 的 contributions → released，退點入錢包、寫 ledger release、通知（reallocation 期限掃描）。</td><td>每品項一個交易；ledger UNIQUE 防重複退點</td></tr>
+<tr><td><code>place_orders</code> <span class="badge p2">P2</span></td><td>每分鐘 + 達標 COMMIT 後立即嘗試</td><td>以 <code>purchase_orders</code> 為佇列（<code>status='pending' AND fulfillment_type='catalog'</code> 且 <code>next_attempt_at &lt;= now()</code>，<code>FOR UPDATE SKIP LOCKED</code>）呼叫商家 API 下單；暫時性錯誤退避 1m / 5m / 30m / 2h，重試前先查商家端是否已建單；耗盡重試 → failed → F6d。concierge 訂單不由此 job 處理，停留在 staff 佇列，pending 超過 24 小時告警。</td><td>租約 <code>locked_until</code>；商家端以我方 order id 做冪等</td></tr>
+<tr><td><code>poll_merchant_orders</code> <span class="badge p2">P2</span></td><td>每 10 分鐘</td><td>查詢 placed / shipped 的 catalog 訂單於商家端狀態，更新 shipped / delivered 與 tracking_no；delivered 時品項轉 fulfilled。</td><td>SKIP LOCKED；僅更新單調前進的狀態</td></tr>
+<tr><td><code>reconcile_topups</code> <span class="badge p2">P2</span></td><td>每 10 分鐘</td><td>對 pending 超過 30 分鐘的 topups 向金流商查詢交易結果（補 webhook 漏接）；超過 24 小時仍 pending 者標 failed。</td><td>與 webhook 共用同一個入帳函式，以 <code>provider_txn_id</code> 冪等</td></tr>
+<tr><td><code>expire_bonus_lots</code> <span class="badge p2">P2-B</span></td><td>每日（Asia/Taipei 00:10）</td><td><code>point_lots.source='reward_bonus' AND expires_at &lt;= now() AND remaining_points &gt; 0</code> → remaining 歸零，balance 扣除，INSERT ledger <code>expire</code>（帶 lot_id）；到期前 7 天通知（<code>bonus_expiring_soon</code>）。</td><td>逐錢包短交易，鎖序 wallet → lots；條件式更新可重跑</td></tr>
+<tr><td><code>expire_stars</code> <span class="badge p2">P2-B</span></td><td>每日</td><td>依 F13 FIFO 公式計算已到期星星，寫 <code>star_ledger</code> expire 並同步 <code>reward_accounts.stars_balance</code>。</td><td>逐使用者鎖 reward_accounts</td></tr>
+<tr><td><code>evaluate_tiers</code> <span class="badge p2">P2-B</span></td><td>每日</td><td>重算近 12 個月累積星數，更新 <code>tier</code> 與 <code>tier_evaluated_at</code>（降級在此發生；升級也在賺星時即時評估）。</td><td>逐使用者短交易</td></tr>
+<tr><td><code>process_outbox_events</code> <span class="badge p2">P2</span></td><td>每分鐘 + COMMIT 後立即嘗試</td><td>處理 <code>outbox_events</code>：<code>auto_topup</code>（自動儲值扣款，F11）、<code>earn_stars</code> / <code>clawback_stars</code>（F13）、<code>gift_refund</code>（禮物卡原路退款，F12）。失敗指數退避，超過 5 次告警。</td><td><code>SKIP LOCKED</code> + 租約；各事件以業務唯一鍵去重</td></tr>
+<tr><td><code>reconcile_counters</code></td><td>每日 03:00</td><td>對帳（含錢包與 ledger），見 6.5。</td><td>advisory lock</td></tr>
+<tr><td><code>cleanup_orphan_uploads</code></td><td>每週</td><td>列舉 R2 <code>u/</code> 前綴中超過 24 小時且未被任何 wishlists / wishlist_items 引用的物件並刪除。</td><td>advisory lock</td></tr>
+</tbody></table>
+<table class="meta"><tbody>
+<tr><td>觸發方式</td><td>Cloud Run 會縮到 0 且請求外 CPU 受限，故 in-process 常駐 timer 不可靠。採 <strong>Cloud Scheduler 每分鐘呼叫內部端點 <code>POST /internal/jobs/tick</code></strong>（以 OIDC token 驗證，僅允許排程服務帳號，不在公開 API 清單內，亦不經 Cloudflare 公開路由）。tick 依「各 job 的 next_run」決定要跑哪些，各 job 先 <code>pg_try_advisory_lock</code>。替代方案：min-instances=1 並關閉 CPU throttling，以 tokio interval 內建執行。</td></tr>
+<tr><td>為何不用 Redis</td><td>吞吐量低（每分鐘數十到數百列），Postgres 的 <code>SKIP LOCKED</code> 足夠；且 outbox 與業務資料同交易，天然免除雙寫不一致。上限：outbox 達每秒數百筆持續寫入時再評估專用 queue。</td></tr>
+<tr><td>交易邊界</td><td>見時序圖：每個 item 一個短交易（批次 ≤ 50 items）；outbox 取列與標記 sending 為一個短交易，外部 I/O 在交易外，結果再開短交易回寫。</td></tr>
+<tr><td>例外 / 錯誤碼</td><td>內部端點：<code>UNAUTHORIZED</code> 401（OIDC 驗證失敗）。job 內錯誤只記錄與告警，不回給使用者；單一 item 失敗不影響批次內其他項目。</td></tr>
+<tr><td>冪等性</td><td>所有 job 以「條件式更新」設計，可安全重跑：expire 的 WHERE 含 <code>status='reserved' AND expires_at &lt;= now()</code>；清理為刪除過期列；outbox 以 dedupe_key 與租約防重。</td></tr>
+</tbody></table>
+
+<h3 id="f10">F10 救災模式 <span class="badge p2">P2</span> <span class="muted">P2-D</span></h3>
+<p>前端據點頁路由為 <code>/relief/sites/{slug}</code>（用 slug 不用 id），頁面資料走 <code>GET /public/wishlists/{slug}</code>；<code>GET /public/relief/sites</code> 每筆回傳 slug。</p>
+<p>概念對應：據點 site = <code>wishlists</code>（type=relief, org_id, <code>location geography(Point,4326)</code>, address, <code>site_status</code>）；捐贈者「認捐」使用 F4 的數量型 claims（relief 品項 funding_mode = quantity）；志工「登記實收」寫入 <code>receipts</code> 並累加 <code>qty_received</code>。relief 不收集災民個資，只記錄據點層級需求。</p>
+<h4>F10-a 組織、成員、據點</h4>
+<pre class="mermaid">
+sequenceDiagram
+  autonumber
+  participant U as 組織建立者
+  participant A as Rust API
+  participant D as PostgreSQL
+  U->>A: POST /orgs (name)
+  A->>D: BEGIN, INSERT organizations, INSERT org_members (org_role=owner), INSERT audit_logs, COMMIT
+  A-->>U: 201 org
+  U->>A: POST /orgs/id/members (email, org_role)
+  A->>D: BEGIN, 驗證呼叫者 org_role=owner, 以 email 找 users, INSERT org_members, COMMIT
+  A-->>U: 201 (找不到使用者回 404 USER_NOT_FOUND)
+  U->>A: PATCH /orgs/id/members/user_id (org_role)
+  A->>D: BEGIN, SELECT org_members FOR UPDATE, 若降級最後一位 owner 則拒絕, UPDATE, COMMIT
+  U->>A: POST /orgs/id/sites (title, lat, lng, address, claim_ttl_hours)
+  A->>D: BEGIN, 驗證 coordinator 以上, 產生 slug, INSERT wishlists (type=relief, visibility=public, location=ST_SetSRID(ST_MakePoint(lng,lat),4326)), COMMIT
+  A-->>U: 201 site
+  U->>A: POST /wishlists/site_id/items (relief_category, relief_urgency, qty_needed)
+  U->>A: PATCH /sites/id (site_status=active)
+</pre>
+<ul>
+<li>成員管理：僅 org owner；<code>PATCH /orgs/{id}/members/{user_id}</code> 可變更角色，禁止讓組織沒有 owner（<code>LAST_OWNER</code>）。成員加入要求對方<strong>已有帳號</strong>（先以 Email OTP / LINE / Google 登入過），以 email 比對 <code>auth_identities</code>；無邀請信流程（待決問題）。</li>
+<li>角色：owner 管成員與組織；coordinator 建 / 改據點與品項、取消認領、標 delivered；volunteer 登記 receipts 與檢視儀表板。</li>
+<li>座標順序：<code>ST_MakePoint(lng, lat)</code>（經度在前）；API 輸入驗證 lat ∈ [-90,90]、lng ∈ [-180,180]，且限制在台灣與離島合理範圍外時警告（不拒絕，支援海外救援）。</li>
+<li>據點可見度受組織驗證限制（見 F10-0）。</li>
+<li>據點生命週期與 F8 一致，另有 <code>site_status</code>：<code>active</code> 正常；<code>paused</code> 清單仍可見但新認領回 <code>SITE_NOT_ACTIVE</code> 409（例如據點暫時飽和）；<code>closed</code> 與 wishlist closed 同步，新認領回 <code>WISHLIST_CLOSED</code>。</li>
+</ul>
+
+<h4>F10-0 組織驗證（D43）</h4>
+<table class="meta"><tbody>
+<tr><td>規則</td><td><code>organizations.verification_status</code> ∈ pending（預設）| verified | rejected，附 <code>verified_at</code>、<code>verified_by</code>。驗證文件（立案證書、政府單位證明）經 <code>POST /uploads/presign</code>（purpose=org_document）上傳到 R2 <strong>私有 bucket</strong>，不經 CDN，只有該 org 成員與 staff 以短效簽名網址讀取。</td></tr>
+<tr><td>未驗證限制</td><td>未驗證組織的據點只能 <code>visibility=link</code>：不上地圖、不出現在 <code>GET /public/relief/sites</code> 與需求彙總；建立或改成 <code>visibility=public</code> 回 <code>ORG_NOT_VERIFIED</code> 403。通過驗證後，公開頁顯示「已驗證組織」徽章。驗證被撤銷（rejected）時，同交易把該組織所有 public 據點降為 link 並 purge CDN。</td></tr>
+<tr><td>API</td><td>staff：<code>GET /admin/orgs?verification_status=</code>、<code>PATCH /admin/orgs/{id}/verification</code>（body <code>{status, reason}</code>，STAFF_ONLY，寫 audit_logs）。</td></tr>
+<tr><td>錯誤碼</td><td><code>ORG_NOT_VERIFIED</code> 403；<code>STAFF_ONLY</code> 403。</td></tr>
+</tbody></table>
+
+<h4>F10-b 地圖查詢與需求彙總</h4>
+<pre class="mermaid">
+sequenceDiagram
+  autonumber
+  participant B as 瀏覽器 /relief
+  participant C as Cloudflare CDN
+  participant A as Rust API
+  participant D as PostgreSQL + PostGIS
+  B->>C: GET /public/relief/sites?bbox=minLng,minLat,maxLng,maxLat (座標量化到 0.01 度)
+  alt 命中 (s-maxage=30)
+    C-->>B: 200 JSON
+  else 未命中
+    C->>A: 轉發
+    A->>D: ST_Intersects 於 GiST 索引, 或 ST_DWithin (near 模式), LIMIT 500
+    D-->>A: 據點 + 各據點缺口摘要
+    A-->>C: 200 + Cache-Control public, s-maxage=30, stale-while-revalidate=60
+    C-->>B: 200
+  end
+  B->>C: GET /public/relief/needs/summary?bbox=...
+  C->>A: 未命中時轉發
+  A->>D: GROUP BY relief_category, relief_urgency 彙總
+  A-->>B: 200 (s-maxage=60)
+</pre>
+<pre><code>-- 索引
+CREATE INDEX wishlists_relief_geo_gix ON wishlists USING GIST (location)
+  WHERE wishlist_type = 'relief' AND visibility = 'public' AND status = 'active';
+
+-- bbox 模式
+SELECT id, slug, title, site_status, ST_Y(location::geometry) AS lat, ST_X(location::geometry) AS lng
+  FROM wishlists
+ WHERE wishlist_type='relief' AND visibility='public' AND status='active'
+   AND location &amp;&amp; ST_MakeEnvelope($1,$2,$3,$4,4326)::geography
+ LIMIT 500;
+
+-- near 模式 (radius_km 轉公尺)
+SELECT id, slug, title, ST_Distance(location, p.g) AS dist_m
+  FROM wishlists, (SELECT ST_SetSRID(ST_MakePoint($lng,$lat),4326)::geography AS g) p
+ WHERE wishlist_type='relief' AND visibility='public' AND status='active'
+   AND ST_DWithin(location, p.g, $radius_m)
+ ORDER BY dist_m LIMIT 200;</code></pre>
+<ul>
+<li>參數驗證：bbox 四值皆有效、min &lt; max、面積上限（例如跨度 ≤ 3 度，避免整島全掃）；<code>near</code> 的 <code>radius_km</code> ∈ (0, 100]；兩種模式擇一，缺或同時給回 <code>VALIDATION_FAILED</code>。</li>
+<li>快取命中率：前端把 bbox 對齊到固定網格（0.01 度，約 1 km）再請求；API 將 query string 正規化（排序、固定小數位）。</li>
+<li>需求彙總：<code>SUM(qty_needed)</code>、<code>SUM(qty_claimed)</code>、<code>SUM(qty_received)</code> 依 category x urgency 分組；<strong>缺口</strong> = <code>GREATEST(qty_needed − qty_received, 0)</code>；<strong>可認領量</strong> = <code>qty_needed − qty_claimed</code>。只計 <code>site_status=active</code> 的據點。流量過大時改為 materialized view（<code>REFRESH … CONCURRENTLY</code> 每 60 秒）。</li>
+</ul>
+
+<h4>F10-c 認捐 → 運送 → 實收 與離線佇列</h4>
+<pre class="mermaid">
+sequenceDiagram
+  autonumber
+  participant Dn as 捐贈者 guest
+  participant V as 志工 PWA
+  participant Q as IndexedDB 離線佇列
+  participant A as Rust API
+  participant D as PostgreSQL
+  Dn->>A: POST /items/item_id/claims (F4, expires_at = now + 48h)
+  A-->>Dn: 201 reserved
+  Dn->>A: PATCH /claims/id (status=purchased) 清除 expires_at 表示已出發
+  V->>V: 據點收貨, 離線登記
+  V->>Q: 存入 [Idempotency-Key = 新 UUID, item_id, quantity_received, claim_id, client_recorded_at]
+  Note over V,Q: 網路恢復 或 Background Sync 觸發
+  loop 依登記順序逐筆重送
+    V->>A: POST /items/item_id/receipts + Idempotency-Key (ws_session)
+    A->>D: BEGIN, 占位 idempotency 並以 receipts.client_request_id 唯一約束二次去重
+    A->>D: 鎖 item, INSERT receipts, UPDATE items SET qty_received = qty_received + n
+    A->>D: 若帶 claim_id 則 claim 轉 delivered, INSERT audit_logs, pg_notify, COMMIT
+    A-->>V: 201 (重送時 200 回原結果)
+    V->>Q: 刪除該筆
+  end
+</pre>
+<table class="meta"><tbody>
+<tr><td>前置條件</td><td>登記者為該據點 org 的任一成員（owner / coordinator / volunteer）；據點未 closed（paused 仍可登記實收）。</td></tr>
+<tr><td>規則</td><td>receipts：<code>quantity_received</code> ≥ 1、可選 <code>claim_id</code>（對應某位捐贈者的認領，登記後該 claim 轉 delivered）、<code>note</code>、<code>client_recorded_at</code>（離線時的實際時間）。無 claim_id 者視為現場捐贈。<code>qty_received</code> 允許超過 <code>qty_needed</code>（溢收），回應附 <code>over_received:true</code>。不收集災民個資。更正以反向 receipt（負數）實作需待決，MVP 版本僅允許 coordinator 以 PATCH 更正。</td></tr>
+<tr><td>離線佇列</td><td>PWA 將待送 receipts 存於 IndexedDB，每筆在<strong>建立當下</strong>就產生 Idempotency-Key（UUID）並固定不變；以 Background Sync（Chromium 系）重送，iOS Safari 無 Background Sync，改在 app 回到前景與 <code>online</code> 事件時重送；依 <code>client_recorded_at</code> 順序逐筆送。伺服器除了 24 小時的 idempotency_keys，另在 <code>receipts.client_request_id</code> 設永久 UNIQUE：離線超過 24 小時後重送仍不會重複計入。命中重複時回 200 與原結果，而不是 409。</td></tr>
+<tr><td>API</td><td><code>POST /orgs</code>、<code>GET /orgs/{id}</code>、<code>POST /orgs/{id}/members</code>、<code>PATCH /orgs/{id}/members/{user_id}</code>、<code>POST /orgs/{id}/sites</code>、<code>PATCH /sites/{id}</code>、<code>GET /public/relief/sites</code>、<code>GET /public/relief/needs/summary</code>、<code>POST /items/{item_id}/receipts</code>，另重用 F2（品項）、F4/F5（認領）</td></tr>
+<tr><td>交易邊界</td><td>建 org：INSERT organizations + org_members(owner) 同交易。建 site：INSERT wishlists（含 location）+ audit。receipts：占位 → 以 org 成員身分驗證（<code>JOIN org_members</code>）→ 鎖 item → INSERT receipts → <code>qty_received += n</code>（原子累加）→（可選）claim 轉 delivered，鎖序 item → claim → audit → notify → 回寫 idempotency → COMMIT。</td></tr>
+<tr><td>例外 / 錯誤碼</td><td><code>FORBIDDEN</code> 403（非成員或角色不足）；<code>NOT_FOUND</code> 404；<code>USER_NOT_FOUND</code> 404（加入成員時 email 無帳號）；<code>MEMBER_ALREADY_EXISTS</code> 409；<code>LAST_OWNER</code> 409；<code>SITE_NOT_ACTIVE</code> 409；<code>WISHLIST_CLOSED</code> 409；<code>IDEMPOTENCY_KEY_REQUIRED</code> 400；<code>VALIDATION_FAILED</code> 422（座標、bbox、radius）；<code>RATE_LIMITED</code> 429。</td></tr>
+<tr><td>冪等性</td><td>receipts 必帶 Idempotency-Key，並有永久 <code>client_request_id</code> 約束；<code>POST /orgs</code> 與 <code>POST /orgs/{id}/sites</code> 建議接受 Idempotency-Key；成員 POST 以 <code>(org_id, user_id)</code> 唯一鍵天然去重（重複回 <code>MEMBER_ALREADY_EXISTS</code>）。</td></tr>
+<tr><td>尖峰</td><td>災時公開讀取（地圖、彙總、據點頁）全部由 CDN 承擔（見 6.4），寫入只有認捐與實收（相對少量）。</td></tr>
+</tbody></table>
+
+
+<h3 id="f11">F11 自動儲值（隨行卡式）<span class="badge p2">P2</span> <span class="muted">P2-A</span></h3>
+<pre class="mermaid">
+sequenceDiagram
+  autonumber
+  participant G as 捐贈者
+  participant A as Rust API
+  participant D as PostgreSQL
+  participant J as 自動儲值 job
+  participant P as 金流商
+  G->>A: PUT /wallet/auto-topup (enabled, threshold_points, amount, monthly_cap_amount)
+  A->>D: UPSERT wallet_auto_topups (card_token_ref 取自先前同意儲存卡片的儲值)
+  A-->>G: 200
+  G->>A: POST /items/item_id/contributions (F6b)
+  A->>D: F6b 交易內扣點後, 若 balance 低於 threshold 且已啟用: INSERT outbox_events (auto_topup, wallet_id)
+  A->>D: COMMIT
+  A-->>G: 201 (不在認捐交易內同步扣卡)
+  J->>D: SELECT outbox_events FOR UPDATE SKIP LOCKED
+  J->>D: 檢查當月 (Asia/Taipei) 自動儲值累計加本次是否不超過 monthly_cap_amount, 且無 pending 的自動儲值
+  alt 超過上限
+    J->>D: 標記 limit_reached, outbox 通知 (AUTO_TOPUP_LIMIT_REACHED), 不扣款
+  else 可扣款
+    J->>D: INSERT topups (pending, auto=true, provider_txn_id)
+    J->>P: 以 card_token_ref 扣款 (交易之外)
+    P-->>J: 成功或失敗 (同時有 webhook)
+    J->>D: 成功: 共用入帳函式 (建 topup lot, balance, ledger), 失敗: 重試 3 次後停用並通知
+  end
+</pre>
+<table class="meta"><tbody>
+<tr><td>前置條件</td><td>已登入；至少完成過一次勾選「儲存卡片」的信用卡儲值（金流商回傳 card token，我方只存 <code>card_token_ref</code>，不存卡號）。method 目前限 card。</td></tr>
+<tr><td>規則</td><td><code>wallet_auto_topups(user_id PK, enabled, threshold_points, amount, method, provider, card_token_ref, monthly_cap_amount 預設 10000)</code>。認捐成功後若 <code>balance &lt; threshold_points</code> 才排入 outbox；<strong>扣款一律非同步</strong>，認捐時餘額不足仍回 <code>INSUFFICIENT_POINTS</code>（使用者可重試）。當月累計（Asia/Taipei 月曆月，只計 auto 儲值）超過 <code>monthly_cap_amount</code> 就不扣並通知。每個錢包同時最多一筆 pending 的自動儲值（partial unique index），避免連續認捐重複扣款。自動儲值金額同樣受 <code>topup_min_amount</code> / <code>topup_max_amount</code> 限制，產生的 topup lot 為 cash_refundable。</td></tr>
+<tr><td>API</td><td><code>GET /wallet/auto-topup</code>、<code>PUT /wallet/auto-topup</code>、<code>DELETE /wallet/auto-topup</code></td></tr>
+<tr><td>交易邊界</td><td>設定：單一 UPSERT。排入：寫在 F6b 認捐交易內（INSERT outbox_events，與扣點同 COMMIT）。扣款 job：短交易取列與租約 → 交易外呼叫金流商 → 短交易入帳（與 F6a webhook 共用函式，以 <code>provider_txn_id</code> 冪等）。</td></tr>
+<tr><td>例外 / 錯誤碼</td><td><code>AUTO_TOPUP_LIMIT_REACHED</code> 409（僅出現在設定端點：啟用或調整時本月已用額度達上限；以及通知 payload，<strong>不阻擋認捐</strong>）；<code>VALIDATION_FAILED</code> 422；<code>UNAUTHORIZED</code> 401；<code>PAYMENT_FAILED</code> 402（綁卡儲值）。</td></tr>
+<tr><td>冪等性</td><td>PUT / DELETE 天生冪等。扣款以 <code>provider_txn_id</code> 與 ledger UNIQUE 去重；outbox 以租約防重。</td></tr>
+</tbody></table>
+
+<h3 id="f12">F12 電子禮物卡 <span class="badge p2">P2</span> <span class="muted">P2-B</span></h3>
+<pre class="mermaid">
+sequenceDiagram
+  autonumber
+  participant B as 購買者 /gift
+  participant A as Rust API
+  participant D as PostgreSQL
+  participant P as 金流商
+  participant R as 收卡者 /g/code
+  B->>A: POST /gift-cards/orders (face_value_points, quantity, method, theme, message) + Idempotency-Key
+  A->>D: INSERT gift_card_orders (pending, provider_txn_id)
+  A-->>B: 201 order_id + 金流前端參數
+  B->>P: 付款
+  P->>A: POST /webhooks/payments/provider (驗簽)
+  A->>D: BEGIN, 鎖 order, 金額核對, status=paid, 產生 quantity 張 gift_cards (code 只留 hash 與加密副本), COMMIT
+  loop 付款後輪詢
+    B->>A: GET /gift-cards/orders/order_id
+    A-->>B: status pending 或 paid
+  end
+  A-->>B: paid 時回 cards[].share_url = https://app.wishsync.tw/g/code (可隨時重看補發, LINE 分享)
+  R->>A: GET /public/gift-cards/code (SSR + OG 卡面預覽, no-store)
+  A-->>R: 面額, 卡面, 祝福語, 寄送者暱稱, 可否兌換 (code 錯誤一律 404 GIFT_CARD_INVALID)
+  R->>A: 登入後 POST /gift-cards/claim (code) + Idempotency-Key + Turnstile
+  A->>D: BEGIN, 占位 idempotency, SELECT gift_cards WHERE code_hash FOR UPDATE
+  alt status 不是 active
+    A-->>R: 409 GIFT_CARD_ALREADY_CLAIMED (已兌換) 或 404 GIFT_CARD_INVALID
+  else active
+    A->>D: 鎖 wallet (無則建立), UPDATE gift_cards claimed, INSERT point_lots (gift_card, cash_refundable=false), balance += face
+    A->>D: INSERT ledger (gift_claim, +face, lot_id), INSERT audit_logs, COMMIT
+    A-->>R: 200 新餘額
+  end
+  B->>A: POST /gift-cards/id/refund (未兌換才可)
+  A->>D: BEGIN, 鎖 gift_card, 若 active 轉 refunded, INSERT outbox_events (refund), COMMIT
+  A->>P: job 原路退款 (交易之外)
+</pre>
+<pre class="mermaid">
+stateDiagram-v2
+  [*] --> active : 付款成功 或 企業批次入帳後產碼
+  active --> claimed : 收卡者登入兌換
+  active --> refunded : 購買者退款 或 整批退款
+  active --> void : 營運作廢 或 批次 void
+  claimed --> [*]
+  refunded --> [*]
+  void --> [*]
+</pre>
+<table class="meta"><tbody>
+<tr><td>前置條件</td><td>購買與兌換都需登入。面額固定 300 / 500 / 1000 / 2000 / 3000 點（1 點 = NT$1），一次 1 到 10 張；可附祝福語（≤ 200 字）、卡面 <code>theme</code>、<code>sender_display_name</code>；祝福語以<strong>訂單</strong>為單位（同訂單所有卡相同，不支援逐張設定）。面額、最大張數、卡面主題取自 <code>GET /config/public</code>。</td></tr>
+<tr><td>規則</td><td>
+<ul>
+<li><b>碼</b>：16 碼 Crockford base32（約 80 bits，CSPRNG）。查詢用 <code>code_hash = SHA-256(code)</code>（UNIQUE）。購買者需能事後重看連結（補發），故另存應用層 AEAD 加密的 <code>code_enc</code>：<strong>個人購買</strong>保留到卡片 claimed / refunded / void 時清為 NULL，期間購買者可隨時用 <code>GET /gift-cards/orders/{id}</code> 取得每張卡的 <code>share_url</code>；<strong>企業批次</strong>在 CSV 匯出後即清為 NULL。</li>
+<li><b>暴力猜碼防護</b>：碼空間 2^80 本身不可枚舉；再加：<code>GET /public/gift-cards/{code}</code> 與 claim 一律回應相同的 404 <code>GIFT_CARD_INVALID</code>（不區分不存在 / 格式錯 / 已作廢），回應時間一致；Cloudflare 邊緣每 IP 10 次/分鐘；claim 要求 Turnstile，且每帳號每小時失敗 5 次即暫時鎖定（<code>RATE_LIMITED</code>）；預覽不快取（<code>Cache-Control: no-store</code>）、不進 CDN；日誌不記錄 code，只記 hash 前 8 碼。</li>
+<li><b>兌換後</b>：建立 <code>point_lots(source=gift_card, cash_refundable=false)</code>，不設期限。點數只能投入心願品項（任何清單，含自己的），不可轉送、不可退現金。</li>
+<li><b>未兌換退款</b>：購買者可對 active 卡申請，原路退款，卡片轉 refunded（無法再兌換）；已兌換 → <code>GIFT_CARD_NOT_REFUNDABLE</code>。轉 refunded 與排入退款 outbox 同交易，實際向金流商退款由 job 完成並重試。禮物卡不設使用期限。</li>
+<li><b>履約保證</b>：售出款屬禮券預收款，履約保證範圍含 active 禮物卡與已兌換未使用的 gift_card lots（見 F6 法規列）。</li>
+<li>購買與退款的 webhook 共用 <code>POST /webhooks/payments/{provider}</code>，依 <code>provider_txn_id</code> 對應到 topups 或 gift_card_orders。</li>
+</ul></td></tr>
+<tr><td>API</td><td><code>POST /gift-cards/orders</code>（回 <code>order_id</code> + 金流參數）、<code>GET /gift-cards/orders/{id}</code>（付款後前端輪詢：status pending → paid，paid 後回 <code>cards[].share_url</code>）、<code>GET /gift-cards/purchased</code>（訂單列表）、<code>POST /gift-cards/{id}/refund</code>、<code>GET /public/gift-cards/{code}</code>、<code>POST /gift-cards/claim</code>；前端 <code>/gift</code>、<code>/g/{code}</code>（SSR + OG 卡面）</td></tr>
+<tr><td>交易邊界</td><td>下單：短交易 INSERT pending。Webhook：鎖 order → 核對金額 → paid → INSERT n 張 gift_cards（同交易）。兌換：<code>gift_cards（FOR UPDATE）→ point_wallets → point_lots</code>，單一交易完成卡片狀態、批次、balance、ledger、audit。退款：鎖 gift_card → 狀態轉 refunded + outbox，金流商呼叫在交易外。</td></tr>
+<tr><td>例外 / 錯誤碼</td><td><code>GIFT_CARD_INVALID</code> 404；<code>GIFT_CARD_ALREADY_CLAIMED</code> 409；<code>GIFT_CARD_NOT_REFUNDABLE</code> 409；<code>PAYMENT_FAILED</code> 402；<code>TOPUP_LIMIT_EXCEEDED</code> 409（購買）；<code>GIFT_CARD_NOT_YET_CLAIMABLE</code> 409（兌換）；<code>WALLET_FROZEN</code> 403；<code>RATE_LIMITED</code> 429；<code>VALIDATION_FAILED</code> 422；<code>IDEMPOTENCY_KEY_REQUIRED</code> 400；<code>UNAUTHORIZED</code> 401。</td></tr>
+<tr><td>冪等性</td><td>訂單與兌換、退款皆需 Idempotency-Key（兌換重播回同一個 200）；Webhook 以 <code>provider_txn_id</code>；同一張卡併發兌換由 <code>FOR UPDATE</code> 序列化，第二個看到 claimed 回 <code>GIFT_CARD_ALREADY_CLAIMED</code>（若為同一使用者同一 Idempotency-Key 則重播成功結果）。</td></tr>
+</tbody></table>
+
+<h3 id="f13">F13 回饋星星 <span class="badge p2">P2</span> <span class="muted">P2-B</span></h3>
+<pre class="mermaid">
+sequenceDiagram
+  autonumber
+  participant D as PostgreSQL
+  participant W as 星星 worker (outbox)
+  participant G as 捐贈者
+  participant A as Rust API
+  Note over D: F6b 達標交易: contributions 轉 captured 並 INSERT outbox_events (earn_stars, contribution_id)
+  W->>D: SELECT outbox_events FOR UPDATE SKIP LOCKED
+  W->>D: BEGIN, 鎖 reward_accounts, stars = floor((gift_card + topup 批次點數) / 50), INSERT star_ledger (earn, expires_at), stars_balance += n, 評估等級, COMMIT
+  Note over D: F6d 失敗退點: INSERT outbox_events (clawback_stars)
+  W->>D: 扣回: delta = -min(已給星數, stars_balance), INSERT star_ledger (clawback), 不足部分記錄不致負
+  G->>A: GET /rewards (餘額, 等級, 即將到期) 和 GET /rewards/offers
+  G->>A: POST /rewards/redemptions (offer_id) + Idempotency-Key
+  A->>D: BEGIN, 鎖 reward_accounts, 條件式 stars_balance -= cost (不足 INSUFFICIENT_STARS)
+  A->>D: INSERT star_ledger (redeem), 鎖 wallet, INSERT point_lots (reward_bonus, expires_at = now + 90 天, cash_refundable=false), balance += bonus
+  A->>D: INSERT point_ledger (reward_bonus, +bonus, lot_id), INSERT audit_logs, COMMIT
+  A-->>G: 200 新星星與點數餘額
+</pre>
+<table>
+<thead><tr><th>項目</th><th>規則</th></tr></thead>
+<tbody>
+<tr><td>賺取</td><td>認捐被 <code>captured</code>（品項達標）時，每 <strong>50 點得 1 星</strong>，無條件捨去，以每筆 contribution 計。儲值與購買禮物卡<strong>不給星</strong>（避免退款套利）。released 的認捐不給星。給星點數 = 該 captured 認捐在 <code>contribution_lot_allocations</code> 中來自 <strong>gift_card + topup</strong> 批次的點數加總，<strong>reward_bonus 批次支付的部分不給星</strong>（避免贊助點數循環生星），再除以 50 取整。賺取與扣回由背景 job（outbox）處理，不在認捐 / 達標交易內，以免鎖住大量 reward_accounts；入帳通常一分鐘內。</td></tr>
+<tr><td>扣回</td><td>已給星後訂單失敗退點（F6d）→ 扣回該筆給的星，<code>delta = −min(給星數, stars_balance)</code>；不允許負餘額（<code>CHECK stars_balance &gt;= 0</code>），不足部分記錄在 star_ledger 的 reason=clawback 備註並告警。</td></tr>
+<tr><td>等級</td><td><code>green</code>（預設）/ <code>gold</code>（近 12 個月累積賺取星數 − 扣回 ≥ 300）。賺星後即時評估，另有每日評估 job 處理降級；寫 <code>tier_evaluated_at</code>。gold 權益：較佳兌換比率、專屬卡面。</td></tr>
+<tr><td>兌換</td><td>星星 → 平台贊助點數（<code>point_lots(source=reward_bonus)</code>，90 天到期，不可退現金）。green：100 星 = 50 點；gold：100 星 = 60 點；實際以 <code>reward_offers(stars_cost, bonus_points, tier_required, active)</code> 為準。成本由平台行銷預算吸收（約 1~1.2% 回饋）。不足 → <code>INSUFFICIENT_STARS</code>；等級不符 → <code>FORBIDDEN</code>。</td></tr>
+<tr><td>到期</td><td>星星 12 個月到期（<code>star_ledger.expires_at</code> 為賺取當月月底 + 12 個月）。到期以 FIFO 計算：<code>expired = max(0, Σ 已到期的 earn − Σ(redeem + clawback 的絕對值) − Σ 先前 expire 的絕對值)</code>，寫一筆 <code>expire</code> 負項並同步 <code>stars_balance</code>。贊助點數批次 90 天到期見 F9。</td></tr>
+<tr><td>法規</td><td>星星與贊助點數為無償贈與，非預收款，可設期限，不納入履約保證；須在使用條款載明。</td></tr>
+<tr><td>API</td><td><code>GET /rewards</code>（餘額、等級、即將到期、明細 cursor）、<code>GET /rewards/offers</code>、<code>POST /rewards/redemptions</code>；前端 <code>/rewards</code></td></tr>
+<tr><td>鎖順序 / 交易</td><td>兌換：<code>reward_accounts → point_wallets → point_lots</code>。賺取 / 扣回 worker 只鎖 reward_accounts（與認捐交易不同時持有兩者，無交叉）。兌換需 Idempotency-Key；賺取以 <code>star_ledger(reason, ref_type, ref_id)</code> UNIQUE 去重，outbox 重跑安全。</td></tr>
+<tr><td>錯誤碼</td><td><code>INSUFFICIENT_STARS</code> 409；<code>FORBIDDEN</code> 403；<code>NOT_FOUND</code> 404（offer 不存在 / 停用）；<code>IDEMPOTENCY_KEY_REQUIRED</code> 400；<code>UNAUTHORIZED</code> 401。</td></tr>
+</tbody></table>
+
+<h3 id="f14">F14 企業禮券 <span class="badge p2">P2</span> <span class="muted">P2-C</span></h3>
+<pre class="mermaid">
+stateDiagram-v2
+  [*] --> draft : staff 建立批次
+  draft --> invoiced : 開立三聯式發票
+  invoiced --> paid : 營運確認入帳 並產碼
+  paid --> issued : 交付 CSV 或寄送完成
+  draft --> void : 作廢
+  invoiced --> void : 作廢
+  paid --> paid : reissue 重新產碼
+  paid --> void : 合約整批退款 僅未兌換卡
+  issued --> issued : reissue 重新產碼
+  issued --> void : 合約整批退款 僅未兌換卡
+  issued --> [*]
+  void --> [*]
+</pre>
+<pre class="mermaid">
+sequenceDiagram
+  autonumber
+  participant S as 營運 staff /admin/corporate
+  participant A as Rust API
+  participant D as PostgreSQL
+  participant C as 企業窗口
+  S->>A: POST /admin/corporate-accounts (name, tax_id, contact)
+  S->>A: POST /admin/gift-card-batches (corporate_account_id, quantity, face_value_points)
+  A->>D: INSERT gift_card_batches (draft, total_amount), audit_logs
+  S->>A: PATCH /admin/gift-card-batches/id (status=invoiced, invoice_no)
+  C->>C: 銀行轉帳 / 匯款
+  S->>A: PATCH /admin/gift-card-batches/id (status=paid)
+  A->>D: BEGIN, 鎖 batch, 檢查 invoiced, status=paid, paid_at, 產生 quantity 張 gift_cards (batch_id, status=active), audit_logs, COMMIT
+  S->>A: GET /admin/gift-card-batches/id/codes (CSV)
+  A->>D: BEGIN, 鎖 batch, codes_exported_at 為空才可, 設定 codes_exported_at, 清除 code_enc, COMMIT
+  A-->>S: CSV 兌換連結 (只此一次)
+  S->>C: 交付 CSV (加密) 或依 email 清單寄送
+  S->>A: PATCH /admin/gift-card-batches/id (status=issued)
+  Note over S,A: 再次 GET codes 回 409 CODES_ALREADY_EXPORTED
+  S->>A: CSV 遺失時 POST /admin/gift-card-batches/id/reissue
+  A->>D: BEGIN, 鎖 batch, 該批次所有 active 未兌換卡轉 void, 產生同數量新卡, codes_exported_at 重置為 NULL, audit_logs, COMMIT
+  S->>A: GET /admin/gift-card-batches/id/codes (可再匯出一次)
+</pre>
+<table class="meta"><tbody>
+<tr><td>前置條件</td><td>操作者 <code>users.is_staff</code>（否則 <code>STAFF_ONLY</code> 403）。P2-C 由營運後台代建，企業自助入口列為未來。</td></tr>
+<tr><td>規則</td><td>企業（福委會 / HR）大量採購禮物卡發給員工。<code>corporate_accounts(tax_id UNIQUE)</code>、<code>gift_card_batches(status, invoice_no, paid_at, issued_at, created_by_staff_id)</code>。付款為銀行轉帳 / 匯款，營運確認入帳後標 paid 才產碼（未入帳不產碼）。發票為三聯式含統編，開立時點待會計師確認。批次卡片規則同 F12：兌換後 cash_refundable=false、不設期限、只能用於心願品項；未兌換卡依合約可整批退款（void 時將該批 active 卡轉 void，已兌換者不受影響）。</td></tr>
+<tr><td>CSV 一次性匯出</td><td>匯出在交易內以 batch 列 <code>FOR UPDATE</code> 鎖住、檢查 <code>codes_exported_at IS NULL</code>、寫入時間並清除 <code>code_enc</code>，COMMIT 成功才串流回應（確保只會有一次）；再次呼叫 → <code>CODES_ALREADY_EXPORTED</code> 409。CSV 建議以密碼加密 zip 交付，匯出動作寫 audit_logs（staff、時間、筆數），不含 code 本身。CSV 遺失時以 <code>reissue</code> 補救：批次內所有 active 未兌換卡轉 void（已兌換者不受影響），產生同數量新卡，<code>codes_exported_at</code> 重置為 NULL，可再匯出一次；僅 paid / issued 狀態可呼叫（否則 <code>INVALID_STATE_TRANSITION</code>），寫 audit_logs。</td></tr>
+<tr><td>API（皆 STAFF_ONLY）</td><td><code>POST /admin/corporate-accounts</code>、<code>GET /admin/corporate-accounts</code>、<code>POST /admin/gift-card-batches</code>、<code>PATCH /admin/gift-card-batches/{id}</code>（status = invoiced | paid | issued | void）、<code>GET /admin/gift-card-batches/{id}/codes</code>、<code>POST /admin/gift-card-batches/{id}/reissue</code>；前端 <code>/admin/corporate</code></td></tr>
+<tr><td>交易邊界</td><td>paid 轉換與產卡同一交易（預期單批 ≤ 10,000 張；更大分批並以 <code>(batch_id, seq)</code> UNIQUE 重跑）。匯出見上。void：鎖 batch → 鎖其 gift_cards（id 升冪）→ 批次轉 void、active 卡轉 void。</td></tr>
+<tr><td>例外 / 錯誤碼</td><td><code>STAFF_ONLY</code> 403；<code>INVALID_STATE_TRANSITION</code> 409（非法批次轉換）；<code>CODES_ALREADY_EXPORTED</code> 409；<code>VALIDATION_FAILED</code> 422（統編重複 / 格式、數量超出範圍）；<code>NOT_FOUND</code> 404。</td></tr>
+<tr><td>冪等性</td><td>PATCH 目標狀態與現況相同回 200，不重複產碼（產碼由 <code>status draft/invoiced → paid</code> 的條件式轉換一次觸發）；匯出本身即一次性語意。</td></tr>
+</tbody></table>
+
+<h3 id="f15">F15 檢舉與下架 <span class="badge p0">P0</span></h3>
+<pre class="mermaid">
+sequenceDiagram
+  autonumber
+  participant V as 訪客 (免登入)
+  participant A as Rust API
+  participant D as PostgreSQL
+  participant S as 營運 staff /admin
+  participant O as 建立者
+  V->>A: POST /public/wishlists/slug/reports (reason, detail, item_id?) + Turnstile token
+  A->>A: 驗證 Turnstile, 每 IP 與每清單限流
+  A->>D: INSERT content_reports (open, reporter_guest_id 或 reporter_user_id), INSERT notifications (通知 staff)
+  A-->>V: 202 Accepted
+  S->>A: GET /admin/reports?status=open
+  S->>A: PATCH /admin/wishlists/id/moderation (moderation_status=hidden, reason)
+  A->>D: BEGIN, SELECT wishlist FOR UPDATE, 更新 moderation_status, moderation_reason, moderated_at, INSERT audit_logs (actor_type=staff), pg_notify wishlist.updated, COMMIT
+  A->>A: commit 後 purge CDN tag wl-id
+  S->>A: PATCH /admin/reports/id (status=actioned, handled_by)
+  V->>A: GET /public/wishlists/slug
+  A-->>V: 410 WISHLIST_REMOVED (前端顯示 此清單已被下架)
+  O->>A: GET /wishlists/id/dashboard
+  A-->>O: moderation_status=hidden + moderation_reason
+</pre>
+<table class="meta"><tbody>
+<tr><td>前置條件</td><td>檢舉：免登入，需通過 Turnstile。審核：<code>users.is_staff</code>（MVP，見營運後台表）。</td></tr>
+<tr><td>規則</td><td><code>content_reports(reason: scam | inappropriate | copyright | personal_info | other, detail, status: open | actioned | dismissed, handled_by, handled_at)</code>。<code>wishlists.moderation_status</code> ∈ ok | hidden，附 <code>moderation_reason</code>、<code>moderated_at</code>。hidden 時：公開 <code>GET /public/wishlists/{slug}</code>、SSE、認領 / 認捐一律回 <code>410 WISHLIST_REMOVED</code>（與 NOT_FOUND 區分，前端顯示「此清單已被下架」）；410 快取 30 秒並帶 <code>Cache-Tag</code>，恢復（hidden → ok）時 purge。建立者仍可登入看到下架原因，可編輯但無法使公開頁恢復。下架與 status（draft / active / closed / archived）獨立。同一人對同一清單 24 小時內重複檢舉合併為一筆（以 guest / user / IP hash 去重）。</td></tr>
+<tr><td>營運後台（MVP）</td><td>前端 <code>/admin</code>（staff 殼）：清單搜尋（slug / 建立者 email）、清單詳情與下架 / 恢復、檢舉佇列、使用者查詢、系統旗標切換（唯讀模式）。API 皆 STAFF_ONLY：<code>GET /admin/wishlists?q=</code>、<code>GET /admin/users?q=</code>、<code>PUT /admin/system-flags/{key}</code>、<code>GET /admin/reports?status=</code>、<code>PATCH /admin/reports/{id}</code>、<code>PATCH /admin/wishlists/{id}/moderation</code>。所有 staff 動作寫 audit_logs（<code>actor_type=staff</code>），查詢使用者 email 也記錄。P2 的 /admin/orders、/admin/cash-refunds、/admin/corporate 掛在同一個 /admin 殼內。</td></tr>
+<tr><td>API</td><td><code>POST /public/wishlists/{slug}/reports</code>、上述 admin API</td></tr>
+<tr><td>交易邊界</td><td>檢舉：單一短交易（INSERT report + INSERT notifications）。下架：<code>wishlists FOR UPDATE</code> → UPDATE moderation → audit → <code>pg_notify</code> → COMMIT，CDN purge 在 COMMIT 後。</td></tr>
+<tr><td>例外 / 錯誤碼</td><td><code>WISHLIST_REMOVED</code> 410；<code>VALIDATION_FAILED</code> 422；<code>FORBIDDEN</code> 403（Turnstile 失敗）；<code>RATE_LIMITED</code> 429；<code>STAFF_ONLY</code> 403；<code>NOT_FOUND</code> 404。</td></tr>
+<tr><td>冪等性</td><td>檢舉以去重鍵合併；PATCH moderation / report 以目標狀態為準，重送回 200，不重複寫 audit。</td></tr>
+</tbody></table>
+
+<h3 id="f16">F16 MVP Email 通知 <span class="badge p0">P0</span></h3>
+<pre class="mermaid">
+sequenceDiagram
+  autonumber
+  participant G as 訪客 (留了 Email)
+  participant A as Rust API
+  participant D as PostgreSQL
+  participant J as 通知 job
+  participant M as Email 供應商 Resend 或 SES
+  participant O as 建立者
+  G->>A: POST /items/item_id/claims (F4, contact 為 Email)
+  A->>D: F4 交易內: INSERT notifications (kind=owner_claim 或 owner_digest), 若訪客留 Email 再 INSERT (kind=guest_confirm), COMMIT
+  J->>D: SELECT notifications 到期且待寄 FOR UPDATE SKIP LOCKED
+  J->>D: 標記 sending 與租約, COMMIT
+  J->>M: 寄送 (交易之外)
+  M-->>J: 成功或失敗
+  J->>D: sent 或 退避重試
+  M-->>O: 第一筆認領即時信, 之後每日彙整一封
+  M-->>G: 認領確認信含 管理我的認領 連結
+  G->>A: 點連結 /me/claims#r=token, 前端 POST /guest/recover (token)
+  A->>D: BEGIN, 驗證 token 雜湊 未使用且未過期, 標記 used_at, 換發新的 guest_token 並作廢舊 hash, COMMIT
+  A-->>G: Set-Cookie ws_guest + 導向 /me/claims
+</pre>
+<table class="meta"><tbody>
+<tr><td>觸發與頻率</td><td>
+<ul>
+<li><b>建立者</b>：清單的<strong>第一筆認領即時寄出</strong>（<code>scheduled_at = now()</code>）；之後同一清單的認領合併成<strong>每日彙整一封</strong>（每日 09:00 Asia/Taipei；以 <code>dedupe_key = owner_digest:{wishlist_id}:{date}</code> UNIQUE，<code>ON CONFLICT DO NOTHING</code>，件數於寄送時計算）。建立者可在 <code>/me/settings</code> 關閉（<code>users.notification_prefs.email_claims</code>，預設 true）。</li>
+<li><b>驚喜模式內容遮蔽</b>：<code>surprise_mode=true</code> 且 now &lt; unlock_at 時，信件內容只寫「你的清單有 N 件新認領」，<strong>不含品項名稱與認領者</strong>；即時信與彙整信皆同。Email 內容在<strong>寄送時</strong>依當下狀態組裝（非入隊時），避免入隊與寄送間狀態改變。</li>
+<li><b>訪客</b>：若 contact 是 Email 格式，認領成功寄確認信，含「管理我的認領」連結。這是 D15 換裝置找回的 MVP 最小版（P1 做完整版）。每個收件地址 24 小時最多 5 封（防被當垃圾郵件發射器），信末附退訂連結。</li>
+</ul></td></tr>
+<tr><td>訪客管理連結</td><td>採<strong>一次性恢復權杖</strong>，信件中<strong>不放 guest_token</strong>。表 <code>guest_recovery_tokens(id, guest_id, token_hash BYTEA UNIQUE, expires_at, used_at)</code>：32 bytes 隨機，DB 只存 SHA-256，效期 30 天，<strong>每次寄信產生新權杖</strong>。信件連結為 <code>/me/claims#r={token}</code>（放在 fragment，不進伺服器 log 與 Referer）；前端取出後呼叫 <code>POST /guest/recover</code>（body <code>{token}</code>），伺服器在交易內驗證「未使用、未過期」→ 標 <code>used_at</code> → 對該 guest 換發<strong>新的</strong> guest_token（舊 hash 作廢），Set-Cookie <code>ws_guest</code> 並回傳新 token 給前端存 localStorage。<strong>無效、過期、已使用一律回 404 <code>NOT_FOUND</code></strong>（不區分原因）。Email 為訪客自填、未驗證，連結只寄到該地址。</td></tr>
+<tr><td>Outbox</td><td><code>notifications</code>（MVP）：<code>kind</code>、<code>channel=email</code>、<code>to_user_id</code> 或 <code>to_email</code>、<code>scheduled_at</code>、<code>status pending | sending | sent | failed</code>、<code>attempts</code>、<code>next_attempt_at</code>、<code>locked_until</code>、<code>dedupe_key</code> UNIQUE、<code>payload</code>（只放 ID，不放個資內容）。通知與業務寫入<strong>同交易</strong>入隊。供應商：Resend 或 AWS SES（待定）；硬退信 / 投訴回報後加入 suppression list，不再寄送。LINE Messaging API 仍為 <span class="badge p1">P1</span>。</td></tr>
+<tr><td>API</td><td>無專屬寄送 API。<code>PATCH /me</code>（<code>notification_prefs</code>，如 <code>{"email_claims": true}</code>，供 /me/settings）、<code>POST /guest/recover</code>、退訂連結 <code>GET /unsubscribe?token=</code>（HMAC 簽章，內含 user / guest id 與通知類型，免登入一鍵退訂）。</td></tr>
+<tr><td>交易邊界</td><td>入隊：在 F4（認領）等業務交易內 INSERT。寄送：短交易取列與租約 → 交易外呼叫供應商 → 短交易回寫。</td></tr>
+<tr><td>例外 / 錯誤碼</td><td>寄送失敗不影響認領成功；<code>VALIDATION_FAILED</code> 422（token 格式）；<code>NOT_FOUND</code> 404（recovery token 無效、過期或已使用）；<code>RATE_LIMITED</code> 429。</td></tr>
+<tr><td>冪等性</td><td><code>dedupe_key</code> UNIQUE 防重複入隊；租約防重複寄送；供應商端附 notification id 作 idempotency key。</td></tr>
+</tbody></table>
+
+<h3 id="f17">F17 帳號刪除與資料匯出 <span class="badge p0">P0</span> <span class="muted">錢包相關檢查為 P2</span></h3>
+<pre class="mermaid">
+sequenceDiagram
+  autonumber
+  participant U as 使用者 /me/settings
+  participant A as Rust API
+  participant D as PostgreSQL
+  participant J as 清理 job
+  U->>A: GET /me/export
+  A-->>U: 200 JSON (個人資料, 清單, 認領摘要, P2 錢包與認捐紀錄)
+  U->>A: DELETE /me (confirm 二次確認字串)
+  A->>D: BEGIN, SELECT users FOR UPDATE
+  alt P2: 錢包餘額大於 0 或有 pledged 或未結案訂單
+    A->>D: ROLLBACK
+    A-->>U: 409 ACCOUNT_HAS_BALANCE (列出需處理項目)
+  else 可刪除
+    A->>D: users 去識別化 (email, 名稱清空, is_deleted), DELETE auth_identities, DELETE sessions
+    A->>D: 其清單 status=archived 並移出公開, INSERT outbox (purge CDN, 刪 R2 物件), INSERT audit_logs
+    A->>D: COMMIT
+    A-->>U: 204 + 清除 ws_session
+    J->>D: 刪除 R2 圖片, 清除通知佇列
+  end
+</pre>
+<table class="meta"><tbody>
+<tr><td>規則</td><td>
+<ul>
+<li><b>刪除（建立者）</b>：<code>DELETE /me</code> 需二次確認（body 帶確認字串，且 session 近 10 分鐘內曾驗證，否則先要求重新驗證）。去識別化：<code>users</code> 的 email、名稱清空並標 <code>deleted_at</code>，<code>auth_identities</code>、<code>sessions</code> 刪除；使用者列本身以<strong>假名化</strong>保留（僅留 UUID），以維持外鍵與金融紀錄。其清單 status 設 archived 並從公開移除（purge CDN），圖片由 job 自 R2 刪除；訪客在這些清單上的 claims 保留（供對帳），但清單內容不可再瀏覽。同 email 之後可重新註冊為全新帳號。</li>
+<li><b>刪除（訪客）</b>：<code>DELETE /guest/me</code> 清除暱稱與聯絡方式（暱稱改為「已刪除的訪客」），作廢 guest_token 與 recovery token；claims 保留，數量仍計入清單。</li>
+<li><b>P2 檢查</b>：錢包餘額 &gt; 0、有 pledged 認捐、未結案訂單、未結案現金退款、wallet_debts open → <code>ACCOUNT_HAS_BALANCE</code> 409。使用者需先處理：可退現金的點數申請退款；不可退現金的點數須明確確認放棄（確認後以 <code>adjustment</code> ledger 歸零）。</li>
+<li><b>金融紀錄保留</b>：ledger、topups、發票、訂單、收件地址快照依商業會計法保存期限保留並假名化（年限待會計師確認），不隨帳號刪除；收件地址 shipping_addresses 於清單封存時刪除。</li>
+<li><b>匯出</b>：<code>GET /me/export</code> 回 JSON：個人資料、登入方式（provider 清單，不含 token）、自己的清單與品項、清單上的認領摘要（驚喜模式未解鎖前套用與 dashboard 相同的遮罩）、P2 加錢包 / 儲值 / 認捐 / 發票紀錄。每使用者每日最多 3 次；資料量大時改非同步產生並寄下載連結（效期 24 小時）。</li>
+</ul></td></tr>
+<tr><td>API</td><td><code>DELETE /me</code>、<code>GET /me/export</code>、<code>DELETE /guest/me</code></td></tr>
+<tr><td>交易邊界</td><td>單一交易：鎖 users（<code>FOR UPDATE</code>，阻擋同時進行的儲值 / 認捐）→（P2）鎖 wallet 做餘額檢查 → 去識別化與清單封存 → outbox → audit。R2 刪除與 CDN purge 在 COMMIT 後由 job 完成，可重試。</td></tr>
+<tr><td>例外 / 錯誤碼</td><td><code>ACCOUNT_HAS_BALANCE</code> 409；<code>UNAUTHORIZED</code> 401；<code>VALIDATION_FAILED</code> 422（確認字串錯誤）；<code>RATE_LIMITED</code> 429。</td></tr>
+<tr><td>冪等性</td><td>已刪除的帳號再呼叫回 401（session 已清除）；訪客 DELETE 重送回 204。</td></tr>
+</tbody></table>
+
+<h3 id="f18">F18 信用卡拒付處理 <span class="badge p2">P2</span> <span class="muted">P2-A</span></h3>
+<pre class="mermaid">
+stateDiagram-v2
+  [*] --> pending : 建立儲值
+  pending --> paid : webhook 成功
+  pending --> failed : 付款失敗
+  paid --> refunded : 現金退款完成
+  paid --> disputed : 金流 webhook 回報爭議
+  disputed --> paid : 爭議勝訴
+  disputed --> charged_back : 確定拒付
+  charged_back --> [*]
+  refunded --> [*]
+  failed --> [*]
+</pre>
+<pre class="mermaid">
+sequenceDiagram
+  autonumber
+  participant P as 金流商
+  participant A as Rust API
+  participant D as PostgreSQL
+  participant S as 營運 staff
+  P->>A: POST /webhooks/payments/provider (爭議 / 拒付通知, 驗簽)
+  A->>D: BEGIN, 鎖 topup, status=disputed
+  A->>D: 鎖 wallet, status=frozen (認捐 / 兌換 / 退款之後回 403 WALLET_FROZEN)
+  A->>D: 該 topup 批次尚未 captured 的 pledged 認捐整筆 released 回原批次
+  A->>D: 扣回該 topup 批次剩餘點數 (ledger adjustment, 帶 lot_id)
+  alt 批次點數不足以扣回
+    A->>D: INSERT wallet_debts (open, 不足金額), balance 維持 大於等於 0
+  end
+  A->>D: INSERT audit_logs, outbox 通知 staff, COMMIT
+  P->>A: 後續 webhook: 勝訴 或 確定拒付
+  A->>D: 勝訴: topup 回 paid 由 staff 審核解凍. 拒付: charged_back, debts 由 staff 結案 settled 或 written_off
+  S->>A: PATCH /admin/wallets/id (status=active) 解凍, PATCH /admin/wallet-debts/id (settled 或 written_off)
+</pre>
+<table class="meta"><tbody>
+<tr><td>預防（D41）</td><td>所有信用卡付款強制 3DS。新帳號風控：註冊 30 天內，每日儲值與禮物卡購買合計上限 NT$3,000，<strong>涵蓋手動儲值、自動儲值（F11）與禮物卡購買，不含營運建立的企業禮券（F14）</strong>；超限<strong>直接拒絕</strong>，回 <code>TOPUP_LIMIT_EXCEEDED</code> 409（附 <code>limit_amount</code>、<code>remaining_amount</code>）。異常（短時間多卡、多帳號同裝置）進人工審核佇列，審核屬風控標記，<strong>不影響 <code>TOPUP_LIMIT_EXCEEDED</code> 的判定</strong>；審核期間該筆的禮物卡設 <code>gift_cards.claimable_at</code>（最多延遲 24 小時才可兌換）。</td></tr>
+<tr><td>拒付處理</td><td>
+<ol>
+<li>webhook 報爭議 → <code>topups.status = disputed</code>，<code>point_wallets.status = frozen</code>。</li>
+<li>先處理該 topup 批次：尚未 captured 的 pledged 認捐（含此批次 allocations 者）整筆 released 回原批次，再把該批次剩餘點數扣回（ledger <code>adjustment</code>，帶 lot_id）。</li>
+<li>已用於達標下單的點數<strong>不追回</strong>受捐者的禮物，平台吸收；扣不足的部分記入 <code>wallet_debts(wallet_id, topup_id, amount, status: open | settled | written_off)</code>，<code>balance CHECK &gt;= 0</code> 不變。</li>
+<li>勝訴：topup 回 paid，由 staff 審核後解凍錢包並補回扣回的點數（<code>adjustment</code>）。確定拒付：<code>charged_back</code>，debts 由 staff 結案；通知帳務與開發票折讓（F19）。</li>
+</ol></td></tr>
+<tr><td>禮物卡</td><td>訂單被拒付：未兌換卡 → <code>void</code>；已兌換的點數<strong>不追回</strong>收卡者，平台吸收並封鎖購買者（其錢包 frozen，不能再購買）。<code>claimable_at</code> 未到時兌換回 <code>GIFT_CARD_NOT_YET_CLAIMABLE</code> 409（附 <code>claimable_at</code>），預覽頁顯示「可兌換時間」。</td></tr>
+<tr><td>WALLET_FROZEN 範圍</td><td>frozen 時：儲值、認捐、撤回、轉投、兌換禮物卡、星星兌換、現金退款、購買禮物卡一律 <code>WALLET_FROZEN</code> 403；查詢（GET /wallet）仍可；<code>DELETE /me</code> 因 wallet_debts open 回 <code>ACCOUNT_HAS_BALANCE</code>。</td></tr>
+<tr><td>API</td><td><code>POST /webhooks/payments/{provider}</code>（含爭議事件）、後台（STAFF_ONLY）：<code>PATCH /admin/wallets/{id}</code>（body <code>{status: active | frozen, reason}</code>，解凍 / 手動凍結）、<code>GET /admin/wallet-debts?status=</code>、<code>PATCH /admin/wallet-debts/{id}</code>（body <code>{status: settled | written_off, note}</code>）；皆寫 audit_logs（actor_type=staff）。</td></tr>
+<tr><td>交易邊界</td><td>爭議處理單一交易：鎖序 <code>topups → wishlists（讀）→ point_wallets → point_lots → wishlist_items → contributions</code>；含大量 released 時分批，以 ledger UNIQUE 重跑安全。</td></tr>
+<tr><td>例外 / 錯誤碼</td><td><code>WALLET_FROZEN</code> 403；<code>TOPUP_LIMIT_EXCEEDED</code> 409（新帳號額度）；<code>PAYMENT_FAILED</code> 402（3DS 失敗）；<code>STAFF_ONLY</code> 403。</td></tr>
+<tr><td>冪等性</td><td>webhook 以 <code>(provider_txn_id, event_type)</code> 去重；狀態轉換為條件式（只從 paid 轉 disputed），重送不會重複扣回。</td></tr>
+</tbody></table>
+
+<h3 id="f19">F19 電子發票 <span class="badge p2">P2</span> <span class="muted">P2-A</span></h3>
+<pre class="mermaid">
+sequenceDiagram
+  autonumber
+  participant B as 購買者
+  participant A as Rust API
+  participant D as PostgreSQL
+  participant J as 發票 job
+  participant V as 電子發票加值中心
+  B->>A: POST /wallet/topups (amount, method, invoice 選項: 載具 / 統編 / 捐贈碼)
+  A->>A: 驗證載具 (手機條碼向加值中心查驗), 統編格式
+  Note over A,D: 付款成功入帳交易 (F6a webhook)
+  A->>D: 同交易 INSERT invoices (pending, source_type=topup, source_id, amount), INSERT outbox_events (issue_invoice)
+  J->>D: SELECT invoices pending FOR UPDATE SKIP LOCKED
+  J->>V: 開立發票 (以 invoice id 為冪等參照, 交易之外)
+  alt 成功
+    J->>D: status=issued, invoice_no, issued_at
+  else 失敗
+    J->>D: 指數退避重試, 超過 5 次告警, 保持 pending
+  end
+  Note over A,V: 現金退款完成
+  A->>J: outbox (void_invoice)
+  J->>V: 當期全額退款 作廢, 跨期或部分退款 開折讓
+  J->>D: status=void 或 allowance
+</pre>
+<table class="meta"><tbody>
+<tr><td>規則</td><td>表 <code>invoices(source_type: topup | gift_card_order | gift_card_batch | service_fee, source_id, invoice_no, amount, tax_type, status: pending | issued | void | allowance, carrier_type: member | mobile_barcode | citizen_cert | donate | b2b, carrier_id, donate_code, buyer_tax_id, buyer_name, issued_at, voided_at)</code>；topups / gift_card_orders 原本的 <code>invoice_no</code> 改為關聯 invoices。儲值與禮物卡購買頁提供發票選項（會員載具預設、手機條碼、捐贈碼、公司統編）。企業禮券批次（F14）以 <code>source_type=gift_card_batch</code> 開三聯式。人工代購服務費屬 <code>service_fee</code>。</td></tr>
+<tr><td>開立時點</td><td><strong>待會計師確認</strong>（儲值 / 購卡時開，或兌換 / 下單時開）。表結構兩者皆支援：「儲值時開」= webhook 入帳交易建立 pending invoice（source_type=topup）；「兌換時開」= 在達標 captured 或下單交易建立 pending invoice（source_type 與 source_id 指向 purchase_order / service_fee）。切換只影響「何處 INSERT invoices」，job 與狀態機不變。</td></tr>
+<tr><td>作廢與折讓</td><td>現金退款（F6f completed）或禮物卡退款：全額且同一申報期內 → <code>void</code>（作廢）；跨期或部分退款 → 開折讓單，<code>status=allowance</code>。拒付（F18）同樣處理。</td></tr>
+<tr><td>API</td><td>發票選項隨 <code>POST /wallet/topups</code>、<code>POST /gift-cards/orders</code> 的 body 傳入（<code>invoice</code> 物件）；使用者查詢 <code>GET /wallet</code> 內含發票號碼與載具資訊；開立 / 作廢 / 折讓由 job 對加值中心 API 完成，無對外端點。</td></tr>
+<tr><td>交易邊界</td><td>建立 pending invoice 與 outbox <strong>同入帳交易</strong>；呼叫加值中心在交易之外；回寫為短交易。開立失敗不影響入帳與點數。</td></tr>
+<tr><td>例外 / 錯誤碼</td><td><code>VALIDATION_FAILED</code> 422（載具、統編、捐贈碼無效）；開立失敗屬內部重試，不回給使用者。</td></tr>
+<tr><td>冪等性</td><td>以 invoice id 為加值中心端的冪等參照（merchant order no）；<code>(source_type, source_id)</code> UNIQUE 防重複建立；作廢 / 折讓以目標狀態為準。</td></tr>
+</tbody></table>
+
+<h2 id="s6">6. 橫切關注點</h2>
+
+<h3>6.1 認證中介層</h3>
+<pre class="mermaid">
+flowchart LR
+  R["Request"] --> L1["request_id + tracing span"]
+  L1 --> L2["Origin 驗證<br/>X-Origin-Auth + 真實 IP"]
+  L2 --> L3["CORS + CSRF Origin 檢查"]
+  L3 --> L4["唯讀模式閘門"]
+  L4 --> L5["限流 應用層"]
+  L5 --> L6{"Principal 解析"}
+  L6 -->|"ws_session cookie"| P1["Owner / OrgMember"]
+  L6 -->|"X-Guest-Token 或 ws_guest"| P2["Guest"]
+  L6 -->|"皆無"| P3["Anonymous"]
+  P1 --> H["Handler"]
+  P2 --> H
+  P3 --> H
+</pre>
+<table>
+<thead><tr><th>憑證</th><th>形式</th><th>儲存 / 驗證</th><th>適用</th></tr></thead>
+<tbody>
+<tr><td><code>ws_session</code></td><td>opaque 32 bytes，HttpOnly; Secure; SameSite=Lax; 30 天滑動</td><td>DB <code>sessions.token_hash</code> = SHA-256；逾期或登出即刪列</td><td>建立者與 org 成員端點</td></tr>
+<tr><td><code>ws_guest</code></td><td>opaque 32 bytes，HttpOnly; Secure; SameSite=Lax; 180 天</td><td>DB <code>guests.guest_token_hash</code> = SHA-256</td><td>認領 / 認捐 / <code>/guest/me</code></td></tr>
+<tr><td>金流 webhook 簽章 <span class="badge p2">P2</span></td><td>provider 簽章標頭 / 欄位</td><td>以 provider 密鑰對原始 body 驗證；無 session</td><td><code>/webhooks/payments/*</code></td></tr>
+<tr><td><code>X-Guest-Token</code></td><td>同上 token，自訂 header</td><td>同 ws_guest；<strong>優先於 cookie</strong></td><td>LINE in-app browser 等 cookie 不穩環境</td></tr>
+</tbody></table>
+<ul>
+<li>以 axum extractor 表達權限：<code>StaffAuth</code>（MVP 起，檢查 <code>is_staff</code>）、<code>WebhookAuth</code>（P2，驗簽）、<code>OwnerAuth</code>、<code>OrgAuth(role≥…)</code>、<code>GuestAuth</code>（修改型，缺少即 401）、<code>OptionalGuest</code>（建立型，缺少則稍後建立新 guest）。handler 簽名即文件，漏接 extractor 無法通過編譯測試中的「所有 route 必須宣告 auth 類型」檢查。</li>
+<li>Cookie 僅由 <code>api.wishsync.tw</code> 設定（host-only）；app 與 api 同站（same-site），SameSite=Lax 下前端 fetch 需 <code>credentials:'include'</code>。Nuxt SSR 呼叫需要登入的端點時，由 Pages 轉送使用者的 Cookie header。</li>
+<li>CSRF：cookie 認證的非安全方法（POST/PATCH/PUT/DELETE）必須驗證 <code>Origin</code> ∈ 白名單（<code>https://app.wishsync.tw</code>），否則 403；以 <code>X-Guest-Token</code> header 認證者不受 CSRF 影響。CORS 僅允許該 origin 並 <code>Allow-Credentials</code>。</li>
+<li>token 比對一律對 SHA-256 做索引等值查詢，不在應用層用 <code>==</code> 比較明文；明文 token 絕不寫入 log、audit_logs 或 trace。</li>
+</ul>
+
+<h3>6.2 限流</h3>
+<table>
+<thead><tr><th>層級</th><th>目標</th><th>規則（初始值，可調）</th><th>超限回應</th></tr></thead>
+<tbody>
+<tr><td>Cloudflare 邊緣</td><td><code>/auth/otp/*</code></td><td>5 次/分鐘/IP</td><td>429（CF 頁面或 problem+json）</td></tr>
+<tr><td>Cloudflare 邊緣</td><td>POST <code>/items/*/claims</code>、<code>/contributions</code></td><td>20 次/分鐘/IP</td><td>429</td></tr>
+<tr><td>Cloudflare 邊緣 <span class="badge p2">P2-B</span></td><td><code>/public/gift-cards/*</code>、<code>POST /gift-cards/claim</code></td><td>10 次/分鐘/IP；claim 另需 Turnstile，每帳號每小時失敗 5 次暫鎖</td><td>429 / <code>RATE_LIMITED</code></td></tr>
+<tr><td>Cloudflare 邊緣</td><td>公開 GET 與 SSE</td><td>GET 300 次/分鐘/IP；SSE 新連線 10 次/分鐘/IP</td><td>429</td></tr>
+<tr><td>應用層（in-memory GCRA，如 governor）</td><td>每 guest_token 建立型請求</td><td>10 次/分鐘；每 IP 30 次/分鐘</td><td><code>RATE_LIMITED</code> + <code>Retry-After</code></td></tr>
+<tr><td>應用層（DB 計數）</td><td>OTP：每 email / 每 IP</td><td>每 email 1 次/60 秒且 5 次/小時；每 IP 20 次/小時；單 challenge 5 次驗證</td><td><code>RATE_LIMITED</code></td></tr>
+<tr><td>應用層 <span class="badge p2">P2</span></td><td>儲值 / 認捐 / 現金退款</td><td>儲值 5 次/分鐘/使用者（且每日金額上限）；認捐 20 次/分鐘/使用者；現金退款 3 次/小時/使用者；<code>/webhooks/payments/*</code> 不套用 IP 限流，改驗簽</td><td><code>RATE_LIMITED</code></td></tr>
+<tr><td>應用層</td><td>新 guest 建立</td><td>每 IP 每小時 20 個新 guest（防洗號）</td><td><code>RATE_LIMITED</code></td></tr>
+<tr><td>應用層</td><td>SSE 連線</td><td>每 IP 同時 5 條；每 slug 同時 2000 條（保護單 instance）</td><td>429</td></tr>
+</tbody></table>
+<p><b>原則：</b>具安全意義的限制（OTP 嘗試、鎖定）必須落在 DB，因為 in-memory 計數在多 instance 下實際額度為 N 倍；僅供防濫用的軟限制才用 in-memory。所有 <code>RATE_LIMITED</code> 帶 <code>Retry-After</code>。Cloudflare Turnstile 作為首次認領的可選人機驗證（待決）。</p>
+
+<h3>6.3 可觀測性</h3>
+<ul>
+<li><b>request_id</b>：最外層 middleware 取用傳入的 <code>X-Request-Id</code>（驗證為 UUID）或產生 UUID v7；寫入 tracing span、所有 log、回應標頭 <code>X-Request-Id</code>、problem+json 的 <code>request_id</code>、audit_logs.request_id。同時記錄 <code>CF-Ray</code>。</li>
+<li><b>tracing</b>：<code>tracing</code> + <code>tracing-subscriber</code>（JSON 輸出至 stdout，Cloud Logging 解析）+ <code>tracing-opentelemetry</code> + OTLP exporter 送 Cloud Trace（或 Grafana Tempo）；遵循 W3C <code>traceparent</code>；每個 handler 以 <code>#[tracing::instrument(skip_all, fields(...))]</code>；sqlx 查詢耗時以 span 記錄。取樣：預設 5%，錯誤與 &gt; 500 ms 全收。</li>
+<li><b>Metrics</b>：<code>http_requests_total{route,status}</code>、<code>http_request_duration_seconds</code>、<code>claim_conflict_total</code>（ITEM_FULLY_CLAIMED 次數）、<code>db_pool_in_use/idle/wait_seconds</code>、<code>sse_connections</code>、<code>outbox_pending</code>、<code>job_last_success_timestamp{job}</code>、<code>reconcile_mismatch_total</code>、<code>idempotency_replay_total</code>。</li>
+<li><b>日誌禁止</b>：guest_token、session token、OTP、contact、收件地址、金流憑證與卡片資料、完整 IP（改記 HMAC 後的 <code>ip_hash</code>）。</li>
+<li><b>告警</b>：5xx 率 &gt; 1%；p99 &gt; 1 s；pool wait &gt; 500 ms；outbox 積壓 &gt; 100 且最舊 &gt; 10 分鐘；reconcile 發現不一致；任一 job 超過 3 個週期未成功。</li>
+</ul>
+
+<h3 id="s64">6.4 高併發與降級策略（救災尖峰）</h3>
+<table>
+<thead><tr><th>層</th><th>做法</th></tr></thead>
+<tbody>
+<tr><td>公開讀取走 CDN</td><td>公開 GET（清單、地圖、彙總）皆為 <code>public, s-maxage</code> 短 TTL（一般 10 秒，relief 尖峰 30~60 秒）+ <code>stale-while-revalidate</code> + <code>stale-if-error=600</code>；回應無 cookie、無個人化。尖峰時讀取請求絕大多數不到 origin，origin QPS ≈ 熱門 URL 數 / TTL。</td></tr>
+<tr><td>連線池上限</td><td>sqlx 每 instance <code>max_connections=10</code>、<code>acquire_timeout=3s</code>；Cloud Run <code>max-instances</code> 設上限（例如 20）→ 最多 200 條連到 PgBouncer；PgBouncer transaction pooling，<code>default_pool_size</code> ≈ 40 連到 Postgres（低於 <code>max_connections</code> 並預留管理用）。<strong>PgBouncer transaction mode 下需關閉 sqlx 的 prepared statement 快取</strong>（<code>statement_cache_capacity(0)</code>，或使用支援 <code>max_prepared_statements</code> 的 PgBouncer ≥ 1.21）。LISTEN 連線直連 Postgres（每 instance 1 條，不計入 pool）。取不到連線 → <code>SERVICE_UNAVAILABLE</code> 503 + <code>Retry-After</code>，不排隊堆積。</td></tr>
+<tr><td>逾時</td><td><code>statement_timeout=5s</code>、<code>lock_timeout=2s</code>、<code>idle_in_transaction_session_timeout=10s</code>；API 全域請求逾時 10 秒（SSE 例外）。</td></tr>
+<tr><td>熱點列</td><td>熱門品項的 item 列是序列化點；交易保持短（無外部 I/O）、只更新必要欄位。單列約可承受每秒數百次更新；若仍不足，才考慮分片計數器（將 qty_claimed 拆多列再加總），目前不做。</td></tr>
+<tr><td>降級階梯</td><td>
+<ol>
+<li><b>L1</b>：把公開 GET 的 s-maxage 調高（設定檔熱更新）。</li>
+<li><b>L2</b>：關閉 SSE（旗標 <code>sse_enabled=false</code>，端點回 503，前端退化為每 30 秒輪詢 CDN 快取）。</li>
+<li><b>L3 唯讀模式</b>：旗標 <code>read_only=true</code>（由 staff 在 /admin 以 <code>PUT /admin/system-flags/{key}</code> 切換），所有非安全方法（除 <code>POST /auth/logout</code>）回 <code>READ_ONLY_MODE</code> 503 + <code>Retry-After</code>，公開 GET 與 SSE 不受影響。用於 DB 遷移、故障搶修、資料庫過載。</li>
+<li><b>L4</b>（P2）：job 每分鐘把熱門 relief 據點與彙總快照寫入 R2，Pages 在 origin 全掛時回快照。</li>
+</ol>
+旗標存於 <code>system_flags</code> 小表，每個 instance 每 5 秒輪詢（PK 查詢，成本可忽略），不需重新部署。</td></tr>
+<tr><td>寫入保護</td><td>認領 / 認捐 / 儲值 / 實收的寫入路徑已有條件式 UPDATE 與 Idempotency-Key，客戶端重試風暴不會造成重複；應用層以 token/IP 限流吸收惡意流量；Cloudflare 規則可在被攻擊時對 POST 啟用 Managed Challenge。</td></tr>
+</tbody></table>
+
+<h3 id="s65">6.5 資料一致性原則</h3>
+<ul>
+<li><b>真實來源與快取欄位</b>：<code>wishlist_items.qty_claimed</code> 為快取欄位，<strong>真實來源是 claims 加總</strong>：<code>SUM(quantity) WHERE status IN ('reserved','purchased','delivered')</code>。<code>pledged_points</code> 以 contributions（pledged + captured）為真實來源、錢包 <code>balance</code> 以 <code>point_ledger</code> 加總為真實來源（定義見 F6），<code>qty_received</code> 以 receipts 為真實來源。</li>
+<li>快取欄位只可在與來源列變更<strong>同一交易</strong>內修改，且只用相對增減（<code>col = col + $n</code>），禁止「讀出再寫回絕對值」。DB 層 CHECK：<code>qty_claimed BETWEEN 0 AND qty_needed</code>、<code>pledged_points BETWEEN 0 AND target_points</code>、<code>point_wallets.balance &gt;= 0</code>。</li>
+<li><b>錢包不變量（P2）</b>：<code>point_wallets.balance</code> 有 <code>CHECK (balance &gt;= 0)</code>，扣點一律用 <code>UPDATE … SET balance = balance - $n WHERE id=$1 AND balance &gt;= $n</code>；<code>point_ledger</code> <strong>只增不改</strong>（應用程式 DB 角色僅授權 INSERT，並以 trigger 拒絕 UPDATE / DELETE），每筆記 <code>balance_after</code>；任何餘額變動與 ledger 寫入必須同一交易，且集中在單一函式 <code>wallet_apply(wallet_id, delta, entry_type, ref)</code>。對帳 job 驗證：<code>wallet.balance = Σ ledger.delta</code>、<code>wallet.balance = Σ lots.remaining_points</code>、每批次 <code>remaining_points = original_points + Σ 該 lot 的 ledger.delta</code>、<code>Σ allocations.points = contribution.points</code>（每筆 contribution）、<code>reward_accounts.stars_balance = Σ star_ledger.delta</code>、<code>Σ(pledged + captured contributions) = item.pledged_points</code>、<code>Σ topups(paid) = Σ ledger(topup)</code>。</li>
+<li>狀態轉換集中在單一純函式（<code>fn transition(from, to, actor) -&gt; Result&lt;Effect&gt;</code>），handler 與 job 共用，並對該函式做窮舉單元測試。</li>
+<li>所有鎖依 wishlists → point_wallets → items → claims/contributions/receipts/purchase_orders 順序；任何跨品項操作先依 item id 排序再逐一鎖。</li>
+<li><b>對帳 job（<code>reconcile_counters</code>，每日）</b>：
+<pre><code>SELECT i.id, i.qty_claimed AS cached, COALESCE(c.s,0) AS actual
+  FROM wishlist_items i
+  LEFT JOIN (SELECT item_id, SUM(quantity) s FROM claims
+              WHERE status IN ('reserved','purchased','delivered') GROUP BY item_id) c ON c.item_id = i.id
+ WHERE i.qty_claimed IS DISTINCT FROM COALESCE(c.s,0);
+-- 錢包: balance = Σ ledger.delta
+SELECT w.id, w.balance, COALESCE(SUM(l.delta),0) AS ledger_sum
+  FROM point_wallets w LEFT JOIN point_ledger l ON l.wallet_id = w.id
+ GROUP BY w.id HAVING w.balance &lt;&gt; COALESCE(SUM(l.delta),0);
+-- 批次: balance = Σ lots.remaining_points
+SELECT w.id FROM point_wallets w LEFT JOIN point_lots l ON l.wallet_id = w.id
+ GROUP BY w.id HAVING w.balance &lt;&gt; COALESCE(SUM(l.remaining_points),0);
+-- allocations: Σ allocations.points = contribution.points
+-- 眾籌: item.pledged_points = Σ contributions(pledged, captured).points
+-- 另驗: Σ topups(paid) = Σ ledger(topup)；funded 品項 Σ captured = target_points 且恰有一筆 purchase_orders
+-- receipts 同理 (qty_received)</code></pre>
+<strong>錢包與 ledger 的不一致永不自動修正</strong>，一律告警並由人工調查（修正以 <code>adjustment</code> ledger 記錄）。其餘計數預設只告警（<code>reconcile_mismatch_total</code> + log，含 item id）。啟用 <code>reconcile_autofix</code> 旗標後，逐筆在交易內 <code>FOR UPDATE</code> 鎖 item、重算、更新，並寫 <code>audit_logs</code>（<code>system.reconcile</code>，記錄 before/after）。上線初期建議每小時對近 24 小時有異動的品項跑增量對帳。</li>
+<li>CDN 與 SSE 皆為「最終一致」：計數可能落後最多 TTL；任何以計數做的<strong>決策</strong>（可否認領）永遠在 DB 條件式 UPDATE 中判定，不信任任何快取。</li>
+<li>時間：全部 timestamptz；「活動日」是 DATE，以 Asia/Taipei 解讀。</li>
+</ul>
+
+<h3 id="s66">6.6 金流與敏感資料安全 <span class="badge p2">P2</span></h3>
+<ul>
+<li><b>Webhook 驗簽</b>：<code>POST /webhooks/payments/{provider}</code> 先以<strong>原始 body</strong> 驗簽（綠界 CheckMacValue；TapPay 以其回呼驗證與 Record 回查），用 constant-time 比較；驗簽失敗回 401 並告警，不處理 body。可再加金流商來源 IP 白名單與時間戳容忍窗口防重放。</li>
+<li><b>金額只信伺服器</b>：入帳金額一律取 DB 的 <code>topups.amount</code>，webhook 或前端傳來的金額只用於比對，不一致則標 failed 並告警；前端不得指定 <code>target_points</code>、點數匯率或 <code>provider_txn_id</code>。</li>
+<li><b>卡片資料不落地</b>：使用 TapPay prime 或綠界託管頁，我方不接觸卡號（降低 PCI 範圍）；日誌與 trace 不記錄金流商回應的敏感欄位。</li>
+<li><b>收件地址欄位加密</b>：<code>shipping_addresses</code>（recipient_name、phone、address）與 <code>purchase_orders.shipping_address_snapshot</code> 於應用層以 AES-256-GCM 加密（envelope key 由 KMS 管理，密文帶 key id 以便輪替）。僅建立者與履約作業可解密；staff 讀取需 <code>is_staff</code> 並寫 audit_logs（讀取也記錄）；公開 API、捐贈者 API、SSE、日誌一律不出現。</li>
+<li><b>營運後台</b>（MVP 起）：<code>/admin/*</code> 需 <code>ws_session</code> 且 <code>users.is_staff</code>（extractor <code>StaffAuth</code>），否則 <code>STAFF_ONLY</code> 403；staff 登入建議強制 LINE / Google 並後續加 2FA；所有操作寫 audit_logs。</li>
+<li><b>禮物卡碼</b>：碼 DB 只存 SHA-256 hash（查詢鍵）與加密副本（供購買者重看，兌換 / 退款 / 匯出後清除）；預覽與兌換 404 不區分原因、回應時間一致；Turnstile + 邊緣 / 帳號限流；日誌不記錄碼。企業 CSV 一次性匯出並寫 audit_logs（不含碼）。</li>
+<li><b>自動儲值</b>：只存金流商 card token 的參照（<code>card_token_ref</code>），不存卡號；每月上限與單一 pending 限制防止重複 / 無限扣款；連續失敗自動停用。</li>
+<li><b>詐騙防護</b>：儲值啟用 3D 驗證；對短時間大量儲值後立即申請現金退款的帳號人工覆核；現金退款只能原路退回。</li>
+</ul>
+
+<h3 id="s67">6.7 測試策略 <span class="badge p0">P0</span></h3>
+<table>
+<thead><tr><th>層級</th><th>做法</th></tr></thead>
+<tbody>
+<tr><td>單元測試</td><td>狀態機純函式（claim / contribution / order / wishlist / gift_card）做窮舉；扣點順序、最大餘數法、星星計算、slug 產生、遮罩 DTO。</td></tr>
+<tr><td>整合測試</td><td><code>sqlx::test</code> 對<strong>真實 PostgreSQL + PostGIS</strong>（CI 以 service container），每個測試獨立資料庫；包含 migration、PostGIS 查詢、條件式 UPDATE、CHECK / UNIQUE 約束、授權 SQL。</td></tr>
+<tr><td>併發測試</td><td>tokio 同時發 N 個認領 / 認捐搶最後額度，斷言：成功數剛好等於額度、不超額（<code>qty_claimed ≤ qty_needed</code>、<code>pledged_points ≤ target_points</code>）、失敗者皆回正確 409、<strong>帳本守恆</strong>（Σ ledger = balance = Σ lots）。覆蓋 F4-b、F6b、F12 同卡併發兌換、F8 關閉與認領競態。</td></tr>
+<tr><td>冪等重送測試</td><td>同 Idempotency-Key 重送（含並發同 key）→ 回相同回應、無重複副作用；同 key 不同 body → <code>IDEMPOTENCY_CONFLICT</code>；webhook 重放 → 不重複入帳。</td></tr>
+<tr><td>對帳不變量</td><td>每個整合 / 併發測試結尾自動執行 6.5 的對帳查詢，<strong>差異恆為 0</strong>，否則測試失敗。</td></tr>
+<tr><td>契約測試</td><td>後端以 <code>utoipa</code> 產生 OpenAPI 3.1；前端以 <code>openapi-typescript</code> 產生 TS 型別；CI 重新產生並比對產物，有差異即失敗（防前後端漂移）。problem+json 的 <code>code</code> 列舉亦由 OpenAPI 產出。</td></tr>
+<tr><td>前端</td><td>Vitest（元件 / composables）；Playwright E2E（手機 viewport、LINE in-app User-Agent、離線狀態、409 回滾）。</td></tr>
+<tr><td>負載測試</td><td>k6：公開頁（經 CDN）與認領 API，對照 PRD 非功能目標；另測熱門品項單列鎖的吞吐上限與 SSE 連線數。於 staging 執行。</td></tr>
+<tr><td>每個 PR 必跑</td><td><code>cargo fmt --check</code>、<code>cargo clippy -D warnings</code>、<code>cargo test</code>、<code>sqlx</code> offline check（<code>cargo sqlx prepare --check</code>）、前端 lint / typecheck / test、OpenAPI 型別一致性。</td></tr>
+</tbody></table>
+
+<h3 id="s68">6.8 環境、CI/CD、備份與監控 <span class="badge p0">P0</span></h3>
+<table>
+<thead><tr><th>項目</th><th>內容</th></tr></thead>
+<tbody>
+<tr><td>環境</td><td><b>local</b>：docker compose（postgis 16 + MinIO 模擬 R2 + Mailpit 收信）。<b>staging</b>、<b>production</b>：各自獨立的 DB、R2 bucket、金流沙箱（staging 用沙箱、production 用正式金鑰）。</td></tr>
+<tr><td>CI/CD</td><td>GitHub Actions。後端：build image → 推 Artifact Registry → 先跑 <strong>Cloud Run Job 執行 sqlx migrate</strong> → 再部署 Cloud Run 新 revision。前端：Cloudflare Pages（Nitro preset <code>cloudflare_pages</code>，建置產出 <code>dist/</code>；<code>wrangler pages deploy dist</code> 或 Pages Git 整合；<code>wrangler.toml</code> 設 <code>pages_build_output_dir</code> 與 <code>nodejs_compat</code>；本機以 <code>wrangler pages dev dist</code> 預覽）每個 PR 產生 preview URL。</td></tr>
+<tr><td>遷移原則（expand → migrate → contract）</td><td>只允許<strong>向前相容</strong>的遷移，因為 migration 先於新程式碼上線，且 Cloud Run 滾動部署期間新舊 revision 並存：<br>
+1) <b>expand</b>：只新增（可為 NULL 的欄位 / 新表 / 新索引，索引用 <code>CREATE INDEX CONCURRENTLY</code>），舊程式碼不受影響；<br>
+2) <b>migrate</b>：新程式碼雙寫 / 讀新欄位，背景回填舊資料（分批，避免長交易鎖表）；<br>
+3) <b>contract</b>：確認舊 revision 已下線一個版本後，才在後續 PR 刪除舊欄位 / 加 NOT NULL / 加 CHECK（先 <code>NOT VALID</code> 再 <code>VALIDATE</code>）。<br>
+禁止：同一版本內改名 / 刪除欄位、改變欄位型別、長時間 <code>ACCESS EXCLUSIVE</code> 鎖。<code>lock_timeout</code> 設 3 秒，遷移失敗即中止部署。回滾 = 回到前一個 Cloud Run revision（schema 因向前相容而仍可用）。</td></tr>
+<tr><td>機密</td><td>後端：GCP Secret Manager；前端：Cloudflare secrets。金流金鑰與 AEAD / KMS 金鑰不得進 repo；CI 用 OIDC 取得雲端權限，不存長期金鑰。</td></tr>
+<tr><td>備份</td><td>Cloud SQL 自動每日備份 + PITR 7 天；<strong>RPO ≤ 5 分鐘、RTO ≤ 1 小時</strong>；每季還原演練（還原到暫存實例並跑對帳查詢驗證）；R2 物件開啟版本保留 30 天。</td></tr>
+<tr><td>監控</td><td>Sentry（前後端錯誤，release 與 request_id 關聯）、OpenTelemetry traces、Cloud Monitoring 告警：5xx 率、p95 延遲、DB 連線池使用率、佇列堆積（notifications / outbox / purchase_orders pending）、<strong>對帳差異 ≠ 0 立即告警</strong>、job 未執行、金流 webhook 驗簽失敗暴增。</td></tr>
+</tbody></table>
+
+<h3 id="s69">6.9 行為分析：伺服器事件 <span class="badge p0">P0</span></h3>
+<ul>
+<li>工具：PostHog Cloud（或自架）。<b>轉換以後端事件為準</b>（不受廣告攔截與 LINE in-app browser 限制）；前端事件補充漏斗上游。後端以非同步佇列送出（失敗不影響主請求，記 metric 後丟棄）。</li>
+<li><b>不送 PII</b>：user / guest 以 <code>HMAC-SHA256(secret, id)</code> 的不可逆 ID 識別；不送 email、暱稱、聯絡方式、收件地址、IP（只送國別粗粒度）。事件屬性使用列舉值，不放自由文字。</li>
+</ul>
+<table>
+<thead><tr><th>事件</th><th>來源</th><th>由哪個流程送出</th><th>屬性</th></tr></thead>
+<tbody>
+<tr><td><code>list_created</code></td><td>server</td><td>F2 建立清單</td><td>wishlist_type, surprise_mode</td></tr>
+<tr><td><code>list_published</code></td><td>server</td><td>F2 發佈 COMMIT 後</td><td>wishlist_type, item_count</td></tr>
+<tr><td><code>share_clicked</code></td><td>client</td><td>分享按鈕</td><td>channel: line | fb | copy | qr</td></tr>
+<tr><td><code>public_viewed</code></td><td>client + server（SSR）</td><td>F3</td><td>referrer_type, is_in_app_browser</td></tr>
+<tr><td><code>claim_sheet_opened</code></td><td>client</td><td>認領面板</td><td>—</td></tr>
+<tr><td><code>claim_succeeded</code></td><td>server</td><td>F4 COMMIT 後</td><td>wishlist_type, quantity_bucket</td></tr>
+<tr><td><code>claim_failed</code></td><td>client + server</td><td>F4 錯誤</td><td>code（如 ITEM_FULLY_CLAIMED）</td></tr>
+<tr><td><code>claim_status_changed</code></td><td>server</td><td>F5</td><td>from, to, actor_role</td></tr>
+<tr><td><code>pwa_install_prompted</code> / <code>pwa_installed</code></td><td>client</td><td>PWA</td><td>—</td></tr>
+<tr><td><code>open_external_browser_clicked</code></td><td>client</td><td>LINE in-app browser 提示</td><td>—</td></tr>
+<tr><td><code>topup_paid</code>、<code>contribution_created</code>、<code>item_funded</code>、<code>gift_card_claimed</code> 等 <span class="badge p2">P2</span></td><td>server</td><td>F6a、F6b、F6b ⑤、F12</td><td>amount_bucket / method / fulfillment_type（無 PII）</td></tr>
+</tbody></table>
+<p>事件在 COMMIT <strong>之後</strong>送出（回滾不送）；KPI 與事件的對照表在 PRD KPI 章節。</p>
+
+<h2 id="s7">7. 錯誤碼總表</h2>
+<p>格式：<code>application/problem+json</code>，欄位 <code>type</code>（<code>https://api.wishsync.tw/problems/{code 小寫連字號}</code>）、<code>title</code>、<code>status</code>、<code>detail</code>、<code>code</code>，擴充 <code>request_id</code>，驗證錯誤另附 <code>errors[]</code>（欄位路徑與訊息）。本表與 Schema/API 文件的錯誤碼一致。</p>
+<table>
+<thead><tr><th>code</th><th>HTTP</th><th>觸發情境</th></tr></thead>
+<tbody>
+<tr><td><code>VALIDATION_FAILED</code></td><td>422</td><td>欄位格式 / 範圍錯誤（含 bbox、radius、金額、數量）；JSON 格式損毀回 400，同 code</td></tr>
+<tr><td><code>UNAUTHORIZED</code></td><td>401</td><td>缺少或無效的 ws_session / guest_token；內部端點 OIDC 失敗</td></tr>
+<tr><td><code>FORBIDDEN</code></td><td>403</td><td>已登入但角色不足；CSRF Origin 不符；驚喜模式解鎖前對 claim 的寫入</td></tr>
+<tr><td><code>NOT_FOUND</code></td><td>404</td><td>資源不存在、非擁有者（不洩漏存在性）、draft/private/archived 公開頁、claim 不屬於該 guest</td></tr>
+<tr><td><code>RATE_LIMITED</code></td><td>429</td><td>任一層限流（附 Retry-After）；SSE 連線數超限</td></tr>
+<tr><td><code>IDEMPOTENCY_CONFLICT</code></td><td>409</td><td>同 Idempotency-Key 但請求內容（request_hash）不同</td></tr>
+<tr><td><code>IDEMPOTENCY_KEY_REQUIRED</code></td><td>400</td><td>claims / contributions / receipts 缺少或非 UUID 的 Idempotency-Key</td></tr>
+<tr><td><code>WISHLIST_CLOSED</code></td><td>409</td><td>清單 closed / archived 後新增認領、認捐，或 guest 改動既有項目；relief 據點 closed</td></tr>
+<tr><td><code>ITEM_FULLY_CLAIMED</code></td><td>409</td><td>條件式 UPDATE 0 rows（含改量增加）；附 <code>remaining</code></td></tr>
+<tr><td><code>CROWDFUND_TARGET_EXCEEDED</code> <span class="badge p2">P2</span></td><td>409</td><td>認捐點數會使 <code>pledged_points</code> 超過 <code>target_points</code>（硬上限，不可超額）；附 <code>remaining_points</code></td></tr>
+<tr><td><code>FUNDING_MODE_MISMATCH</code></td><td>409</td><td>對 crowdfund 品項做數量認領，或對 quantity 品項認捐（P2）</td></tr>
+<tr><td><code>CLAIM_ALREADY_EXISTS</code></td><td>409</td><td>同 guest 對同品項已有有效認領（請用 PATCH 改量）</td></tr>
+<tr><td><code>INVALID_STATE_TRANSITION</code></td><td>409</td><td>claim / contribution / wishlist 狀態機不允許的轉換</td></tr>
+<tr><td><code>QTY_BELOW_CLAIMED</code></td><td>409</td><td>將 qty_needed 調到低於 qty_claimed</td></tr>
+<tr><td><code>ITEM_HAS_CLAIMS</code></td><td>409</td><td>刪除含有效 claims / contributions 的品項，或已有 claim / contribution 後變更 funding_mode</td></tr>
+<tr><td><code>WISHLIST_NOT_PUBLISHABLE</code></td><td>409</td><td>發佈前檢查失敗（無品項、surprise_mode 缺 event_date）；<code>errors[]</code> 列出缺項</td></tr>
+<tr><td><code>INSUFFICIENT_POINTS</code> <span class="badge p2">P2</span></td><td>409</td><td>錢包餘額不足（認捐、現金退款）</td></tr>
+<tr><td><code>ITEM_FUNDED</code> <span class="badge p2">P2</span></td><td>409</td><td>眾籌品項已達標（funded / fulfilled），不再接受認捐</td></tr>
+<tr><td><code>FUNDING_EXPIRED</code> <span class="badge p2">P2</span></td><td>409</td><td>對 funding_status=expired 的品項認捐</td></tr>
+<tr><td><code>CONTRIBUTION_LOCKED</code> <span class="badge p2">P2</span></td><td>409</td><td>contribution 已 captured，或 expired 後超過 7 天選擇期，不可撤回或轉投</td></tr>
+<tr><td><code>REALLOCATION_NOT_ALLOWED</code> <span class="badge p2">P2</span></td><td>409</td><td>轉投目標不在同清單、非 open、超過剩餘；或來源非 expired / 已超過 7 天選擇期</td></tr>
+<tr><td><code>SHIPPING_ADDRESS_REQUIRED</code> <span class="badge p2">P2</span></td><td>409</td><td>含眾籌品項的清單發佈時未填收件地址</td></tr>
+<tr><td><code>CATALOG_PRODUCT_UNAVAILABLE</code> <span class="badge p2">P2</span></td><td>409</td><td>目錄商品下架或缺貨（建立 / 發佈品項時）</td></tr>
+<tr><td><code>PAYMENT_FAILED</code> <span class="badge p2">P2</span></td><td>402</td><td>儲值同步付款被拒（如授權失敗）</td></tr>
+<tr><td><code>WISHLIST_REMOVED</code></td><td>410</td><td>清單被 staff 下架（moderation_status=hidden）：公開頁、SSE、認領 / 認捐</td></tr>
+<tr><td><code>ACCOUNT_HAS_BALANCE</code> <span class="badge p2">P2</span></td><td>409</td><td>刪除帳號時仍有錢包餘額、pledged 認捐、未結案訂單 / 退款或 wallet_debts</td></tr>
+<tr><td><code>GIFT_CARD_NOT_YET_CLAIMABLE</code> <span class="badge p2">P2-A</span></td><td>409</td><td>高風險訂單的禮物卡尚未到 <code>claimable_at</code>（附 claimable_at）</td></tr>
+<tr><td><code>TOPUP_LIMIT_EXCEEDED</code> <span class="badge p2">P2-A</span></td><td>409</td><td>新帳號（註冊 30 天內）當日儲值＋自動儲值＋禮物卡購買超過 NT$3,000；附 <code>limit_amount</code>、<code>remaining_amount</code></td></tr>
+<tr><td><code>WALLET_FROZEN</code> <span class="badge p2">P2-A</span></td><td>403</td><td>錢包因拒付 / 爭議凍結，認捐、儲值、兌換、退款等被拒</td></tr>
+<tr><td><code>ORG_NOT_VERIFIED</code> <span class="badge p2">P2-D</span></td><td>403</td><td>未驗證組織建立或設定 public 據點</td></tr>
+<tr><td><code>GIFT_CARD_INVALID</code> <span class="badge p2">P2-B</span></td><td>404</td><td>禮物卡碼不存在、格式錯誤或已作廢 / 退款（一律同一回應，防枚舉）</td></tr>
+<tr><td><code>GIFT_CARD_ALREADY_CLAIMED</code> <span class="badge p2">P2-B</span></td><td>409</td><td>禮物卡已被兌換</td></tr>
+<tr><td><code>GIFT_CARD_NOT_REFUNDABLE</code> <span class="badge p2">P2-B</span></td><td>409</td><td>對已兌換的禮物卡申請退款</td></tr>
+<tr><td><code>NOT_CASH_REFUNDABLE</code> <span class="badge p2">P2</span></td><td>409</td><td>現金退款金額超過可退現金的 topup 批次餘額</td></tr>
+<tr><td><code>INSUFFICIENT_STARS</code> <span class="badge p2">P2-B</span></td><td>409</td><td>星星餘額不足以兌換</td></tr>
+<tr><td><code>AUTO_TOPUP_LIMIT_REACHED</code> <span class="badge p2">P2-A</span></td><td>409</td><td>自動儲值本月已達上限（僅設定端點與通知，不阻擋認捐）</td></tr>
+<tr><td><code>CODES_ALREADY_EXPORTED</code> <span class="badge p2">P2-C</span></td><td>409</td><td>企業禮券批次兌換連結 CSV 已匯出過</td></tr>
+<tr><td><code>STAFF_ONLY</code> <span class="badge p2">P2</span></td><td>403</td><td>非 is_staff 呼叫 <code>/admin/*</code></td></tr>
+<tr><td><code>OTP_INVALID</code></td><td>401</td><td>OTP 錯誤、已使用、逾 10 分鐘或嘗試達 5 次已作廢（不區分原因）</td></tr>
+<tr><td><code>OAUTH_STATE_INVALID</code></td><td>400</td><td>OAuth state / PKCE cookie 不符或遺失</td></tr>
+<tr><td><code>OAUTH_PROVIDER_ERROR</code></td><td>502</td><td>換 token 或 id_token 驗證失敗</td></tr>
+<tr><td><code>SITE_NOT_ACTIVE</code> <span class="badge p2">P2</span></td><td>409</td><td>據點 paused 時新增認領</td></tr>
+<tr><td><code>USER_NOT_FOUND</code> <span class="badge p2">P2</span></td><td>404</td><td>加入 org 成員時該 email 尚無帳號</td></tr>
+<tr><td><code>MEMBER_ALREADY_EXISTS</code> <span class="badge p2">P2</span></td><td>409</td><td>重複加入成員</td></tr>
+<tr><td><code>LAST_OWNER</code> <span class="badge p2">P2</span></td><td>409</td><td>降級或移除組織最後一位 owner</td></tr>
+<tr><td><code>READ_ONLY_MODE</code></td><td>503</td><td>唯讀模式開啟時的寫入請求（附 Retry-After）</td></tr>
+<tr><td><code>SERVICE_UNAVAILABLE</code></td><td>503</td><td>連線池耗盡、lock_timeout、下游暫時不可用（附 Retry-After）</td></tr>
+<tr><td><code>INTERNAL_ERROR</code></td><td>500</td><td>未預期錯誤（不外洩細節，僅回 request_id）</td></tr>
+</tbody></table>
+
+<h2 id="s8">8. 待決問題</h2>
+<ol>
+<li><b>已決</b>：眾籌改為點數錢包 + 達標自動購買（v0.2），P2；MVP 只有數量認領。眾籌一律硬上限，履約為 catalog 自動下單與 concierge 人工代購並行，截止未達標由捐贈者選擇（預設退回）。內部端點 <code>POST /internal/jobs/tick</code> 採 Cloud Scheduler + OIDC；驚喜模式解鎖為 <code>event_date</code> 當日 00:00 Asia/Taipei，公開頁維持顯示 x/y 並以前端軟性遮蔽（已知限制：建立者可用無痕視窗看到）；同 guest 對同品項僅一筆有效認領；relief 認捐沿用 claims + receipts。</li>
+<li><b>已決（D22 補充）</b>：撤回在 open，或 expired 且在 7 天選擇期內可用，其餘回 <code>CONTRIBUTION_LOCKED</code>；對 expired 品項認捐回 <code>FUNDING_EXPIRED</code>；<code>pledged_points</code> = pledged + captured 的點數加總；補充欄位（<code>contributions.refunded_points</code> / <code>wishlist_id</code>、<code>outbox_events</code>、<code>cash_refund_requests.destination_enc</code>、<code>wishlist_items.expired_at</code>、<code>purchase_orders.attempts / next_attempt_at / locked_until</code>、ledger UNIQUE）已納入 Schema；金額欄位 <code>*_amount</code>、點數欄位 <code>*_points</code>；<code>purchase_orders.amount</code> 初值為 target、staff 以 PATCH <code>amount</code> 回報實際花費；現金退款後台為 <code>/admin/cash-refunds</code>；公開 DTO 含 <code>id</code>、<code>owner.id</code>、<code>surprise_mode</code> 供前端判斷驚喜遮罩。</li>
+<li><b>法規阻斷項</b> <span class="badge p2">P2</span>：儲值預收款的禮券履約保證（銀行保證或信託）、不得記載使用期限、單一用途不可轉讓、發票開立時點（儲值或兌換），需律師與會計師審閱後才能上線。</li>
+<li><b>緩衝與服務費</b>：<code>target_points</code> 的價格波動緩衝比例與人工代購服務費 8% 的最終數值；目錄商品價格在眾籌期間變動時，現行處理為下單時超過 target 即失敗退點。</li>
+<li><b>商家出貨 / 送達 webhook</b>：現以輪詢替代，若合作商家提供 webhook 需新增端點與驗簽。</li>
+<li><b>驚喜模式與訂單</b>：解鎖前建立者只看到「已下單 N 件 / 運送中 M 件」彙總，不顯示品項對應；若產品希望顯示逐品項狀態需重新評估洩漏程度。</li>
+<li><b>部分轉投</b>：轉投以整筆為單位，不支援拆分一部分退回、一部分轉投。</li>
+<li><b>已決（v0.3）</b>：效仿星巴克維持點數錢包並接受禮券法規負擔；點數分批（topup / gift_card / reward_bonus），扣點順序 bonus → gift_card → topup；現金退款只退 topup 批次；星星每 50 點 1 星、12 個月到期，贊助點數 90 天到期；禮物卡兌換後不可退現金、只能用於心願品項；企業禮券 P2-C 由營運後台代建。</li>
+<li><b>法規（待律師）</b>：禮物卡兌換後不可退現金、只能用於心願品項，是否符合禮券定型化契約規範？不符則退款對象改為原購買者（影響 F12 兌換與 F6f）。履約保證範圍與具體作法（保證或信託）；星星 / 贊助點數條款；企業禮券發票開立時點。</li>
+<li><b>Schema 補充</b>：<code>outbox_events</code> 新增事件類型（auto_topup、earn_stars、clawback_stars、gift_refund）；<code>wallet_auto_topups</code> 的「單一 pending 自動儲值」partial unique index；topups 加 <code>auto</code> 欄位；<code>star_ledger(reason, ref_type, ref_id)</code> UNIQUE。</li>
+<li><b>已決（D31）</b>：<code>code_enc</code> 保存規則（個人購買到 claimed / refunded / void 清除，企業匯出後清除）；購買後輪詢 <code>GET /gift-cards/orders/{id}</code> 取 <code>share_url</code>；<code>GET /config/public</code> 含禮物卡面額 / 張數 / 卡面；祝福語以訂單為單位；<code>point_ledger</code> UNIQUE 含 <code>lot_id</code>；給星排除 reward_bonus 且由背景 job 處理；差額退點逆序 topup → gift_card → reward_bonus；扣點過濾 <code>expires_at</code>；企業 CSV 遺失用 <code>POST /admin/gift-card-batches/{id}/reissue</code>；<code>gift_card_batches.codes_exported_at</code> 已納入 Schema。</li>
+<li><b>已決（v0.4）</b>：前端部署為 Cloudflare Pages（Pages Functions SSR；使用者基於成本選擇，D44 已撤銷），Workers + Static Assets（preset <code>cloudflare_module</code>）為備案，未來需要 Pages 不支援的功能再遷移，Nuxt 只需換 preset；檢舉下架與 staff 後台提前到 MVP；MVP 提供 Email 通知（Resend 或 SES），訪客管理連結為換裝置找回的最小版；帳號刪除採去識別化、金融紀錄假名化保留；拒付走凍結 + 扣回 topup 批次 + wallet_debts；電子發票串加值中心；救災據點需組織驗證。</li>
+<li><b>已決（D47）</b>：<code>GIFT_CARD_NOT_YET_CLAIMABLE</code> 409；<code>TOPUP_LIMIT_EXCEEDED</code> 409（涵蓋手動 / 自動儲值與禮物卡購買，不含企業禮券，超限直接拒絕）；訪客恢復權杖為一次性、30 天、每次寄信新發、無效回 404；<code>GET /unsubscribe?token=</code>；通知設定為 <code>users.notification_prefs.email_claims</code>（<code>PATCH /me</code>）；<code>image_status</code> ∈ none | pending | ready | rejected；<code>invoice</code> 巢狀物件；錢包解凍與欠款結案端點 <code>/admin/wallets/{id}</code>、<code>/admin/wallet-debts</code>。</li>
+<li><b>Schema 仍待確認</b>：<code>notifications</code> 欄位（scheduled_at、locked_until、to_email）；Email 供應商退信 / 投訴 webhook 端點。</li>
+<li><b>電子發票開立時點</b>：儲值 / 購卡時開，或兌換 / 下單時開，待會計師確認（F19 兩者皆可支援）。</li>
+<li><b>帳號刪除細節</b>：二次確認要求的重新驗證時間窗（本文件 10 分鐘）；金融紀錄保存年限（待會計師）；匯出過大時的非同步寄送。</li>
+<li><b>未來</b>：讓捐贈者以點數購買目錄物資直送 relief 據點（本版 relief 仍只用數量認領）。</li>
+<li><b>跨裝置訪客識別</b>：MVP 提供最小版（訪客留 Email 時的確認信含「管理我的認領」連結，見 F16）；P1 做完整版（含 contact 驗證、無 Email 者的其他找回方式）。</li>
+<li><b>組織成員邀請</b>：規格僅有 <code>POST /orgs/{id}/members</code>，無邀請連結 / 接受邀請端點與資料表。本文件假設對方已有帳號、直接加入。若要「寄邀請信、對方點擊加入」，需新增 <code>org_invites</code> 與接受端點。</li>
+<li><b>LINE Messaging API push</b>（P1）：需使用者已加入官方帳號為好友才能推播，且推播有月則數計費。降級策略為 email，是否足夠？</li>
+<li><b>Turnstile / 人機驗證</b>：首次認領是否要求 Cloudflare Turnstile？會增加摩擦但可防洗單；目前僅以限流防護。</li>
+<li><b>清單生命週期細節</b>：closed → active 是否允許重新開啟（本文件允許）；是否支援 <code>closes_at</code> 自動關閉；archived 資料保留 90 天後匿名化是否符合隱私政策與個資法要求；claim 在 closed 後 guest 是否仍可取消（本文件：不可）。</li>
+<li><b>冪等性範圍</b>：規格只強制 claims / contributions / receipts。本文件建議 <code>POST /wishlists</code>、<code>POST /wishlists/{id}/items</code>、<code>POST /orgs</code>、<code>POST /orgs/{id}/sites</code> 也接受 Idempotency-Key（非必填），請 API 文件決定。</li>
+<li><b>Postgres 託管選型</b>：Cloud SQL / Neon / Supabase 皆支援 PostGIS，但 LISTEN/NOTIFY 直連與 PgBouncer 的相容性因供應商而異（Supabase、Neon 的 pooler 與直連端點不同），選型後需實測 SSE 扇出。</li>
+</ol>
+
+</div></main>
+<script type="module">import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs'; mermaid.initialize({startOnLoad:true, theme: matchMedia('(prefers-color-scheme: dark)').matches?'dark':'default'});</script>
+</body>
+</html>

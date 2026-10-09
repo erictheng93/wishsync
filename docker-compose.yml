@@ -1,0 +1,26 @@
+# 本機開發環境（D38）：PostGIS、MinIO（模擬 R2）、Mailpit（收 OTP 信）
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_USER: wishsync
+      POSTGRES_PASSWORD: wishsync
+      POSTGRES_DB: wishsync
+    ports: ["5432:5432"]
+    volumes: [db:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wishsync"]
+      interval: 2s
+      retries: 30
+  minio:
+    image: minio/minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: wishsync
+      MINIO_ROOT_PASSWORD: wishsync-secret
+    ports: ["9000:9000", "9001:9001"]
+  mailpit:
+    image: axllent/mailpit
+    ports: ["1025:1025", "8025:8025"]
+volumes:
+  db:

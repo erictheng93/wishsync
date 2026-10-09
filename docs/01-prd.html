@@ -1,0 +1,718 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WishSync PRD 產品需求文件</title>
+<style>
+:root{--bg:#ffffff;--fg:#1f2328;--muted:#59636e;--border:#d1d9e0;--accent:#0b7a75;--accent-soft:#e6f4f3;--warn:#b35900;--code-bg:#f6f8fa;--blue:#0a5cad;--blue-soft:#e3effb;--gray-soft:#eceff2;--zebra:#f6f8fa}
+@media (prefers-color-scheme: dark){:root{--bg:#0d1117;--fg:#e6edf3;--muted:#9198a1;--border:#3d444d;--accent:#3fb8b1;--accent-soft:#12302f;--warn:#e3963e;--code-bg:#161b22;--blue:#6cb2f5;--blue-soft:#14283f;--gray-soft:#21262d;--zebra:#131920}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.75 system-ui,"Noto Sans TC","PingFang TC",sans-serif}
+header.top{border-bottom:1px solid var(--border);padding:14px 24px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-left:240px}
+header.top .t{font-weight:700;font-size:1.05rem}
+header.top a{color:var(--accent);text-decoration:none}
+nav.toc{position:fixed;top:0;left:0;bottom:0;width:240px;overflow:auto;padding:18px 14px;border-right:1px solid var(--border);background:var(--bg);font-size:.88rem}
+nav.toc b{display:block;margin-bottom:8px;color:var(--accent)}
+nav.toc a{display:block;color:var(--muted);text-decoration:none;padding:3px 6px;border-radius:4px;line-height:1.5}
+nav.toc a:hover{background:var(--accent-soft);color:var(--accent)}
+main{margin-left:240px;padding:8px 24px 80px}
+.wrap{max-width:960px;margin:0 auto}
+h1{font-size:1.9rem;margin:24px 0 4px}
+h2{font-size:1.4rem;margin:44px 0 12px;padding-bottom:6px;border-bottom:2px solid var(--accent);scroll-margin-top:12px}
+h3{font-size:1.1rem;margin:26px 0 8px;color:var(--accent)}
+h4{margin:18px 0 6px}
+p,li{overflow-wrap:anywhere}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:.92rem;display:block;overflow-x:auto}
+th,td{border:1px solid var(--border);padding:7px 10px;text-align:left;vertical-align:top}
+th{background:var(--accent-soft);white-space:nowrap}
+tbody tr:nth-child(even){background:var(--zebra)}
+code{background:var(--code-bg);padding:1px 5px;border-radius:4px;font-size:.88em;font-family:ui-monospace,Menlo,monospace}
+.badge{display:inline-block;padding:0 8px;border-radius:10px;font-size:.78rem;font-weight:700;line-height:1.6;white-space:nowrap}
+.p0{background:var(--accent);color:#fff}.p1{background:var(--blue-soft);color:var(--blue);border:1px solid var(--blue)}.p2{background:var(--gray-soft);color:var(--muted);border:1px solid var(--border)}
+.callout{border-left:4px solid var(--accent);background:var(--accent-soft);padding:10px 16px;margin:14px 0;border-radius:0 6px 6px 0}
+.callout.warn{border-color:var(--warn);background:var(--code-bg)}
+.callout.warn b.h{color:var(--warn)}
+.story{border:1px solid var(--border);border-radius:6px;padding:10px 14px;margin:10px 0}
+.story .id{font-weight:700;color:var(--accent)}
+.story ul{margin:6px 0 0;padding-left:20px}
+.meta td:first-child{white-space:nowrap;font-weight:600;background:var(--accent-soft)}
+.muted{color:var(--muted)}
+@media (max-width:860px){
+nav.toc{position:static;width:auto;border-right:0;border-bottom:1px solid var(--border);display:flex;flex-wrap:wrap;gap:2px 8px}
+nav.toc b{width:100%;margin:0}
+header.top,main{margin-left:0}
+header.top,main{padding-left:16px;padding-right:16px}
+}
+</style>
+</head>
+<body>
+<nav class="toc" aria-label="目錄">
+<b>目錄</b>
+<a href="#s1">1. 文件資訊</a>
+<a href="#s2">2. 背景、願景與目標</a>
+<a href="#s3">3. 想法評估</a>
+<a href="#s4">4. 技術棧評估</a>
+<a href="#s5">5. 使用者角色 Persona</a>
+<a href="#s6">6. 使用者故事與驗收條件</a>
+<a href="#s7">7. 功能需求清單</a>
+<a href="#s8">8. 非功能需求</a>
+<a href="#s9">9. 成功指標 KPI</a>
+<a href="#s10">10. 分期路線圖</a>
+<a href="#s11">11. 待決問題</a>
+</nav>
+<header class="top"><span class="t">WishSync（心願同步）PRD 產品需求文件</span><a href="index.html">← 文件索引</a></header>
+<main><div class="wrap">
+
+<h1>WishSync 產品需求文件（PRD）</h1>
+
+<h2 id="s1">1. 文件資訊</h2>
+<table class="meta"><tbody>
+<tr><td>文件名稱</td><td>WishSync（心願同步）PRD</td></tr>
+<tr><td>版本</td><td>v0.4</td></tr>
+<tr><td>日期</td><td>2026-10-08</td></tr>
+<tr><td>狀態</td><td>Draft</td></tr>
+<tr><td>v0.4 變更</td><td>補齊上線前遺漏：行為分析、檢舉下架、MVP 營運後台、測試策略、環境與備份、MVP Email 通知、帳號刪除與資料匯出、信用卡拒付、電子發票、救災組織驗證、技術 Spike、P2 前 Go/No-Go 關卡。部署平台為 Cloudflare Pages（使用者基於成本決定，D48）。</td></tr>
+<tr><td>v0.3 變更</td><td>效仿星巴克，新增自動儲值、電子禮物卡、回饋星星、企業禮券；點數改為分批（point lots）管理；8.7 法規依 D30 更新；P2 細分為 P2-A / B / C / D。</td></tr>
+<tr><td>v0.2 變更</td><td>眾籌改為點數錢包與達標自動購買，移到 Phase 2；MVP 只做數量認領。移除平台外收款與建立者收款、確認流程，眾籌一律硬上限。新增 D16 點數規則與法規上線前阻斷項、營運代購人員 Persona、錢包 / 認捐 / 自動下單 / 代購 / 退點相關需求。</td></tr>
+<tr><td>相關文件</td><td>主用戶流程、線框圖、Schema / API 文件（見 <a href="index.html">文件索引</a>）。名稱、枚舉、API 路徑、前端路由以共用對齊規格為準。</td></tr>
+<tr><td>分期代號</td><td><span class="badge p0">P0</span> MVP / Phase 1　<span class="badge p1">P1</span> Phase 1.5　<span class="badge p2">P2</span> Phase 2</td></tr>
+</tbody></table>
+
+<h2 id="s2">2. 背景、願景與目標</h2>
+<h3>2.1 背景與問題陳述</h3>
+<p>送禮與捐助的共通痛點是「供需資訊不同步」：想要的人說不出口或沒有管道公開需求，想送的人不知道缺什麼、怕重複。三個典型情境：</p>
+<table>
+<thead><tr><th>情境</th><th>現況痛點</th><th>WishSync 解法</th></tr></thead>
+<tbody>
+<tr><td>一、生日（<code>personal</code>）</td><td>朋友不知道送什麼，怕與別人重複。</td><td>本人列清單，朋友開連結參考並認領；他人只看到「已認領」。</td></tr>
+<tr><td>二、孕婦（<code>registry</code>）</td><td>大家都送奶瓶，沒人送奶粉、紙尿褲、嬰兒車。</td><td>列出品項與數量（奶瓶 10、XX 品牌奶粉 2 罐、紙尿褲 5 包、嬰兒車 1），親友自行認領；嬰兒車等高價品，MVP 先以數量 1 認領，Phase 2 起可由多位親友以點數眾籌，達標後平台自動購買並寄給孕婦；孕婦可看完成度與誰認領了什麼（驚喜模式除外）。</td></tr>
+<tr><td>三、天災（<code>relief</code>，P2）</td><td>志工與救災隊不知道災民缺什麼（藥品、清水、食物），無法統計與協調。</td><td>組織建立據點，志工統計需求並分配；捐贈者看地圖與緊急度認捐，志工登記實收。</td></tr>
+</tbody></table>
+<h3>2.2 產品願景</h3>
+<p>讓「想要的人」與「想送的人」同步。連結貼進 LINE 群組，對方點開就能認領，不必安裝、不必註冊。</p>
+<h3>2.3 目標</h3>
+<ul>
+<li>G1：訪客從點開連結到完成認領 &lt; 30 秒、不需註冊（<span class="badge p0">P0</span>）。</li>
+<li>G2：認領零超額，併發下數量一致（條件式更新 + <code>ITEM_FULLY_CLAIMED</code>）。</li>
+<li>G3：LINE / FB / 簡訊分享連結具備正確 OG 預覽（標題、封面圖、完成度）。</li>
+<li>G4：MVP 只支援數量型認領（送禮者自行購買）；Phase 2 新增點數錢包眾籌：點數不經受捐者之手，達標後由平台購買品項（目錄自動下單或人工代購）。</li>
+<li>G5：Phase 2 以組織為單位驗證救災物資協調，並在尖峰流量下維持可用。</li>
+</ul>
+<h3>2.4 非目標（MVP 不做）</h3>
+<ul>
+<li>MVP 不做點數、儲值、金流；眾籌延到 Phase 2，且點數不可提領給受捐者、不可轉讓（見 8.7 法規）。</li>
+<li>MVP 不做電商結帳、不代購、不處理物流（Phase 2 才有目錄自動下單與人工代購）。</li>
+<li>不做社群 Feed、公開探索頁（<code>public</code> 僅 relief 使用）。</li>
+<li>不做原生 App；PWA 僅「可加入主畫面 + 靜態資源快取」。</li>
+<li>relief 不收集災民個資，只記錄據點層級需求。</li>
+<li>不做商品比價。</li>
+</ul>
+
+<h2 id="s3">3. 想法評估（PM 觀點）</h2>
+<h3>3.1 市場現況與競品</h3>
+<table>
+<thead><tr><th>競品 / 做法</th><th>強項</th><th>弱點（WishSync 的切入點）</th></tr></thead>
+<tbody>
+<tr><td>Amazon Wish List / Registry</td><td>商品庫、物流、信任度極高。</td><td>綁 Amazon 商店，台灣使用有限；非自家商品無法登記；無眾籌。</td></tr>
+<tr><td>MyRegistry</td><td>跨店加入商品，支援現金與眾籌基金。</td><td>以英文與美國市場為主；介面較重；台灣在地店家與付款方式缺乏支援。</td></tr>
+<tr><td>Giftful</td><td>簡潔的跨店心願單、預訂（reserve）防重複。</td><td>預設需登入；無繁中；不處理「數量」與部分認領的多件需求。</td></tr>
+<tr><td>Elfster</td><td>交換禮物、抽籤強項。</td><td>場景是團體交換而非「需求登記」。</td></tr>
+<tr><td>Google 表單 / 試算表</td><td>免費、無需教學、台灣團購與救災志工常用。</td><td>無併發保護（超額認領）、無完成度、無 OG 預覽、手機體驗差、救災時資料常分散多份。</td></tr>
+<tr><td>LINE 記事本 / 群組公告</td><td>觸及率最高。</td><td>純文字，要靠人工接龍、容易重複與漏算。</td></tr>
+</tbody></table>
+<h3>3.2 差異化</h3>
+<ol>
+<li><b>免註冊認領</b>：訪客以暱稱 + 選填聯絡方式即可認領；<code>guest_token</code> 讓訪客日後可改/取消。這是對 Giftful、MyRegistry 最大的轉換率優勢。</li>
+<li><b>數量認領 + 點數眾籌（Phase 2）</b>：奶瓶 10 個可部分認領；嬰兒車可多人以點數認捐，達標後平台自動購買。點數保證心意只會用在該品項上；受捐者拿不到現金，反而提升送禮者的信任，也避免「收了錢沒買」的尷尬。</li>
+<li><b>LINE 優先</b>：LINE Login、LINE 內建瀏覽器相容（cookie 不穩時以 <code>X-Guest-Token</code> 備援）、LINE Messaging API 通知。</li>
+<li><b>繁中在地化</b>：台灣用語、信用卡 / LINE Pay / Apple Pay 等在地付款方式、台灣個資法與電子支付法規意識。</li>
+<li><b>驚喜模式</b>：活動日前建立者看不到誰認領了什麼，只看完成度。</li>
+<li><b>同一資料模型延伸到救災</b>：relief 據點 = 帶座標的 wishlist，不需另起一套系統。</li>
+</ol>
+<h3>3.2.1 效仿星巴克：儲值錢包、禮物卡、星禮程、企業採購</h3>
+<p>星巴克台灣的隨行卡（儲值卡）、電子禮物卡、星禮程（回饋星星）與企業採購，構成「預收現金 + 高留存 + 社交送禮」的飛輪。對應到 WishSync：</p>
+<table>
+<thead><tr><th>星巴克做法</th><th>WishSync 對應</th><th>分期</th></tr></thead>
+<tbody>
+<tr><td>隨行卡儲值與自動加值</td><td>點數錢包 + 自動儲值（餘額低於門檻時扣卡，每月上限預設 NT$10,000）</td><td>P2-A</td></tr>
+<tr><td>電子禮物卡（固定面額、祝福語、LINE 分享連結）</td><td>面額 300 / 500 / 1,000 / 2,000 / 3,000 的禮物卡，分享連結 <code>/g/{code}</code>；兌換後點數只能投入心願品項</td><td>P2-B</td></tr>
+<tr><td>星禮程（消費賺星、星星兌換）</td><td>回饋星星：認捐被 captured 時每 50 點得 1 星，可兌換平台贊助點數；green / gold 等級</td><td>P2-B</td></tr>
+<tr><td>企業大量採購</td><td>企業禮券：福委會 / HR 批次採購給員工（生日、生育津貼），初期由營運後台代建，三聯式發票</td><td>P2-C</td></tr>
+</tbody></table>
+<p><b>為何能提升留存與預收現金流：</b>(1) 儲值後點數留在錢包，下次送禮的邊際成本趨近零，降低每次付款的摩擦與手續費占比；(2) 禮物卡把「送禮」從單次認領變成可轉成新用戶的獲客管道（收卡者必須註冊才能兌換）；(3) 星星有到期機制，鼓勵持續認捐；(4) 企業禮券提供可預測的 B2B 預收款。預收款必須納入履約保證，且不得動用孳息。</p>
+<p><b>核心原則不變：</b>點數永遠不能提領成現金給受捐者；點數只能用在心願品項。禮物卡兌換者也不能把點數變現。</p>
+<h3>3.3 風險</h3>
+<table>
+<thead><tr><th>風險</th><th>等級</th><th>說明與緩解</th></tr></thead>
+<tbody>
+<tr><td>冷啟動</td><td>高</td><td>價值依賴「建立者把連結丟進群組」。緩解：範本清單（新生兒、婚禮、喬遷）、一鍵複製 LINE 分享文案、被邀請的訪客在認領完成頁引導「我也要建立」（病毒迴路）。</td></tr>
+<tr><td>禮券履約保證與電子支付條例</td><td>高</td><td>平台預收儲值款，屬「商品（服務）禮券」範疇，須有履約保證（銀行足額保證或信託）且不得記載使用期限；點數須限本平台購買商品（單一用途）、不得用戶間轉讓，以避免落入《電子支付機構管理條例》的儲值 / 轉帳業務；發票開立時點需會計師確認。列為眾籌<b>上線前阻斷項</b>，需律師與會計師審閱（見 8.7）。</td></tr>
+<tr><td>履約保證成本（含禮物卡與企業禮券）</td><td>高</td><td>履約保證範圍擴大為：儲值點數 + 未兌換禮物卡 + 已兌換未使用的 gift_card 點數（reward_bonus 除外）。保證金或信託的資金成本與行政成本隨預收款成長；需在定價與毛利模型中計入。</td></tr>
+<tr><td>禮物卡詐騙 / 盜刷</td><td>高</td><td>盜刷信用卡大量購買禮物卡再兌換洗錢；暴力猜碼；釣魚詐騙要求「幫我買禮物卡」。緩解：購買與兌換需登入、Turnstile、每 IP / 帳號限流、code 16 碼、DB 以 hash 比對兌換，另存加密副本僅供購買者補看連結（兌換 / 退款 / 作廢後清除）、單筆與單日購買上限、風控延遲兌換、兌換後點數不可退現金、不可轉送。</td></tr>
+<tr><td>回饋成本</td><td>中</td><td>星星兌換的贊助點數成本約佔 1 至 1.2% 回饋，由行銷預算吸收；需防止刷單（儲值與禮物卡購買不給星、失敗退點時扣回星星、星星 12 個月到期）。</td></tr>
+<tr><td>信用卡拒付 / 盜刷</td><td>高</td><td>儲值與禮物卡購買屬高風險標的。緩解（P2-A）：信用卡一律 3DS；新帳號 30 天內每日儲值與禮物卡合計上限 NT$3,000；異常進人工審核；拒付時凍結錢包、先扣回該儲值批次剩餘點數，不足部分記入 <code>wallet_debts</code>，平台吸收損失；高風險禮物卡延遲最多 24 小時才可兌換，拒付時未兌換卡作廢。已用於達標下單的點數不追回受捐者的禮物。</td></tr>
+<tr><td>商家合作</td><td>中</td><td>目錄自動下單依賴合作商家 API、庫存與價格穩定。緩解：價格快照 + 緩衝、缺貨 / 漲價 / 拒單即整筆退點；初期只選少數 2-3 家有 API 的商家。</td></tr>
+<tr><td>代購人力與履約時效</td><td>中</td><td>非目錄商品由平台人工購買，量大時成本與出錯率上升。緩解：營運後台佇列與 SLA、服務費 8% 覆蓋人力、限制可代購的商品類型與單價上限。</td></tr>
+<tr><td>詐騙濫用</td><td>中</td><td>點數不會到受捐者手上，降低「假清單騙錢」的風險，但仍可能用假清單騙取商品。緩解：檢舉機制、收件地址欄位加密與異常偵測、眾籌品項發佈前必填收件地址、audit_logs、異常建立速率限流。</td></tr>
+<tr><td>救災情境用戶完全不同</td><td>高</td><td>採購者與使用者是 NGO、政府、志工團，決策週期長、需要信任背書、資料權責與稽核要求不同，且尖峰是突發的。建議 relief 放 <span class="badge p2">P2</span>，並先找 1-2 個合作夥伴（例如在地志工團或 NGO）試點，用真實演練（颱風、地震）驗證，而非自己想像需求。</td></tr>
+<tr><td>LINE in-app browser 限制</td><td>中</td><td>無法安裝 PWA、Service Worker 行為受限、cookie 不穩。緩解：核心流程不依賴 PWA；認領以 token 雙通道。</td></tr>
+<tr><td>個資</td><td>中</td><td>訪客聯絡方式與收件地址屬個資，見 8.3。</td></tr>
+</tbody></table>
+<h3>3.4 商業模式選項</h3>
+<table>
+<thead><tr><th>選項</th><th>做法</th><th>評估</th></tr></thead>
+<tbody>
+<tr><td>導購分潤（affiliate）</td><td>品項貼商品網址（P1 link preview）時改寫為聯盟連結。</td><td>與數量認領情境貼合，零摩擦；需揭露，分潤率與聯盟平台條款須確認。MVP 期間可先試。</td></tr>
+<tr><td>進階功能訂閱</td><td>無廣告、自訂網址、多人協作、匯出、進階通知。</td><td>個人付費意願偏低；較適合婚顧、月子中心等 B2B2C。中期。</td></tr>
+<tr><td>NGO / 公益免費</td><td>relief 對合格組織永久免費。</td><td>品牌與信任資產；成本需由其他收入或贊助補貼。</td></tr>
+<tr><td>代購服務費</td><td>非目錄商品人工代購，收取服務費（暫定 8%，另加價差緩衝 10%，皆含於 target_points）。</td><td>最直接的營收；需控制人力成本。服務費率待定（見 11）。</td></tr>
+<tr><td>目錄商品分潤</td><td>向合作商家收取分潤，目錄商品免服務費或低服務費。</td><td>可擴張、人力成本低；依賴商家名單與談判。不得動用儲值款孳息。</td></tr>
+<tr><td>電子禮物卡</td><td>購買者付款買禮物卡，兌換後成為收卡者的點數，用於心願品項。</td><td>帶來預收現金流與新用戶；預收款須納入履約保證，<b>不得動用孳息</b>；未兌換餘額是負債而非收入。</td></tr>
+<tr><td>企業禮券（B2B）</td><td>企業批次採購禮物卡（匯款、三聯式發票）。</td><td>單筆金額大、可預測；初期由營運代建，需業務開發與對帳。是 B2B 營收來源。</td></tr>
+</tbody></table>
+<h3>3.5 結論與建議</h3>
+<div class="callout">
+<b>建議 Go，但收斂範圍：</b>MVP 先以 personal + registry（尤其孕婦 / 新生兒）驗證「免註冊認領 + LINE 分享」的轉換率，只做數量認領、不碰金流。Phase 2 依序為：P2-A 儲值錢包 + 點數眾籌 + 履約 + 自動儲值（須先通過 8.7 法規阻斷項）；P2-B 電子禮物卡 + 回饋星星；P2-C 企業禮券；P2-D relief 救災（仍只用數量認領，待合作夥伴試點）。效仿星巴克能放大留存與預收現金流，但履約保證成本與禮物卡風控必須先備妥。主要賭注是分享迴路是否自然成立，而不是功能多寡。
+</div>
+
+<h2 id="s4">4. 技術棧評估</h2>
+<p>評分 1-5（5 最佳），針對本產品情境（冷啟動小團隊、公開頁讀取為主、救災尖峰突發）。</p>
+<table>
+<thead><tr><th>選擇</th><th>評分</th><th>評價</th><th>風險</th><th>建議</th></tr></thead>
+<tbody>
+<tr><td>Nuxt 3/4 + TypeScript</td><td>4</td><td>Vue 生態成熟、SSR / 路由 / PWA 模組完整，適合 <code>/s/{slug}</code> 的 OG 預覽。</td><td>LINE / FB 爬蟲不執行 JS，若為純 SPA 則 OG 全失效。</td><td>採用。<code>/s/{slug}</code> 必須 SSR（或邊緣預渲染），其餘頁面可 SPA。</td></tr>
+<tr><td>Cloudflare Pages 部署</td><td>4</td><td><b>已決（使用者基於成本決定，D48）。</b>Nuxt 在 Cloudflare 上可完整 SSR，並非只能跑 SPA；Nitro preset <code>cloudflare_pages</code>，建置產出 <code>dist/</code>（<code>_worker.js</code>、<code>_routes.json</code>、<code>_headers</code>）；本機預覽 <code>npx wrangler pages dev dist</code>，部署 <code>npx wrangler pages deploy dist</code> 或 Pages Git 整合；wrangler 設定 <code>pages_build_output_dir: "./dist"</code>、<code>compatibility_flags: ["nodejs_compat"]</code>；每個 PR 有 Pages preview URL。<br><b>成本事實：</b>Pages 靜態資源免費且不限量；Pages Functions（SSR）以 Workers 請求計費，免費方案與 Workers 共用每日 100,000 次。Workers + Static Assets 費用結構相同，改用 Workers 並無成本優勢，且其多出的 Cron / Durable Objects 本專案不需要（排程在 Cloud Run + Cloud Scheduler）。<br><b>驗證紀錄：</b>2026-10-08 以 Nuxt 4.0.0 + Wrangler 4.148.0 在本機（workerd 執行環境）實測：<code>cloudflare_pages</code> preset 經 <code>wrangler pages dev</code>，以不執行 JS 的爬蟲 UA 請求 <code>/s/{slug}</code>，SSR HTML 已含 <code>&lt;title&gt;</code>、<code>og:title</code>、<code>og:description</code>，server route 執行於 Cloudflare-Workers runtime；另測 <code>cloudflare_module</code> 經 <code>wrangler dev</code> 亦通過，且執行期環境變數可覆寫 runtimeConfig。<b>尚未在正式 Cloudflare 帳號部署，也尚未用真實 LINE / FB 爬蟲測試</b>，仍屬 Spike S1。</td><td>Workers runtime 非完整 Node；Nitro 官方文件現推薦 Workers，為已知取捨，不影響本專案。</td><td>採用 Cloudflare Pages。<b>備案：</b>Workers（<code>cloudflare_module</code>）；未來若需要 Pages 不支援的功能再遷移，Nuxt 只需換 preset。SSR 頁面設短 TTL 快取。</td></tr>
+<tr><td>PWA（Service Worker）</td><td>3</td><td>加入主畫面、靜態資源快取成本低。</td><td>LINE in-app browser 不支援安裝 PWA，Service Worker 行為受限；iOS 限制多。</td><td>MVP 僅做 manifest + 靜態快取；不依賴 SW 完成核心流程。離線佇列（Background Sync）延至 P2，且須有 Safari 降級方案。</td></tr>
+<tr><td>Rust 後端</td><td>4</td><td>效能與記憶體安全足夠，單機高併發穩定。</td><td>開發速度較慢、招募與維護成本較高；團隊熟悉度是決定因素。</td><td>採用 <b>axum + tokio + sqlx + tower</b>。天災高併發真正的瓶頸在 DB 與讀取流量而非語言，靠 CDN 快取、限流、讀寫分離解決。</td></tr>
+<tr><td>Rust 部署位置</td><td>2 / 4</td><td>Rust→Wasm 跑在 Workers 連 Postgres（Hyperdrive）可行但受限。</td><td>Wasm 目標生態限制（sqlx、tokio 支援不完整）、除錯困難。</td><td><b>不建議</b> Workers 方案。建議 GCP Cloud Run asia-east1（彰化）或 Fly.io（東京等）跑原生容器，自動擴縮。</td></tr>
+<tr><td>PostgreSQL + PostGIS</td><td>5</td><td>正確選擇：交易一致性（併發認領）+ 地理查詢（據點 bbox / near）。</td><td>連線數與寫入熱點（熱門品項 row 鎖競爭）。</td><td>Cloud SQL / Neon / Supabase 擇一（需支援 PostGIS）；PgBouncer；熱點使用條件式 UPDATE 而非長交易。</td></tr>
+<tr><td>金流（TapPay / 綠界） <span class="badge p2">P2</span></td><td>4</td><td>兩者皆支援信用卡、LINE Pay、Apple Pay 儲值，台灣在地、文件完整；可擇一，避免雙供應商初期複雜度。</td><td>webhook 重送 / 亂序 / 偽造；對帳與發票串接；退款流程。</td><td>採用其一（待比較費率與發票服務）。<code>POST /webhooks/payments/{provider}</code> 必須驗簽，並以 <code>provider_txn_id</code>（UNIQUE）冪等入帳；儲值入帳與 <code>point_ledger</code> 同一交易。不在前端信任付款結果。</td></tr>
+<tr><td>點數帳本（Postgres） <span class="badge p2">P2</span></td><td>4</td><td>關聯式交易最適合錢包：<code>point_ledger</code> 只增不改，<code>point_wallets.balance</code> 為快取，以 ledger 加總為準。</td><td>熱門品項與錢包列鎖競爭；死結。</td><td>固定鎖順序 wishlist (FOR SHARE) → wallet (FOR UPDATE) → item，短交易；每日對帳 job 比對 balance 與 ledger；下單用 outbox 模式觸發 job。</td></tr>
+<tr><td>Cloudflare R2</td><td>5</td><td>S3 相容、零出口費，適合圖片；presigned PUT 直傳減輕後端。</td><td>需處理圖片大小 / 類型驗證與惡意檔案。</td><td>採用。限制 MIME 與大小；公開圖片經 CDN。</td></tr>
+<tr><td>通知</td><td>-</td><td>MVP 即需 Email（建立者認領通知、訪客確認信）。</td><td>LINE Notify 已於 2025-03-31 終止；Messaging API 需對方加官方帳號好友。</td><td><span class="badge p0">P0</span> Email 用 Resend 或 AWS SES，以 <code>notifications</code> outbox 發送；<span class="badge p1">P1</span> 加 LINE Messaging API（對建立者為主）。訪客通知以 Email 為主。</td></tr>
+<tr><td>監控與告警</td><td>-</td><td>無監控則尖峰時無法判斷瓶頸。</td><td>金流與帳本問題需即時發現。</td><td>Sentry（前後端錯誤）+ OpenTelemetry traces + Cloud Monitoring 告警（5xx 率、p95、DB 連線、佇列堆積、對帳差異 &ne; 0 立即告警）；P0 即導入。</td></tr>
+<tr><td>CI/CD</td><td>-</td><td>GitHub Actions；後端 build image 推 Artifact Registry，先跑 Cloud Run Job 執行 <code>sqlx migrate</code>（僅向前相容：expand → migrate → contract），再部署 Cloud Run；前端 Cloudflare Pages 每個 PR 產生 preview URL。</td><td>遷移破壞相容性會造成停機。</td><td>採用。機密放 GCP Secret Manager（後端）與 Cloudflare secrets（前端），金流與 AEAD 金鑰不得進 repo。</td></tr>
+<tr><td>備份與環境</td><td>-</td><td>local（docker compose：postgis 16 + MinIO 模擬 R2 + Mailpit）、staging、production，各自獨立 DB、R2 bucket、金流沙箱。Cloud SQL 每日備份 + PITR 7 天。</td><td>未演練的備份等於沒有備份。</td><td>RPO &le; 5 分鐘、RTO &le; 1 小時；每季還原演練；R2 物件版本保留 30 天。</td></tr>
+<tr><td>行為分析</td><td>-</td><td>PostHog Cloud（或自架）；前端事件 + 後端伺服器事件，轉換以後端為準。</td><td>誤送 PII。</td><td>P0 導入。不送 PII：user / guest 以不可逆雜湊 ID；不記錄聯絡方式與收件地址。</td></tr>
+<tr><td>Redis / 微服務</td><td>-</td><td>MVP 不需要。</td><td>過早引入增加維運。</td><td>單一 Rust 服務 + 單一 Postgres；限流用 Cloudflare 規則 + 服務內 tower 層；快取用 CDN。</td></tr>
+</tbody></table>
+<div class="callout"><b>技術 Spike（MVP 開工前 1 週，D45）：</b>S1 Nuxt SSR on Cloudflare + OG（LINE / FB / iMessage 貼連結顯示正確預覽）；S2 LINE in-app browser 的 cookie、localStorage、<code>ws_guest</code> 存活率與 <code>openExternalBrowser=1</code> 行為；S3 SSE 經 Cloudflare 到 Cloud Run 的連線穩定度與輪詢退路。通過標準與備案見 10 路線圖。</div>
+<div class="callout warn"><b class="h">SSE 與 CDN 注意：</b>即時更新使用 SSE 長連線，不可被 CDN 快取，且 Cloud Run 有請求逾時與併發連線限制。需規劃重連（<code>Last-Event-ID</code>）、逾時前主動重連，並在尖峰時降級為輪詢。</div>
+
+<h2 id="s5">5. 使用者角色 Persona</h2>
+<table>
+<thead><tr><th>角色</th><th>代表</th><th>目標</th><th>痛點</th><th>關鍵需求</th></tr></thead>
+<tbody>
+<tr><td>建立者</td><td>小琪，32 歲，懷孕 7 個月</td><td>讓親友送真正需要的東西，避免重複</td><td>不好意思直接開口；每個人都送奶瓶</td><td>快速建清單、設數量、看完成度、可選驚喜模式；P2：嬰兒車眾籌、填收件地址、不會收到現金</td></tr>
+<tr><td>送禮者訪客</td><td>阿偉，同事，用 LINE 點連結</td><td>30 秒內挑一件並確認沒重複</td><td>不想註冊、不想裝 App</td><td>免註冊認領、手機友善、可取消</td></tr>
+<tr><td>眾籌捐贈者 <span class="badge p2">P2</span></td><td>婆婆與三位阿姨</td><td>一起送嬰兒車，確定錢真的花在嬰兒車上</td><td>不知道已湊多少；擔心錢被挪用；截止沒湊滿怎麼辦</td><td>登入、儲值點數、認捐、可撤回（達標前）、達標後自動購買、未達標或失敗時退點、可申請退回現金</td></tr>
+<tr><td>送禮物卡的人 <span class="badge p2">P2</span></td><td>小美，想送同事新生兒禮但不知道買什麼</td><td>用最少時間送一份「對方真的用得到」的禮</td><td>怕買錯；沒有清單可挑</td><td>選面額、寫祝福語、LINE 分享連結、未兌換可退款</td></tr>
+<tr><td>收卡者 <span class="badge p2">P2</span></td><td>收到禮物卡的同事</td><td>把卡片點數用在真正想要的品項</td><td>不想拿到無用禮物；不知道怎麼用</td><td>開 <code>/g/{code}</code>、登入兌換、投入任何心願品項（含自己的清單）、不能退現金</td></tr>
+<tr><td>企業福委會窗口 <span class="badge p2">P2</span></td><td>公司 HR / 福委會</td><td>為員工的生日、生育發放禮券並核銷</td><td>發放與對帳繁瑣、需要統編發票</td><td>批次採購、匯款、三聯式發票、兌換連結 CSV、未兌換整批退款（依合約）</td></tr>
+<tr><td>救災組織協調員 <span class="badge p2">P2</span></td><td>NGO 物資組長</td><td>掌握各據點缺口並調度</td><td>資料散落在群組與表單</td><td>據點彙總、緊急度、角色權限、稽核紀錄</td></tr>
+<tr><td>志工 <span class="badge p2">P2</span></td><td>據點現場志工</td><td>快速登記需求與實收</td><td>現場網路不穩、沒時間操作</td><td>離線佇列、簡單表單、登記實收</td></tr>
+<tr><td>救災捐贈者 <span class="badge p2">P2</span></td><td>企業 CSR 或熱心個人</td><td>捐出對方真正需要的物資</td><td>不知道缺什麼、怕堆積無用物資</td><td>地圖看據點與緊急度、認捐、追蹤送達</td></tr>
+<tr><td>營運代購人員 <span class="badge p2">P2</span></td><td>平台營運（is_staff）</td><td>在時限內買到非目錄商品並更新出貨狀態</td><td>訂單散落、漲價缺貨、需留存憑證</td><td>後台訂單佇列、填商家訂單編號與物流單號、失敗處理（觸發退點）、稽核紀錄</td></tr>
+</tbody></table>
+
+<h2 id="s6">6. 使用者故事與驗收條件</h2>
+<h3>6.1 <span class="badge p0">P0</span> MVP / Phase 1</h3>
+
+<div class="story"><span class="id">US-01 建立清單</span>　身為建立者，我想以 Email OTP、LINE 或 Google 登入並建立清單，以便開始收集心願。
+<ul>
+<li><b>Given</b> 我未登入，<b>When</b> 我完成 Email OTP 驗證，<b>Then</b> 系統建立 session（<code>ws_session</code>）並導向 <code>/dashboard</code>。</li>
+<li><b>Given</b> 我已登入，<b>When</b> 我在 <code>/w/new</code> 選擇類型 <code>personal</code> 或 <code>registry</code> 並填標題，<b>Then</b> 建立一張 <code>draft</code> 清單與 10 碼 slug。</li>
+<li><b>Given</b> OTP 錯誤超過限制次數，<b>When</b> 我再次提交，<b>Then</b> 回 <code>RATE_LIMITED</code>。</li>
+</ul></div>
+
+<div class="story"><span class="id">US-02 新增品項與數量</span>　身為建立者，我想設定品項、品牌、數量與圖片，以便讓親友知道要買多少。
+<ul>
+<li><b>Given</b> 我在 <code>/w/{id}/edit</code>，<b>When</b> 我新增「奶瓶，數量 10，funding_mode=quantity」，<b>Then</b> 品項儲存且 <code>qty_needed=10</code>、<code>qty_claimed=0</code>。</li>
+<li><b>Given</b> 我在 MVP 建立品項，<b>When</b> 我選擇 <code>funding_mode=crowdfund</code>，<b>Then</b> 回 <code>VALIDATION_FAILED</code>（<code>funding_mode</code> 欄位保留，但 MVP 只能選 <code>quantity</code>；眾籌為 Phase 2）。</li>
+<li><b>Given</b> 我上傳圖片，<b>When</b> 前端取得 presigned URL 直傳 R2，<b>Then</b> 品項顯示圖片，DB 僅存 object key。</li>
+</ul></div>
+
+<div class="story"><span class="id">US-03 分享連結</span>　身為建立者，我想把清單狀態設為 <code>active</code> 並一鍵分享到 LINE / FB / 簡訊，以便親友點開。
+<ul>
+<li><b>Given</b> 清單為 <code>active</code> 且 visibility=<code>link</code>，<b>When</b> LINE 或 FB 爬蟲請求 <code>/s/{slug}</code>，<b>Then</b> 伺服器端回傳含 <code>og:title</code>、<code>og:image</code>、<code>og:description</code> 的 HTML。</li>
+<li><b>Given</b> visibility=<code>private</code>，<b>When</b> 非建立者請求公開 API，<b>Then</b> 回 <code>NOT_FOUND</code>。</li>
+</ul></div>
+
+<div class="story"><span class="id">US-04 訪客數量認領</span>　身為送禮者訪客，我想免註冊認領一件或多件，以便避免重複。
+<ul>
+<li><b>Given</b> 品項剩餘 4 件，<b>When</b> 我輸入暱稱並認領 2 件，<b>Then</b> 產生 <code>claim</code>（<code>reserved</code>）、<code>qty_claimed</code> 加 2，並簽發 <code>guest_token</code>（HttpOnly cookie <code>ws_guest</code> + 回傳供 localStorage）。</li>
+<li><b>Given</b> 剩餘 1 件，<b>When</b> 兩人同時各認領 1 件，<b>Then</b> 只有一人成功，另一人收到 409 <code>ITEM_FULLY_CLAIMED</code>。</li>
+<li><b>Given</b> 同一個 <code>Idempotency-Key</code> 重送，<b>When</b> 24 小時內請求相同，<b>Then</b> 回傳原結果且不重複扣量；內容不同則 <code>IDEMPOTENCY_CONFLICT</code>。</li>
+<li><b>Given</b> 我對同一品項已有有效認領（<code>reserved</code> / <code>purchased</code> / <code>delivered</code>），<b>When</b> 我再次 POST 認領，<b>Then</b> 回 409 <code>CLAIM_ALREADY_EXISTS</code>；要改數量須用 <code>PATCH /claims/{claim_id}</code>（DB 以 partial unique index 保證）。</li>
+<li><b>Given</b> 我在 LINE in-app browser 且 cookie 遺失，<b>When</b> 前端以 <code>X-Guest-Token</code> 帶回 token，<b>Then</b> 仍可辨識我的認領。</li>
+</ul></div>
+
+<div class="story"><span class="id">US-05 管理我的認領</span>　身為訪客，我想查看、修改、取消自己的認領。
+<ul>
+<li><b>Given</b> 我持有有效 token，<b>When</b> 開啟 <code>/me/claims</code>，<b>Then</b> 看到我的認領列表（<code>GET /guest/me</code>）。</li>
+<li><b>Given</b> 我取消認領，<b>When</b> 送出 <code>DELETE /claims/{claim_id}</code>，<b>Then</b> claim 變 <code>cancelled</code> 並歸還數量。</li>
+<li><b>Given</b> 非本人 token，<b>When</b> 嘗試修改，<b>Then</b> 回 <code>FORBIDDEN</code>。</li>
+<li><b>Given</b> 我已送出禮物，<b>When</b> 我、清單 owner（或 relief 的 org owner / coordinator）將認領標記為 <code>delivered</code>，<b>Then</b> 狀態更新；驚喜模式鎖定期間實際上只有認領者本人能標記。</li>
+<li><b>Given</b> 認領已是 <code>delivered</code>，<b>When</b> 重送 <code>PATCH</code> 到同一目標狀態，<b>Then</b> 視為成功（冪等），不報錯。</li>
+<li><b>Given</b> 清單 <code>closed</code>，<b>When</b> 嘗試認領，<b>Then</b> 回 <code>WISHLIST_CLOSED</code>。</li>
+</ul></div>
+
+<div class="story"><span class="id">US-06 數量認領是 MVP 唯一的品項模式</span>　身為建立者，我想把嬰兒車這類高價品也先以數量 1 列出，讓親友認領。
+<ul>
+<li><b>Given</b> 品項 <code>qty_needed=1</code>，<b>When</b> 一位訪客認領，<b>Then</b> 品項顯示已認領，其他人不能重複認領。</li>
+<li><b>Given</b> 平台尚未開放眾籌，<b>When</b> 公開頁顯示品項，<b>Then</b> 不出現儲值、點數或任何收款資訊。</li>
+</ul></div>
+
+<div class="story"><span class="id">US-07 完成度儀表板</span>　身為建立者，我想看完成度與誰認領了什麼。
+<ul>
+<li><b>Given</b> 清單有 5 個品項、2 個已滿，<b>When</b> 我開啟 <code>/w/{id}/progress</code>，<b>Then</b> 看到整體完成度與各品項已認領 / 需求。</li>
+<li><b>Given</b> 未開驚喜模式，<b>When</b> 我查看，<b>Then</b> 看到認領者暱稱與認領內容。</li>
+</ul></div>
+
+<div class="story"><span class="id">US-08 驚喜模式</span>　身為建立者，我想在活動日前不知道誰送了什麼。
+<ul>
+<li><b>Given</b> <code>surprise_mode=true</code> 且 now &lt; <code>unlock_at</code>（<code>event_date</code> 當日 00:00 Asia/Taipei），<b>When</b> 我呼叫 <code>GET /wishlists/{id}/dashboard</code>，<b>Then</b> 只回整體彙總（如 <code>completion_pct</code>），各品項 <code>qty_claimed</code> / <code>pledged_points</code> 為 <code>null</code>，不含 claims、暱稱、聯絡方式、留言與捐贈者；眾籌品項（P2）只顯示「已下單 / 運送中」狀態，包裹送達本身即揭曉。</li>
+<li><b>Given</b> 已到 <code>unlock_at</code>，<b>When</b> 我查看，<b>Then</b> 解鎖顯示完整資訊。</li>
+<li><b>Given</b> 我是建立者本人且開啟自己的公開頁 <code>/s/{slug}</code>，<b>When</b> 驚喜模式鎖定中，<b>Then</b> 前端顯示「驚喜模式中」遮罩（軟性遮蔽）。公開頁仍顯示各品項 x/y（避免重複送禮所必需），建立者用無痕視窗可看到，列為已知限制並接受。</li>
+<li><b>Given</b> 開啟驚喜模式但未設 <code>event_date</code>，<b>When</b> 儲存，<b>Then</b> 回 <code>VALIDATION_FAILED</code>。</li>
+</ul></div>
+
+<div class="story"><span class="id">US-09 隱私與即時更新</span>　身為訪客，我想即時看到最新剩餘量，且不暴露他人姓名。
+<ul>
+<li><b>Given</b> 我開著 <code>/s/{slug}</code>，<b>When</b> 他人認領，<b>Then</b> SSE 推送 <code>item.updated</code> 且畫面數字更新，無需重整。</li>
+<li><b>Given</b> <code>show_claimer_names=false</code>（預設），<b>When</b> 訪客查看，<b>Then</b> 只顯示「已認領 x / 需求 y」。</li>
+<li><b>Given</b> SSE 斷線，<b>When</b> 重連，<b>Then</b> 前端重新取得完整狀態。</li>
+</ul></div>
+
+<div class="story"><span class="id">US-10 PWA 基本</span>　身為使用者，我想把 WishSync 加入主畫面。
+<ul>
+<li><b>Given</b> 我使用 Chrome / Safari，<b>When</b> 符合 PWA 條件，<b>Then</b> 可加入主畫面，靜態資源可快取。</li>
+<li><b>Given</b> 我在 LINE in-app browser，<b>When</b> 使用核心流程，<b>Then</b> 不依賴 PWA 也能完成認領。</li>
+</ul></div>
+
+<div class="story"><span class="id">US-35 檢舉與下架</span>　身為訪客，我想檢舉可疑清單；身為營運人員，我想下架。
+<ul>
+<li><b>Given</b> 我在公開頁 <code>/s/{slug}</code>（免登入），<b>When</b> 我送出檢舉（reason：scam / inappropriate / copyright / personal_info / other，通過 Turnstile，受每 IP 限流），<b>Then</b> 建立 <code>content_reports(open)</code>，呼叫 <code>POST /public/wishlists/{slug}/reports</code>。</li>
+<li><b>Given</b> 我是 staff，<b>When</b> 我在 <code>/admin</code> 處理檢舉並下架清單（<code>PATCH /admin/wishlists/{id}/moderation</code>），<b>Then</b> 清單 <code>moderation_status=hidden</code>，公開頁回 410 <code>WISHLIST_REMOVED</code>（前端顯示「此清單已被下架」），建立者在 dashboard 看到下架原因，並寫入 audit_logs。</li>
+<li><b>Given</b> 我不是 staff，<b>When</b> 呼叫 admin 端點，<b>Then</b> 回 403 <code>STAFF_ONLY</code>。</li>
+</ul></div>
+<div class="story"><span class="id">US-36 圖片限制與 EXIF 去除</span>　身為建立者，我上傳的照片不應洩漏位置。
+<ul>
+<li><b>Given</b> 我上傳圖片，<b>When</b> 類型非 image/jpeg、png、webp 或大於 5 MB，<b>Then</b> 拒絕上傳，回 <code>VALIDATION_FAILED</code>。</li>
+<li><b>Given</b> 我上傳含 GPS 的照片，<b>When</b> 伺服器端處理完成，<b>Then</b> EXIF（含 GPS 座標）已去除後才公開（Cloudflare Images 轉檔或背景 job 重新編碼）。</li>
+<li><b>Given</b> 我在上傳頁，<b>When</b> 查看提示，<b>Then</b> 看到「請勿上傳含個資的照片」提示。</li>
+</ul></div>
+<div class="story"><span class="id">US-37 MVP 營運後台</span>　身為營運人員，我想搜尋與管理清單、使用者。
+<ul>
+<li><b>Given</b> 我是 staff，<b>When</b> 開啟 <code>/admin</code>，<b>Then</b> 可搜尋清單（slug / 建立者 email，<code>GET /admin/wishlists?q=</code>）、查詢使用者（<code>GET /admin/users?q=</code>）、處理檢舉佇列、下架 / 恢復清單。</li>
+<li><b>Given</b> 我切換系統旗標（<code>PUT /admin/system-flags/{key}</code>，如唯讀模式），<b>When</b> 送出，<b>Then</b> 旗標生效；所有 staff 動作寫入 audit_logs（actor_type=staff）。</li>
+</ul></div>
+<div class="story"><span class="id">US-38 MVP Email 通知</span>　身為建立者，我想在有人認領時收到 Email。
+<ul>
+<li><b>Given</b> 我的清單第一次被認領，<b>When</b> 認領成功，<b>Then</b> 我收到即時 Email；之後每日彙整一封；可在 <code>/me/settings</code> 關閉。</li>
+<li><b>Given</b> 驚喜模式，<b>When</b> 通知內容，<b>Then</b> 只寫「有 N 件新認領」，不含品項與認領者。</li>
+<li><b>Given</b> 訪客留了 Email，<b>When</b> 認領成功，<b>Then</b> 收到確認信，含「管理我的認領」連結（換裝置找回的 MVP 最小版）。</li>
+</ul></div>
+<div class="story"><span class="id">US-39 帳號刪除與資料匯出</span>　身為使用者，我想匯出或刪除我的個資。
+<ul>
+<li><b>Given</b> 我已登入，<b>When</b> 我在 <code>/me/settings</code> 二次確認後呼叫 <code>DELETE /me</code>，<b>Then</b> email、名稱、identities 被去識別化 / 刪除，我的清單封存並從公開移除。</li>
+<li><b>Given</b> 我已登入，<b>When</b> 我呼叫 <code>GET /me/export</code>，<b>Then</b> 取得 JSON：個人資料、清單、認領。</li>
+<li><b>Given</b> 我是訪客，<b>When</b> 我呼叫 <code>DELETE /guest/me</code>，<b>Then</b> 暱稱與聯絡方式被清除，我的認領保留為「已刪除的訪客」。</li>
+</ul></div>
+<div class="story"><span class="id">US-40 法律文件與個資告知</span>　身為訪客，我想知道資料如何被使用。
+<ul>
+<li><b>Given</b> 我在認領 sheet 填暱稱 / 聯絡方式處，<b>When</b> 畫面顯示，<b>Then</b> 出現個資蒐集告知連結（不強制勾選）；頁尾有 <code>/terms</code>、<code>/privacy</code> 與 Cookie / 本機儲存說明。</li>
+</ul></div>
+<div class="story"><span class="id">US-41 行為分析事件</span>　身為 PM，我想用事件量測轉換。
+<ul>
+<li><b>Given</b> 訪客操作，<b>When</b> 點開分享頁、開啟認領 sheet、認領成功，<b>Then</b> 依序送出 <code>public_viewed</code>、<code>claim_sheet_opened</code>、<code>claim_succeeded</code>（伺服器事件為準），且不含 PII。</li>
+</ul></div>
+
+<h3>6.2 <span class="badge p1">P1</span> Phase 1.5</h3>
+<div class="story"><span class="id">US-11 貼網址自動帶入</span>　身為建立者，我想貼商品網址自動抓標題與圖片。
+<ul>
+<li><b>Given</b> 我貼上有效商品網址，<b>When</b> 呼叫 <code>POST /link-preview</code>，<b>Then</b> 回傳標題與圖片供編輯。</li>
+<li><b>Given</b> 網址指向內網或 loopback（如 169.254.x.x、localhost），<b>When</b> 呼叫，<b>Then</b> 被拒絕（SSRF 防護），回 <code>VALIDATION_FAILED</code>。</li>
+<li><b>Given</b> 目標網站逾時，<b>When</b> 超過上限，<b>Then</b> 回傳可手動填寫的降級結果，不阻塞建立品項。</li>
+</ul></div>
+<div class="story"><span class="id">US-12 LINE 通知</span>　身為建立者，我想在有人認領時收到通知。
+<ul>
+<li><b>Given</b> 我綁定 LINE，<b>When</b> 有新認領，<b>Then</b> 以 LINE Messaging API 通知（Email 通知已於 MVP 提供，見 US-38；驚喜模式下僅通知數量、不含認領者）。</li>
+<li><b>Given</b> 活動日將近，<b>When</b> 到期前提醒時間點，<b>Then</b> 發送提醒給建立者。</li>
+</ul></div>
+
+<h3>6.3 <span class="badge p2">P2</span> Phase 2</h3>
+<p class="muted">Phase 2 分為 P2-A（儲值錢包、點數眾籌、自動儲值：US-17 至 US-26、US-27、US-42、US-43）、P2-B（禮物卡與回饋星星：US-28 至 US-33）、P2-C（企業禮券：US-34）、P2-D（relief 救災：US-13 至 US-16、US-44）。relief 仍只用數量型認領，不接點數。上線前須先通過 8.7 的法規阻斷項。</p>
+<div class="story"><span class="id">US-13 組織與據點</span>　身為組織協調員，我想建立組織與據點並指派成員角色。
+<ul>
+<li><b>Given</b> 我是 <code>owner</code>，<b>When</b> 我邀請成員為 <code>coordinator</code> 或 <code>volunteer</code>，<b>Then</b> 成員取得對應權限。</li>
+<li><b>Given</b> 我是 <code>volunteer</code>，<b>When</b> 嘗試改成員角色，<b>Then</b> 回 <code>FORBIDDEN</code>。</li>
+<li><b>Given</b> 我建立據點含座標與地址，<b>When</b> 狀態為 <code>active</code>，<b>Then</b> 出現在 <code>/relief</code> 地圖。</li>
+</ul></div>
+<div class="story"><span class="id">US-14 需求登記與彙總</span>　身為志工，我想登記品項類別與緊急度，協調員可看彙總。
+<ul>
+<li><b>Given</b> 我在據點新增「飲用水，category=water，urgency=critical」，<b>When</b> 儲存，<b>Then</b> 在 <code>GET /public/relief/needs/summary</code> 彙總出現。</li>
+<li><b>Given</b> 我在地圖拖動，<b>When</b> 送出 bbox，<b>Then</b> 回傳範圍內據點。</li>
+</ul></div>
+<div class="story"><span class="id">US-15 認捐、運送、實收</span>　身為捐贈者與志工，我想追蹤物資從認捐到實收。
+<ul>
+<li><b>Given</b> 我認捐 200 箱水，<b>When</b> 志工到貨登記 <code>POST /items/{item_id}/receipts</code>，<b>Then</b> claim 變 <code>delivered</code>，缺口減少。</li>
+<li><b>Given</b> relief 認領（<code>claim_ttl_hours</code> 預設 48）超過 48 小時仍為 <code>reserved</code>，<b>When</b> 背景 job 執行，<b>Then</b> 轉 <code>expired</code> 並回補 <code>qty_claimed</code>；認領轉 <code>purchased</code>（運送中）後清除 <code>expires_at</code>。personal / registry 的 <code>claim_ttl_hours</code> 為 NULL，認領不逾期。</li>
+<li><b>Given</b> 缺口已被認捐滿，<b>When</b> 他人再認捐，<b>Then</b> 回 <code>ITEM_FULLY_CLAIMED</code>，並建議其他據點。</li>
+</ul></div>
+<div class="story"><span class="id">US-16 離線登記</span>　身為志工，我想在網路不穩時先登記，恢復後自動同步。
+<ul>
+<li><b>Given</b> 離線，<b>When</b> 我送出實收，<b>Then</b> 加入本機佇列並顯示「待同步」。</li>
+<li><b>Given</b> 網路恢復，<b>When</b> 佇列同步，<b>Then</b> 使用原 <code>Idempotency-Key</code> 送出，不重複。</li>
+</ul></div>
+<div class="story"><span class="id">US-17 點數儲值</span>　身為眾籌捐贈者，我想用信用卡 / LINE Pay / Apple Pay 儲值點數（1 點 = NT$1）。
+<ul>
+<li><b>Given</b> 我已登入（儲值需登入，訪客仍可做數量認領），<b>When</b> 我送出 <code>POST /wallet/topups {amount, method}</code>（method 為 <code>card</code> / <code>line_pay</code> / <code>apple_pay</code>，金額 100 至 50,000 點，快選 500 / 1,000 / 2,000 / 5,000；金流供應商由後端依 method 決定）並付款成功，<b>Then</b> 金流 webhook（驗簽、以 <code>provider_txn_id</code> 冪等）入帳，<code>topups</code> 變 <code>paid</code>，<code>point_ledger</code> 新增 <code>topup</code>，<code>GET /wallet</code> 餘額增加。</li>
+<li><b>Given</b> 付款失敗，<b>When</b> webhook 回報失敗，<b>Then</b> <code>topups</code> 為 <code>failed</code>，餘額不變，回 <code>PAYMENT_FAILED</code>（402）。</li>
+<li><b>Given</b> 儲值金額低於 100 或高於 50,000，<b>When</b> 送出，<b>Then</b> 回 <code>VALIDATION_FAILED</code>（上下限由 <code>GET /config/public</code> 提供）。</li>
+<li><b>Given</b> 同一筆 webhook 重送，<b>When</b> 系統再次收到，<b>Then</b> 不重複入帳。</li>
+</ul></div>
+<div class="story"><span class="id">US-18 認捐到眾籌品項</span>　身為眾籌捐贈者，我想把點數認捐給嬰兒車。
+<ul>
+<li><b>Given</b> 嬰兒車 <code>target_points</code>=12,000、已認捐 9,000，我餘額足夠，<b>When</b> 我認捐 3,000 點（帶 <code>Idempotency-Key</code>），<b>Then</b> 單一交易內扣錢包、增加 <code>pledged_points</code>、新增 <code>contribution(pledged)</code> 與 ledger <code>pledge</code>。</li>
+<li><b>Given</b> 我的餘額不足，<b>When</b> 我認捐，<b>Then</b> 回 409 <code>INSUFFICIENT_POINTS</code>。</li>
+<li><b>Given</b> 剩餘 500 點，<b>When</b> 我認捐 800 點，<b>Then</b> 回 409 <code>CROWDFUND_TARGET_EXCEEDED</code> 並附 <code>remaining_points</code>（眾籌一律硬上限，不可超額）；前端快選金額自動帶入剩餘點數。</li>
+<li><b>Given</b> 品項已達標，<b>When</b> 我再認捐，<b>Then</b> 回 409 <code>ITEM_FUNDED</code>。</li>
+<li><b>Given</b> 品項已截止（<code>expired</code>），<b>When</b> 我認捐，<b>Then</b> 回 409 <code>FUNDING_EXPIRED</code>。</li>
+<li><b>Given</b> 我認捐過數個品項，<b>When</b> 我開啟 <code>/wallet</code> 的「我的認捐」（<code>GET /wallet/contributions?status=&amp;cursor=</code>），<b>Then</b> 看到每筆認捐的品項、清單標題與狀態（<code>display_status</code>：open / funded / ordered / shipped / delivered / expired）。</li>
+</ul></div>
+<div class="story"><span class="id">US-19 達標前撤回</span>　身為眾籌捐贈者，我想在達標前撤回認捐。
+<ul>
+<li><b>Given</b> 品項 <code>funding_status=open</code>，或已 <code>expired</code> 但仍在 7 天選擇期內（now &lt; <code>expired_at</code> + 7 天），<b>When</b> 我呼叫 <code>DELETE /contributions/{id}</code>，<b>Then</b> contribution 變 <code>released</code>，點數退回錢包（ledger <code>release</code>）。</li>
+<li><b>Given</b> 品項已達標、contribution 為 <code>captured</code>，<b>When</b> 我嘗試撤回，<b>Then</b> 回 409 <code>CONTRIBUTION_LOCKED</code>。</li>
+</ul></div>
+<div class="story"><span class="id">US-20 達標自動下單（目錄商品）</span>　身為建立者，我希望達標後平台自動買好，我不會拿到現金。
+<ul>
+<li><b>Given</b> 品項 <code>fulfillment_type=catalog</code> 且已填收件地址，<b>When</b> <code>pledged_points</code> 達到 <code>target_points</code>，<b>Then</b> 同一交易內 <code>funding_status=funded</code>、所有 pledged 變 <code>captured</code>、建立 <code>purchase_orders(pending)</code> 並寫 outbox；下單 job 呼叫商家 API，成功後訂單為 <code>placed</code>。</li>
+<li><b>Given</b> 商家 webhook 回報出貨與送達，<b>When</b> 系統收到，<b>Then</b> 訂單更新為 <code>shipped</code> / <code>delivered</code>，品項 <code>fulfilled</code>，通知捐贈者；驚喜模式下出貨 / 送達通知只發給捐贈者，不發給建立者。</li>
+<li><b>Given</b> 驚喜模式且 now &lt; <code>unlock_at</code>，<b>When</b> 建立者查看，<b>Then</b> 只看到彙總（已下單 N / 運送中 M），不看逐品項對應。</li>
+<li><b>Given</b> 建立者看自己的清單，<b>When</b> 點數與錢包，<b>Then</b> 建立者沒有錢包餘額，介面不出現任何可提領的金額。</li>
+</ul></div>
+<div class="story"><span class="id">US-21 人工代購</span>　身為營運代購人員，我想處理非目錄商品的訂單。
+<ul>
+<li><b>Given</b> 品項 <code>fulfillment_type=concierge</code> 達標，<b>When</b> 訂單進入營運後台佇列，<b>Then</b> 我（<code>is_staff</code>）在 <code>/admin/orders</code> 看到訂單，購買後填 <code>merchant_order_id</code> 與 <code>tracking_no</code>，用 <code>PATCH /admin/orders/{id}</code> 更新狀態與實際花費 <code>amount</code>；代購 SLA 為達標後 3 個工作天內完成下單。</li>
+<li><b>Given</b> 我不是 staff，<b>When</b> 呼叫 admin 端點，<b>Then</b> 回 403 <code>STAFF_ONLY</code>。</li>
+</ul></div>
+<div class="story"><span class="id">US-22 購買失敗退點</span>　身為眾籌捐贈者，我希望商品買不到時點數退回。
+<ul>
+<li><b>Given</b> 訂單因缺貨、漲價超過緩衝或商家拒單變 <code>failed</code>，<b>When</b> 系統處理，<b>Then</b> 所有 <code>captured</code> contributions 變 <code>released</code>，點數退回各捐贈者錢包，品項 <code>funding_status</code> 回 <code>open</code> 或 <code>expired</code>，並通知建立者與捐贈者。</li>
+<li><b>Given</b> 代購實際花費低於 <code>target_points</code>，<b>When</b> 訂單完成，<b>Then</b> 差額依各人認捐比例退回錢包（最大餘數法分配整數點），ledger 記 <code>release</code>。</li>
+</ul></div>
+<div class="story"><span class="id">US-23 截止未達標</span>　身為眾籌捐贈者，我想在未達標時選擇點數去向。
+<ul>
+<li><b>Given</b> 品項到達 <code>funding_deadline</code>（預設 event_date 23:59 Asia/Taipei）且未達標，<b>When</b> 系統處理，<b>Then</b> <code>funding_status=expired</code>，通知捐贈者，進入 7 天選擇期。</li>
+<li><b>Given</b> 選擇期內，<b>When</b> 我呼叫 <code>POST /contributions/{id}/reallocate</code> 轉投同清單另一個 open 品項，<b>Then</b> 原筆 <code>reallocated</code>、新建一筆 pledged，同樣受硬上限限制；目標不合法回 409 <code>REALLOCATION_NOT_ALLOWED</code>。</li>
+<li><b>Given</b> 7 天內我未選擇，<b>When</b> 期限到，<b>Then</b> 預設退回：自動 <code>released</code>，點數回錢包。</li>
+</ul></div>
+<div class="story"><span class="id">US-24 申請現金退款</span>　身為捐贈者，我想把未使用的點數退回現金。
+<ul>
+<li><b>Given</b> 我的錢包有餘額（點數不設使用期限），<b>When</b> 我呼叫 <code>POST /wallet/cash-refunds</code>，<b>Then</b> 建立 <code>cash_refund_requests(requested)</code> 並當下即扣點（ledger <code>cash_refund</code>），需營運審核：staff 於 <code>PATCH /admin/cash-refunds/{id}</code> 改為 <code>processing</code> / <code>completed</code> / <code>rejected</code>；被駁回時以 <code>adjustment</code> 退回點數。</li>
+<li><b>Given</b> 我的餘額含禮物卡或星星兌換的點數，<b>When</b> 我申請退款金額超過可退現金批次（<code>cash_refundable</code>，僅儲值批次），<b>Then</b> 回 409 <code>NOT_CASH_REFUNDABLE</code>。</li>
+<li><b>Given</b> 點數，<b>When</b> 我嘗試轉給他人，<b>Then</b> 系統不提供轉讓功能。</li>
+</ul></div>
+<div class="story"><span class="id">US-25 收件地址</span>　身為建立者，我想填收件地址讓平台寄送。
+<ul>
+<li><b>Given</b> 我的清單含眾籌品項，<b>When</b> 我發佈清單前未填地址，<b>Then</b> 回 409 <code>SHIPPING_ADDRESS_REQUIRED</code>。</li>
+<li><b>Given</b> 我是清單建立者，<b>When</b> 我呼叫 <code>PUT /wishlists/{id}/shipping-address</code> 儲存，<b>Then</b> 欄位級加密，只有建立者與履約作業可讀，捐贈者看不到。</li>
+</ul></div>
+<div class="story"><span class="id">US-26 匿名捐贈</span>　身為捐贈者，我想匿名送禮。
+<ul>
+<li><b>Given</b> 我認捐時設 <code>is_anonymous=true</code>，<b>When</b> 建立者在解鎖後查看，<b>Then</b> 只顯示「匿名朋友」。</li>
+</ul></div>
+<div class="story"><span class="id">US-27 自動儲值（P2-A）</span>　身為捐贈者，我想讓錢包餘額不足時自動加值。
+<ul>
+<li><b>Given</b> 我設定 <code>PUT /wallet/auto-topup</code>（門檻點數、金額、月上限預設 10,000），<b>When</b> 認捐後餘額低於門檻，<b>Then</b> 系統以 outbox 非同步扣卡儲值（只存金流商 token，不存卡號）。</li>
+<li><b>Given</b> 當月累計自動儲值達上限，<b>When</b> 再次觸發，<b>Then</b> 不扣款並通知我（<code>AUTO_TOPUP_LIMIT_REACHED</code> 只出現在設定與通知，不阻擋認捐）。</li>
+<li><b>Given</b> 餘額不足以認捐，<b>When</b> 我送出認捐，<b>Then</b> 仍回 409 <code>INSUFFICIENT_POINTS</code>（不在認捐交易內同步扣卡）。</li>
+</ul></div>
+<div class="story"><span class="id">US-28 點數批次與扣點順序（P2-A）</span>　身為捐贈者，我希望系統先用快到期的點數。
+<ul>
+<li><b>Given</b> 我的錢包有 reward_bonus、gift_card、topup 三種批次，<b>When</b> 我認捐，<b>Then</b> 依序扣 reward_bonus（最早到期優先）、gift_card、topup，並記錄 <code>contribution_lot_allocations</code>。</li>
+<li><b>Given</b> 認捐被 released，<b>When</b> 點數退回，<b>Then</b> 退回原批次；若原 reward_bonus 批次已過期，該部分作廢（ledger <code>expire</code>）。</li>
+<li><b>Given</b> 我查看 <code>GET /wallet</code>，<b>When</b> 回應，<b>Then</b> 含 <code>refundable_points</code>、<code>gift_points</code>、<code>bonus_points</code>、<code>bonus_expiring_soon</code>。</li>
+</ul></div>
+<div class="story"><span class="id">US-29 購買與分享電子禮物卡（P2-B）</span>　身為送禮物卡的人，我想買禮物卡並用 LINE 傳給對方。
+<ul>
+<li><b>Given</b> 我已登入，<b>When</b> 我選擇面額（300 / 500 / 1,000 / 2,000 / 3,000）、數量 1 至 10 張、祝福語與卡面主題並付款，<b>Then</b> 建立 <code>gift_card_orders</code>，付款成功後產生禮物卡與分享連結 <code>https://app.wishsync.tw/g/{code}</code>；code 16 碼只在產生時顯示一次，DB 存 hash。</li>
+<li><b>Given</b> 我開啟 <code>/gift</code>，<b>When</b> 查看已購，<b>Then</b> <code>GET /gift-cards/purchased</code> 列出各卡狀態。</li>
+</ul></div>
+<div class="story"><span class="id">US-30 兌換禮物卡（P2-B）</span>　身為收卡者，我想兌換並使用點數。
+<ul>
+<li><b>Given</b> 我開啟 <code>/g/{code}</code>，<b>When</b> 頁面載入，<b>Then</b> SSR 顯示 OG 卡面預覽，只呈現面額、卡面、祝福語、寄送者暱稱與是否可兌換。</li>
+<li><b>Given</b> 我已登入，<b>When</b> 我兌換（<code>POST /gift-cards/claim</code>，帶 Idempotency-Key 與 Turnstile），<b>Then</b> 建立 gift_card 批次（<code>cash_refundable=false</code>、不設期限），點數只能投入心願品項（含自己的清單），不可轉送、不可退現金。</li>
+<li><b>Given</b> code 錯誤或不存在，<b>When</b> 開啟或兌換，<b>Then</b> 一律回 404 <code>GIFT_CARD_INVALID</code>；已被兌換回 409 <code>GIFT_CARD_ALREADY_CLAIMED</code>；連續猜碼觸發限流。</li>
+</ul></div>
+<div class="story"><span class="id">US-31 未兌換禮物卡退款（P2-B）</span>　身為送禮物卡的人，我想在對方未兌換時退款。
+<ul>
+<li><b>Given</b> 禮物卡狀態為 <code>active</code>，<b>When</b> 我呼叫 <code>POST /gift-cards/{id}/refund</code>，<b>Then</b> 原路退款，狀態為 <code>refunded</code>。</li>
+<li><b>Given</b> 禮物卡已兌換，<b>When</b> 我申請退款，<b>Then</b> 回 409 <code>GIFT_CARD_NOT_REFUNDABLE</code>。</li>
+</ul></div>
+<div class="story"><span class="id">US-32 賺取與兌換星星（P2-B）</span>　身為捐贈者，我想累積星星換點數。
+<ul>
+<li><b>Given</b> 我的認捐被 captured（品項達標下單），<b>When</b> 系統處理，<b>Then</b> 每 50 點得 1 星（無條件捨去）；儲值與購買禮物卡不給星；released 的認捐不給星。</li>
+<li><b>Given</b> 已給星後訂單失敗退點，<b>When</b> 系統處理，<b>Then</b> 扣回星星，最多扣到 0 並記錄。</li>
+<li><b>Given</b> 我是 green 等級，<b>When</b> 我兌換（<code>POST /rewards/redemptions</code>），<b>Then</b> 100 星 = 50 點（gold 為 100 星 = 60 點），產生 90 天到期的 reward_bonus 批次；星星不足回 409 <code>INSUFFICIENT_STARS</code>。</li>
+</ul></div>
+<div class="story"><span class="id">US-33 星星等級與到期（P2-B）</span>　身為捐贈者，我想知道等級與即將到期的星星。
+<ul>
+<li><b>Given</b> 我 12 個月內累積 ≥ 300 星，<b>When</b> 等級評估，<b>Then</b> 升為 gold，兌換比率較佳並可使用專屬卡面。</li>
+<li><b>Given</b> 星星超過 12 個月（按賺取月份批次），<b>When</b> 每日 job，<b>Then</b> 星星到期（star_ledger <code>expire</code>）；<code>GET /rewards</code> 顯示即將到期。</li>
+<li><b>Given</b> reward_bonus 批次超過 90 天，<b>When</b> 每日 job，<b>Then</b> 批次到期（ledger <code>expire</code>）；兩者皆為無償贈與，需在使用條款載明期限。</li>
+</ul></div>
+<div class="story"><span class="id">US-34 企業禮券（P2-C）</span>　身為企業福委會窗口，我想批次採購禮券發給員工。
+<ul>
+<li><b>Given</b> 營運後台為我建立企業帳號（統編）與批次（面額、數量），<b>When</b> 我以銀行匯款付款，營運確認入帳，<b>Then</b> 批次狀態依序為 <code>invoiced</code>、<code>paid</code>、<code>issued</code>，產生對應張數的禮物卡，開立三聯式發票。</li>
+<li><b>Given</b> 批次已發行，<b>When</b> 營運匯出兌換連結 CSV，<b>Then</b> CSV 只能取得一次，再取回 409 <code>CODES_ALREADY_EXPORTED</code>。</li>
+<li><b>Given</b> 企業禮券，<b>When</b> 員工兌換，<b>Then</b> 規則同 US-30（不可退現金、不設期限、只能用於心願品項）；未兌換卡依合約可整批退款。</li>
+<li><b>Given</b> 我不是 staff，<b>When</b> 呼叫 admin 企業端點，<b>Then</b> 回 403 <code>STAFF_ONLY</code>。</li>
+</ul></div>
+<div class="story"><span class="id">US-42 拒付風控（P2-A）</span>　身為平台，我要降低盜刷與拒付損失。
+<ul>
+<li><b>Given</b> 我以信用卡儲值，<b>When</b> 付款，<b>Then</b> 一律經 3DS 驗證。</li>
+<li><b>Given</b> 新帳號註冊未滿 30 天，<b>When</b> 每日儲值與禮物卡購買合計超過 NT$3,000，<b>Then</b> 拒絕並進人工審核；短時間多卡或多帳號同裝置同樣進人工審核。</li>
+<li><b>Given</b> 金流 webhook 回報爭議，<b>When</b> 系統處理，<b>Then</b> <code>topups.status</code> 變 <code>disputed</code> / <code>charged_back</code>；錢包 <code>frozen</code>（認捐、兌換、退款回 403 <code>WALLET_FROZEN</code>）；先扣回該批次剩餘點數，不足記入 <code>wallet_debts</code>；未兌換禮物卡 void，已兌換不追回並封鎖購買者。</li>
+</ul></div>
+<div class="story"><span class="id">US-43 電子發票（P2-A）</span>　身為儲值或購買禮物卡的人，我想選擇發票載具。
+<ul>
+<li><b>Given</b> 我在儲值或禮物卡購買頁，<b>When</b> 選擇發票，<b>Then</b> 可選會員載具（預設）、手機條碼、捐贈碼、公司統編。</li>
+<li><b>Given</b> 現金退款，<b>When</b> 處理，<b>Then</b> 開折讓（allowance）或作廢；發票紀錄存於 <code>invoices</code>（開立時點待會計師確認，表結構兩者皆支援）。</li>
+</ul></div>
+<div class="story"><span class="id">US-44 救災組織驗證（P2-D）</span>　身為救災組織，我想取得已驗證徽章。
+<ul>
+<li><b>Given</b> 我的組織 <code>verification_status=pending</code>，<b>When</b> 我嘗試建立 <code>public</code> 據點，<b>Then</b> 回 403 <code>ORG_NOT_VERIFIED</code>；據點只能是 link 可見，不上地圖、不出現在 <code>GET /public/relief/sites</code>。</li>
+<li><b>Given</b> 我上傳立案證書或政府單位證明（R2 私有 bucket），<b>When</b> staff 於 <code>PATCH /admin/orgs/{id}/verification</code> 核准，<b>Then</b> 狀態為 <code>verified</code>，公開頁顯示「已驗證組織」徽章。</li>
+</ul></div>
+
+<h2 id="s7">7. 功能需求清單</h2>
+<table>
+<thead><tr><th>ID</th><th>功能</th><th>說明</th><th>優先級</th><th>分期</th></tr></thead>
+<tbody>
+<tr><td>FR-01</td><td>建立者登入</td><td>Email OTP、LINE Login、Google；opaque session cookie <code>ws_session</code></td><td><span class="badge p0">P0</span></td><td>MVP</td></tr>
+<tr><td>FR-02</td><td>清單 CRUD</td><td>類型 personal / registry；狀態 draft / active / closed / archived；visibility link / private</td><td><span class="badge p0">P0</span></td><td>MVP</td></tr>
+<tr><td>FR-03</td><td>品項管理</td><td>名稱、品牌、數量、優先度、圖片、備註、排序（reorder）</td><td><span class="badge p0">P0</span></td><td>MVP</td></tr>
+<tr><td>FR-04</td><td>圖片上傳</td><td>R2 presigned PUT 直傳；限制 MIME 與大小</td><td><span class="badge p0">P0</span></td><td>MVP</td></tr>
+<tr><td>FR-05</td><td>公開分享頁 + OG</td><td><code>/s/{slug}</code> SSR，OG 預覽，10 碼 base62 slug</td><td><span class="badge p0">P0</span></td><td>MVP</td></tr>
+<tr><td>FR-06</td><td>訪客數量認領</td><td>暱稱 + 選填聯絡方式；<code>guest_token</code> 雙通道；條件式更新防超額</td><td><span class="badge p0">P0</span></td><td>MVP</td></tr>
+<tr><td>FR-07</td><td>訪客自助管理</td><td>修改 / 取消認領、<code>/me/claims</code>、改暱稱；同一訪客對同一品項僅一筆有效認領（重複 POST 回 <code>CLAIM_ALREADY_EXISTS</code>）；delivered 可由認領者、owner、org owner/coordinator 標記</td><td><span class="badge p0">P0</span></td><td>MVP</td></tr>
+<tr><td>FR-08</td><td>認領逾期</td><td><code>claim_ttl_hours</code>：personal / registry 預設 NULL（不逾期），relief 預設 48；背景 job 轉 <code>expired</code> 並回補 <code>qty_claimed</code></td><td><span class="badge p0">P0</span></td><td>MVP</td></tr>
+<tr><td>FR-09</td><td>品項模式限制</td><td><code>funding_mode</code> 欄位保留；MVP 建立品項只能選 <code>quantity</code>，選 <code>crowdfund</code> 回 <code>VALIDATION_FAILED</code></td><td><span class="badge p0">P0</span></td><td>MVP</td></tr>
+<tr><td>FR-10</td><td>驚喜模式</td><td>now &lt; unlock_at（event_date 當日 00:00 Asia/Taipei）時，建立者儀表板只回整體彙總，品項明細為 null；眾籌品項只見「已下單 / 運送中」；公開頁軟性遮蔽為已知限制</td><td><span class="badge p0">P0</span></td><td>MVP</td></tr>
+<tr><td>FR-11</td><td>完成度儀表板</td><td><code>/w/{id}/progress</code>，整體與品項完成度</td><td><span class="badge p0">P0</span></td><td>MVP</td></tr>
+<tr><td>FR-12</td><td>隱私設定</td><td><code>show_claimer_names</code> 預設關閉</td><td><span class="badge p0">P0</span></td><td>MVP</td></tr>
+<tr><td>FR-13</td><td>即時更新</td><td>SSE：<code>item.updated</code>、<code>wishlist.updated</code></td><td><span class="badge p0">P0</span></td><td>MVP</td></tr>
+<tr><td>FR-14</td><td>冪等性</td><td>建立型 POST 強制 <code>Idempotency-Key</code>，保存 24 小時</td><td><span class="badge p0">P0</span></td><td>MVP</td></tr>
+<tr><td>FR-15</td><td>錯誤格式</td><td>RFC 9457 problem+json，含 code。<code>PATCH</code> 為狀態轉換，重送到同目標狀態視為成功（冪等），不需 <code>Idempotency-Key</code></td><td><span class="badge p0">P0</span></td><td>MVP</td></tr>
+<tr><td>FR-16</td><td>PWA 基本</td><td>manifest、可加入主畫面、靜態快取</td><td><span class="badge p0">P0</span></td><td>MVP</td></tr>
+<tr><td>FR-17</td><td>濫用防護</td><td>速率限制、檢舉入口、audit_logs</td><td><span class="badge p0">P0</span></td><td>MVP</td></tr>
+<tr><td>FR-18</td><td>監控</td><td>Sentry、OpenTelemetry</td><td><span class="badge p0">P0</span></td><td>MVP</td></tr>
+<tr><td>FR-19</td><td>連結預覽</td><td><code>POST /link-preview</code>，SSRF 防護</td><td><span class="badge p1">P1</span></td><td>1.5</td></tr>
+<tr><td>FR-20</td><td>LINE 通知</td><td>LINE Messaging API（Email 已於 MVP，見 FR-56）</td><td><span class="badge p1">P1</span></td><td>1.5</td></tr>
+<tr><td>FR-21</td><td>到期提醒</td><td>活動日前提醒建立者；P2 起提醒捐贈者截止與選擇期</td><td><span class="badge p1">P1</span></td><td>1.5</td></tr>
+<tr><td>FR-22</td><td>範本清單</td><td>新生兒、婚禮、喬遷預設品項</td><td><span class="badge p1">P1</span></td><td>1.5</td></tr>
+<tr><td>FR-30</td><td>換裝置找回訪客認領（完整版）</td><td>MVP 最小版為認領確認信的「管理我的認領」連結（FR-56）；P1 完整版：自助寄送管理連結、多筆認領合併</td><td><span class="badge p1">P1</span></td><td>1.5</td></tr>
+<tr><td>FR-23</td><td>組織與成員</td><td>organizations、org_members；owner / coordinator / volunteer</td><td><span class="badge p2">P2</span></td><td>2</td></tr>
+<tr><td>FR-24</td><td>救災據點</td><td>relief 型 wishlist + PostGIS 座標、site_status</td><td><span class="badge p2">P2</span></td><td>2</td></tr>
+<tr><td>FR-25</td><td>據點地圖與查詢</td><td><code>/relief</code>；bbox / near 查詢</td><td><span class="badge p2">P2</span></td><td>2</td></tr>
+<tr><td>FR-26</td><td>需求彙總</td><td>依 relief_category、relief_urgency 彙總</td><td><span class="badge p2">P2</span></td><td>2</td></tr>
+<tr><td>FR-27</td><td>認捐 → 運送 → 實收</td><td>claim_status 流轉（reserved 已認捐、purchased 運送中、delivered 已實收）；receipts 記錄實收；認領逾期預設 48 小時（<code>claim_ttl_hours</code>），背景 job 轉 expired 並回補數量</td><td><span class="badge p2">P2</span></td><td>2</td></tr>
+<tr><td>FR-28</td><td>離線佇列</td><td>Background Sync 搭配 Idempotency-Key</td><td><span class="badge p2">P2</span></td><td>2</td></tr>
+<tr><td>FR-29</td><td>金流儲值與 webhook</td><td>TapPay 或綠界（付款方式 <code>card</code> / <code>line_pay</code> / <code>apple_pay</code>，供應商由後端依 method 決定）；儲值 100 至 50,000 點、快選 500 / 1,000 / 2,000 / 5,000；<code>POST /wallet/topups</code>、<code>POST /webhooks/payments/{provider}</code>（驗簽、<code>provider_txn_id</code> 冪等）；<code>topups</code>、發票串接。須先通過 8.7</td><td><span class="badge p2">P2</span></td><td>2</td></tr>
+<tr><td>FR-31</td><td>點數錢包</td><td><code>point_wallets</code>、<code>point_ledger</code>（只增不改）、<code>GET /wallet</code>、<code>/wallet</code> 頁；1 點 = NT$1，不可轉讓、不可提領給受捐者</td><td><span class="badge p2">P2</span></td><td>2</td></tr>
+<tr><td>FR-32</td><td>眾籌品項與認捐</td><td><code>target_points</code>（目錄：商品價 + 運費；代購：商品價 + 運費 + 8% 服務費 + 10% 價差緩衝，以商品價為基底）、硬上限；<code>POST /items/{item_id}/contributions</code>（需登入、Idempotency-Key）；鎖順序 wishlist (FOR SHARE) → wallet (FOR UPDATE) → item；對 expired 品項回 <code>FUNDING_EXPIRED</code>；<code>message</code>、<code>is_anonymous</code></td><td><span class="badge p2">P2</span></td><td>2</td></tr>
+<tr><td>FR-33</td><td>撤回認捐</td><td><code>open</code>，或 <code>expired</code> 後 7 天選擇期內可撤回；其他回 <code>CONTRIBUTION_LOCKED</code>。含「我的認捐」列表 <code>GET /wallet/contributions</code></td><td><span class="badge p2">P2</span></td><td>2</td></tr>
+<tr><td>FR-34</td><td>達標自動下單</td><td>達標同交易：funded、captured、建立 <code>purchase_orders</code>、outbox 觸發下單 job；商家 webhook 更新出貨 / 送達</td><td><span class="badge p2">P2</span></td><td>2</td></tr>
+<tr><td>FR-35</td><td>商品目錄與商家串接</td><td><code>catalog_products</code>、<code>merchants</code>、<code>GET /catalog/products</code>；價格快照 <code>price_snapshot_amount</code></td><td><span class="badge p2">P2</span></td><td>2</td></tr>
+<tr><td>FR-36</td><td>人工代購與營運後台</td><td>非目錄商品進佇列；<code>/admin/orders</code>、<code>PATCH /admin/orders/{id}</code>（<code>is_staff</code>）；服務費暫定 8%、價差緩衝 10%；代購 SLA 達標後 3 個工作天；公開設定 <code>GET /config/public</code></td><td><span class="badge p2">P2</span></td><td>2</td></tr>
+<tr><td>FR-37</td><td>購買失敗退點</td><td>缺貨 / 漲價超過緩衝 / 拒單：captured 全數 released，通知相關人</td><td><span class="badge p2">P2</span></td><td>2</td></tr>
+<tr><td>FR-38</td><td>差額按比例退回</td><td>代購回報實際花費 <code>amount</code> 低於 target 時依認捐比例退回（最大餘數法）</td><td><span class="badge p2">P2</span></td><td>2</td></tr>
+<tr><td>FR-39</td><td>截止未達標處理</td><td><code>funding_deadline</code> 到期 → expired；7 天選擇期：退回錢包（預設）或 reallocate；逾期未選自動退回</td><td><span class="badge p2">P2</span></td><td>2</td></tr>
+<tr><td>FR-40</td><td>現金退款申請</td><td><code>POST /wallet/cash-refunds</code>、<code>cash_refund_requests</code>；<b>只能退 <code>cash_refundable</code> 批次（儲值）</b>，超過回 <code>NOT_CASH_REFUNDABLE</code>；申請即扣點，需營運審核（<code>/admin/cash-refunds</code>），駁回以 adjustment 退回；點數不設使用期限</td><td><span class="badge p2">P2</span></td><td>2-A</td></tr>
+<tr><td>FR-41</td><td>收件地址</td><td><code>PUT /wishlists/{id}/shipping-address</code>；欄位級加密；眾籌品項發佈前必填</td><td><span class="badge p2">P2</span></td><td>2</td></tr>
+<tr><td>FR-42</td><td>法規上線前阻斷項</td><td>履約保證（範圍：儲值點數 + 未兌換禮物卡 + 已兌換未使用的 gift_card 點數）、禮券規範、單一用途與不可轉讓、發票時點；律師與會計師審閱通過方可上線錢包、眾籌與禮物卡</td><td><span class="badge p2">P2</span></td><td>2-A</td></tr>
+<tr><td>FR-43</td><td>自動儲值</td><td><code>wallet_auto_topups</code>、<code>GET/PUT/DELETE /wallet/auto-topup</code>；餘額低於門檻 outbox 非同步扣款（只存金流商 token）；每月上限預設 NT$10,000；認捐餘額不足仍回 <code>INSUFFICIENT_POINTS</code></td><td><span class="badge p2">P2</span></td><td>2-A</td></tr>
+<tr><td>FR-44</td><td>點數批次</td><td><code>point_lots</code>（source：topup / gift_card / reward_bonus / adjustment）；<code>cash_refundable</code>；扣點順序 reward_bonus（最早到期）→ gift_card → topup；<code>contribution_lot_allocations</code>；released 退回原批次；reward_bonus 90 天到期</td><td><span class="badge p2">P2</span></td><td>2-A</td></tr>
+<tr><td>FR-45</td><td>禮物卡購買與分享</td><td>面額 300 / 500 / 1,000 / 2,000 / 3,000、一次 1 至 10 張、祝福語、卡面主題；<code>POST /gift-cards/orders</code>、<code>GET /gift-cards/purchased</code>；分享連結 <code>/g/{code}</code>（code 16 碼、DB 存 hash）；路由 <code>/gift</code></td><td><span class="badge p2">P2</span></td><td>2-B</td></tr>
+<tr><td>FR-46</td><td>禮物卡兌換</td><td><code>/g/{code}</code> SSR + OG；<code>GET /public/gift-cards/{code}</code>、<code>POST /gift-cards/claim</code>（登入、Idempotency-Key、Turnstile、限流）；建立 gift_card 批次（不可退現金、不設期限）；錯誤 <code>GIFT_CARD_INVALID</code>、<code>GIFT_CARD_ALREADY_CLAIMED</code></td><td><span class="badge p2">P2</span></td><td>2-B</td></tr>
+<tr><td>FR-47</td><td>未兌換禮物卡退款</td><td><code>POST /gift-cards/{id}/refund</code> 原路退款；已兌換回 <code>GIFT_CARD_NOT_REFUNDABLE</code></td><td><span class="badge p2">P2</span></td><td>2-B</td></tr>
+<tr><td>FR-48</td><td>回饋星星賺取</td><td>認捐 captured 時每 50 點 1 星；儲值與禮物卡購買不給星；失敗退點扣回星星；<code>reward_accounts</code>、<code>star_ledger</code></td><td><span class="badge p2">P2</span></td><td>2-B</td></tr>
+<tr><td>FR-49</td><td>星星兌換</td><td><code>GET /rewards</code>、<code>GET /rewards/offers</code>、<code>POST /rewards/redemptions</code>；green 100 星 = 50 點、gold 100 星 = 60 點，產生 90 天到期 reward_bonus；路由 <code>/rewards</code></td><td><span class="badge p2">P2</span></td><td>2-B</td></tr>
+<tr><td>FR-50</td><td>等級與到期</td><td>green / gold（12 個月內累積 ≥ 300 星升 gold）；星星 12 個月到期（按賺取月份）；每日到期 job</td><td><span class="badge p2">P2</span></td><td>2-B</td></tr>
+<tr><td>FR-51</td><td>企業禮券（營運後台代建）</td><td><code>corporate_accounts</code>（統編）、<code>gift_card_batches</code>；匯款確認後 paid → issued；三聯式發票；CSV 只能匯出一次；<code>/admin/corporate</code>；STAFF_ONLY；企業自助入口為未來項目</td><td><span class="badge p2">P2</span></td><td>2-C</td></tr>
+<tr><td>FR-52</td><td>行為分析</td><td> PostHog，前端與伺服器事件（以後端為準），不送 PII；事件清單與 KPI 對照見第 9 章</td><td><span class="badge p0">P0</span></td><td>MVP</td></tr>
+<tr><td>FR-53</td><td>檢舉與下架</td><td><code>content_reports</code>、<code>moderation_status</code>；<code>POST /public/wishlists/{slug}/reports</code>（免登入、Turnstile、限流）；hidden 回 410 <code>WISHLIST_REMOVED</code></td><td><span class="badge p0">P0</span></td><td>MVP</td></tr>
+<tr><td>FR-54</td><td>圖片限制與 EXIF 去除</td><td>僅 image/jpeg、png、webp，&le; 5 MB；伺服器端去除 EXIF（含 GPS）後才公開；頁面提示勿上傳含個資照片</td><td><span class="badge p0">P0</span></td><td>MVP</td></tr>
+<tr><td>FR-55</td><td>MVP 營運後台</td><td><code>/admin</code>（<code>is_staff</code>）：清單與使用者搜尋、下架 / 恢復、檢舉佇列、系統旗標（唯讀模式）；staff 動作寫 audit_logs；P2 的訂單、退款、企業後台掛在同一殼內</td><td><span class="badge p0">P0</span></td><td>MVP</td></tr>
+<tr><td>FR-56</td><td>MVP Email 通知</td><td>第一筆認領即時、之後每日彙整，可關閉；驚喜模式只寫件數；訪客留 Email 則寄確認信與管理連結；<code>notifications</code> outbox；Resend 或 AWS SES</td><td><span class="badge p0">P0</span></td><td>MVP</td></tr>
+<tr><td>FR-57</td><td>帳號刪除與資料匯出</td><td><code>DELETE /me</code>、<code>GET /me/export</code>、<code>DELETE /guest/me</code>；<code>/me/settings</code>。P2：有餘額或未結案認捐 / 訂單回 409 <code>ACCOUNT_HAS_BALANCE</code>，金融紀錄依商業會計法保存並假名化（年限待會計師確認）</td><td><span class="badge p0">P0</span></td><td>MVP</td></tr>
+<tr><td>FR-58</td><td>法律文件與個資告知</td><td><code>/terms</code>、<code>/privacy</code>、認領 sheet 個資告知連結（不強制勾選）、Cookie / 本機儲存說明；P2 另需點數 / 禮物卡使用條款、退款政策</td><td><span class="badge p0">P0</span></td><td>MVP</td></tr>
+<tr><td>FR-59</td><td>環境與 CI/CD</td><td>local / staging / production；GitHub Actions；向前相容遷移；PR preview；測試策略見 8.9</td><td><span class="badge p0">P0</span></td><td>MVP</td></tr>
+<tr><td>FR-60</td><td>信用卡拒付風控</td><td>3DS、新帳號每日上限 NT$3,000、凍結錢包、<code>wallet_debts</code>、禮物卡 <code>claimable_at</code> 延遲兌換（最多 24 小時）</td><td><span class="badge p2">P2</span></td><td>2-A</td></tr>
+<tr><td>FR-61</td><td>電子發票</td><td>串接電子發票加值中心；<code>invoices</code>；載具選項；現金退款開折讓或作廢</td><td><span class="badge p2">P2</span></td><td>2-A</td></tr>
+<tr><td>FR-62</td><td>救災組織驗證</td><td><code>organizations.verification_status</code>；驗證文件存 R2 私有 bucket；未驗證不得建立 public 據點（<code>ORG_NOT_VERIFIED</code>）；staff 審核；已驗證徽章</td><td><span class="badge p2">P2</span></td><td>2-D</td></tr>
+</tbody></table>
+
+<h2 id="s8">8. 非功能需求</h2>
+<h3>8.1 效能與可用性</h3>
+<table>
+<thead><tr><th>項目</th><th>目標</th></tr></thead>
+<tbody>
+<tr><td>公開頁（<code>/s/{slug}</code> 與其讀取 API）</td><td>p95 &lt; 300ms（CDN 命中時 &lt; 100ms）；LCP &lt; 2.5s（4G）</td></tr>
+<tr><td>寫入 API（認領；P2 起含認捐）</td><td>p95 &lt; 500ms</td></tr>
+<tr><td>可用性</td><td>99.9% 月可用性（約每月 43 分鐘停機）</td></tr>
+<tr><td>救災尖峰</td><td>公開讀取承受 5,000 RPS，CDN 快取命中率 &gt; 90%；寫入承受 200 RPS；尖峰時 SSE 可降級為輪詢</td></tr>
+<tr><td>一致性</td><td>認領零超額（P2 起認捐亦硬上限）；併發壓測 1,000 並行搶最後 1 件，恰 1 成功</td></tr>
+<tr><td>備份與復原</td><td>RPO &le; 5 分鐘（PITR 7 天）、RTO &le; 1 小時；每季還原演練（見 8.8）</td></tr>
+</tbody></table>
+<h3>8.2 安全</h3>
+<ul>
+<li>HTTPS 全站、HSTS；session 與 guest cookie 設 HttpOnly、Secure、SameSite=Lax。</li>
+<li>guest_token 為 32 bytes 隨機，DB 僅存 SHA-256 hash；session 為 opaque token。</li>
+<li>輸入驗證與參數化查詢（sqlx）；CSP；上傳限 jpeg / png / webp、&le; 5 MB，並於伺服器端去除 EXIF（含 GPS）。</li>
+<li>link preview 防 SSRF（拒絕私有 IP、限制重導、逾時、大小）。</li>
+<li>OTP 速率限制與 Cloudflare 速率限制；機器人防護（Turnstile 用於建立型端點）。</li>
+<li>金流 webhook 驗簽 + 冪等；<code>point_ledger</code> 只增不改，balance 與 ledger 每日對帳；<code>shipping_addresses</code> 欄位級加密；admin 端點限 <code>is_staff</code>。</li>
+<li>授權：每個端點檢查資源擁有權與 org_role；audit_logs 記錄敏感操作。</li>
+</ul>
+<h3>8.3 隱私與個資法</h3>
+<ul>
+<li>依台灣《個人資料保護法》：蒐集時告知目的與項目；訪客聯絡方式為選填；提供查詢、更正、刪除管道。</li>
+<li>最小蒐集；訪客預設不公開姓名；relief 不收集災民個資。</li>
+<li>資料保留：清單結束後（closed / archived）一定期間（建議 12 個月）後匿名化或刪除訪客聯絡方式。</li>
+<li>日誌不記錄聯絡方式與 token 明文。</li>
+<li>MVP 提供服務條款 <code>/terms</code>、隱私權政策 <code>/privacy</code>、認領 sheet 的個資蒐集告知連結（不強制勾選）與 Cookie / 本機儲存說明。P2 另需點數 / 禮物卡使用條款與退款政策（含點數規則：不可轉讓、不可提領給受捐者）。收件地址與電話僅用於履約，履約完成後依期限刪除或匿名化。</li>
+<li>當事人權利：<code>DELETE /me</code> 去識別化與 <code>GET /me/export</code> 匯出（FR-57）；金融紀錄依商業會計法保存並假名化。</li>
+</ul>
+<h3>8.4 無障礙</h3>
+<p>符合 WCAG 2.1 AA：色彩對比 4.5:1、鍵盤可操作、焦點可見、表單標籤與錯誤提示、動態更新使用 <code>aria-live</code>、支援系統字級放大與暗色模式。</p>
+<h3>8.5 國際化</h3>
+<p>以 zh-TW 為主，文案外置於 i18n 檔，日期時間以 Asia/Taipei 顯示（儲存為 UTC），金額顯示 NT$ 千分位。預留 en 與 ja；不寫死語系字串。</p>
+<h3>8.6 瀏覽器與環境支援</h3>
+<table>
+<thead><tr><th>環境</th><th>支援</th></tr></thead>
+<tbody>
+<tr><td>LINE in-app browser（iOS / Android）</td><td>核心流程必須可用（認領、檢視；P2 起含儲值與認捐）；不依賴 Service Worker 與 cookie 持久性</td></tr>
+<tr><td>Facebook / Messenger in-app browser</td><td>同上</td></tr>
+<tr><td>iOS Safari 16+、Android Chrome 最新兩個主版本</td><td>完整支援含 PWA 加入主畫面</td></tr>
+<tr><td>桌面 Chrome / Edge / Safari / Firefox 最新兩個主版本</td><td>完整支援</td></tr>
+<tr><td>網路</td><td>3G 慢速可操作；公開頁首次載入 JS &lt; 150KB gz（建議值）</td></tr>
+</tbody></table>
+<h3>8.7 點數規則與法規（D16、D30，上線前阻斷項）</h3>
+<ul>
+<li>1 點 = NT$1，整數；儲值與兌換禮物卡需登入（錢包跨裝置、退款、開發票）。</li>
+<li><b>核心原則</b>：點數永遠不能提領成現金給受捐者；點數只能用在心願品項（投入眾籌品項，達標後由平台購買）。不可在錢包之間轉點。</li>
+<li><b>點數批次</b>：topup（可退現金、不設期限）、gift_card（不可退現金、不設期限）、reward_bonus（不可退現金、90 天到期、非預收款）。認捐扣點順序為 reward_bonus → gift_card → topup。現金退款只能退儲值批次。</li>
+<li><b>履約保證範圍</b>：儲值點數 + 未兌換禮物卡 + 已兌換未使用的 gift_card 點數；reward_bonus 除外。參考星巴克隨行卡等台灣儲值卡的作法（儲值金由銀行足額履約保證或信託），細節由律師確認。不得動用預收款孳息。</li>
+<li><b>禮物卡</b>是「購買禮券贈送」，不是餘額互轉。兌換後不可退現金、只能用於心願品項的條款，須律師確認是否符合禮券定型化契約規範；如不符，退款對象改為原購買者（待決）。</li>
+<li><b>電子支付條例</b>：以單一用途（只買本平台心願品項）與不可轉讓設計，避免落入儲值 / 轉帳業務。</li>
+<li><b>星星與贊助點數</b>為無償贈與，非預收款，可設期限，需在使用條款載明。</li>
+<li><b>發票</b>：開立時點（儲值時或兌換時）需會計師確認；企業禮券開立三聯式發票。</li>
+<li><b>阻斷</b>：上述項目經律師與會計師審閱前，不得上線點數錢包、眾籌與禮物卡。</li>
+</ul>
+
+<h3>8.8 環境與備份（D38）</h3>
+<ul>
+<li>環境：local（docker compose：postgis 16 + MinIO 模擬 R2 + Mailpit 收信）、staging、production；各自獨立 DB、R2 bucket、金流沙箱。</li>
+<li>CI/CD 以 GitHub Actions：後端 build image、推 Artifact Registry、先跑 Cloud Run Job 執行 <code>sqlx migrate</code>（僅允許向前相容：expand → migrate → contract）、再部署 Cloud Run；前端 Cloudflare Pages 每個 PR 產生 preview URL。</li>
+<li>機密：GCP Secret Manager（後端）、Cloudflare secrets（前端）；金流與 AEAD 金鑰不得進 repo。</li>
+<li>備份：Cloud SQL 每日備份 + PITR 7 天；RPO &le; 5 分鐘、RTO &le; 1 小時；每季還原演練；R2 物件版本保留 30 天。</li>
+<li>監控：Sentry、OpenTelemetry traces、Cloud Monitoring 告警（5xx 率、p95、DB 連線、佇列堆積、對帳差異 &ne; 0 立即告警）。</li>
+</ul>
+<h3>8.9 測試策略摘要（D37）</h3>
+<ul>
+<li>後端：單元測試；<code>sqlx::test</code> 對真實 PostgreSQL + PostGIS（CI 用 service container）；<b>併發測試</b>（tokio 同時 N 個認領 / 認捐搶最後額度，斷言不超額、帳本守恆）；冪等重送測試；對帳查詢在測試資料上恆為 0 差異。</li>
+<li>契約：後端 utoipa 產生 OpenAPI 3.1，前端以 openapi-typescript 產生 TS 型別，CI 比對產物未變。</li>
+<li>前端：Vitest（元件 / composables）；Playwright E2E（手機 viewport、LINE in-app User-Agent、離線狀態、409 回滾）。</li>
+<li>負載：k6，針對公開頁（經 CDN）與認領 API，對照 8.1 目標。</li>
+<li>每個 PR 必跑：fmt / clippy / test、sqlx offline check、前端 lint / typecheck / test、OpenAPI 型別一致性。</li>
+</ul>
+
+<h2 id="s9">9. 成功指標 KPI</h2>
+<div class="callout"><b>北極星指標（建議）：</b>每張已分享清單的「成功認領品項數」（以 <code>reserved</code> 以上、未取消的 claims 計；Phase 2 起加計 <code>funded</code> 的眾籌品項）。它同時反映建立者價值（需求被滿足）與訪客轉換。</div>
+<table>
+<thead><tr><th>類別</th><th>指標</th><th>MVP 目標（上線後 3 個月）</th></tr></thead>
+<tbody>
+<tr><td>啟用</td><td>註冊建立者中，建立清單且新增 ≥ 3 品項的比例</td><td>&gt; 60%</td></tr>
+<tr><td>分享</td><td>建立清單後 24 小時內完成分享的比例</td><td>&gt; 50%</td></tr>
+<tr><td>轉換</td><td>分享後轉換率 = 開啟公開頁的獨立訪客中完成至少一次認領的比例（P2 起含認捐）</td><td>&gt; 15%</td></tr>
+<tr><td>結果</td><td>清單平均完成度（建立 30 天或活動日前）</td><td>&gt; 50%</td></tr>
+<tr><td>品質</td><td>重複 / 超額認領數</td><td>0</td></tr>
+<tr><td>速度</td><td>訪客首次點開到完成認領的中位時間</td><td>&lt; 45 秒</td></tr>
+<tr><td>病毒</td><td>訪客在完成頁點擊「我也要建立」並建立清單的比例（病毒係數）</td><td>&gt; 3%</td></tr>
+<tr><td>眾籌達標率 <span class="badge p2">P2</span></td><td>截止時 <code>funding_status</code> 為 funded / fulfilled 的眾籌品項比例</td><td>&gt; 60%</td></tr>
+<tr><td>代購履約時間 <span class="badge p2">P2</span></td><td>達標到人工代購下單完成的中位時間；到包裹送達的中位時間</td><td>下單 &lt; 3 個工作天（SLA）</td></tr>
+<tr><td>點數健康度 <span class="badge p2">P2</span></td><td>購買失敗率；ledger 與 balance 對帳差異</td><td>失敗率 &lt; 3%；差異 0</td></tr>
+<tr><td>禮物卡兌換率 <span class="badge p2">P2</span></td><td>發出的禮物卡中，30 天內被兌換的比例</td><td>&gt; 80%</td></tr>
+<tr><td>未兌換餘額 <span class="badge p2">P2</span></td><td>未兌換禮物卡與未使用點數的總額（履約保證規模，同時追蹤占預收款比例）</td><td>持續監控，無固定目標</td></tr>
+<tr><td>星星兌換率 <span class="badge p2">P2</span></td><td>賺得星星中已兌換的比例</td><td>30 至 50%（過低表示誘因不足、過高表示成本偏高）</td></tr>
+<tr><td>企業客戶數 <span class="badge p2">P2</span></td><td>有成功發行至少一批禮券的企業數</td><td>P2-C 上線後 3 個月 &ge; 3 家</td></tr>
+<tr><td>穩定</td><td>可用性、API p95、錯誤率</td><td>達 8.1 目標</td></tr>
+<tr><td>救災 <span class="badge p2">P2</span></td><td>試點據點需求缺口被認捐比例；從登記到實收中位時間</td><td>試點後設定</td></tr>
+</tbody></table>
+<h3>9.1 KPI 與分析事件對照（D34）</h3>
+<p>工具為 PostHog。轉換類指標以後端（server）事件為準；事件不含 PII，user / guest 以不可逆雜湊 ID 識別。</p>
+<table>
+<thead><tr><th>KPI</th><th>計算所用事件</th></tr></thead>
+<tbody>
+<tr><td>啟用（建立清單且 &ge; 3 品項）</td><td><code>list_created</code>、<code>list_published</code></td></tr>
+<tr><td>分享（24 小時內完成分享）</td><td><code>list_published</code>、<code>share_clicked{channel: line|fb|copy|qr}</code></td></tr>
+<tr><td>分享後轉換率</td><td><code>public_viewed{referrer_type, is_in_app_browser}</code> &rarr; <code>claim_sheet_opened</code> &rarr; <code>claim_succeeded</code>（server）；失敗看 <code>claim_failed{code}</code></td></tr>
+<tr><td>清單完成度、成功認領品項數</td><td><code>claim_succeeded</code>、<code>claim_status_changed</code>（server）</td></tr>
+<tr><td>病毒（我也要建立）</td><td><code>public_viewed</code> 之後同一匿名 ID 觸發 <code>list_created</code></td></tr>
+<tr><td>PWA 與 LINE 環境</td><td><code>pwa_install_prompted</code>、<code>pwa_installed</code>、<code>open_external_browser_clicked</code></td></tr>
+<tr><td>P2：儲值、眾籌、禮物卡</td><td><code>topup_paid</code>、<code>contribution_created</code>、<code>item_funded</code>、<code>gift_card_claimed</code> 等</td></tr>
+</tbody></table>
+
+<h2 id="s10">10. 分期路線圖</h2>
+<p>時程為假設 3-4 人小團隊（前端 1、後端 Rust 1-2、設計 / PM 兼任）的估計，起點為文件通過日。</p>
+<table>
+<thead><tr><th>階段</th><th>範圍</th><th>估計</th><th>退出條件</th></tr></thead>
+<tbody>
+<tr><td>Spike（D45）</td><td>MVP 開工前 1 週。S1 Nuxt SSR on Cloudflare + OG：LINE / FB / iMessage 貼連結顯示正確預覽（通過：三者皆出現標題與封面圖；失敗備案：邊緣預渲染 OG 專用路由）。S2 LINE in-app browser：cookie、localStorage、<code>ws_guest</code> 存活率與 <code>openExternalBrowser=1</code> 行為（通過：重新開啟後認領仍可識別；失敗備案：強化 <code>X-Guest-Token</code> + Email 管理連結）。S3 SSE 經 Cloudflare 到 Cloud Run 連線穩定度（通過：長連線穩定並可自動重連；失敗備案：改輪詢）</td><td>1 週</td><td>三項 Spike 結論寫入技術決策紀錄</td></tr>
+<tr><td>高保真設計（D33）</td><td>與 MVP 開發並行：線框為低保真，MVP 上線前需高保真設計與 design tokens（色彩、字級、間距、元件）</td><td>並行約 4-6 週（設計師）</td><td>design tokens 與核心頁面高保真稿完成</td></tr>
+<tr><td><span class="badge p0">P0</span> MVP / Phase 1</td><td>FR-01 至 FR-18、FR-52 至 FR-59：登入、personal + registry、<b>僅數量型認領</b>、驚喜模式、儀表板、OG 分享、SSE、PWA 基本、監控、行為分析、檢舉下架與 EXIF 去除、營運後台、Email 通知、帳號刪除與匯出、法律文件、環境與 CI/CD</td><td>約 14-16 週（含 8 週封閉測試）</td><td>30 張真實清單、轉換率與零超額達標、壓測通過 8.1</td></tr>
+<tr><td><b>Go / No-Go（D32）</b></td><td>MVP 封閉測試 8 週後評估，<b>全部達成才啟動 P2-A</b>：已發佈清單 &ge; 300；分享頁到認領轉換率 &ge; 25%；&ge; 40% 清單至少有 1 筆認領；D30 法規意見書已取得。以上數字為假設，待確認。</td><td>評估 1 週</td><td>決策會議與紀錄</td></tr>
+<tr><td><span class="badge p1">P1</span> Phase 1.5</td><td>FR-19 至 FR-22、FR-30：link preview、LINE 通知、到期提醒、範本、換裝置找回完整版（Email 與最小版找回已在 MVP）</td><td>約 6-8 週</td><td>通知送達率 &gt; 95%，建立清單時間縮短 30%</td></tr>
+<tr><td><span class="badge p2">P2-A</span> 儲值錢包 + 點數眾籌（先做）</td><td>FR-29、FR-31 至 FR-44、FR-60、FR-61：錢包、儲值、自動儲值、點數批次、認捐、達標自動下單、人工代購、退點、現金退款、收件地址、拒付風控、電子發票</td><td>約 18-22 週；<b>前置阻斷：</b>律師 / 會計師審閱與履約保證安排 6-8 週（可與 P1 並行啟動）；商家洽談 2-3 家</td><td>履約保證到位；1 個月內眾籌達標率與履約時間達 KPI；對帳零差異</td></tr>
+<tr><td><span class="badge p2">P2-B</span> 電子禮物卡 + 回饋星星</td><td>FR-45 至 FR-50</td><td>約 8-10 週；前置：禮物卡條款律師確認、風控規則</td><td>禮物卡兌換率與星星兌換率達 KPI；無盜刷事故</td></tr>
+<tr><td><span class="badge p2">P2-C</span> 企業禮券</td><td>FR-51：營運後台代建、批次、發票、CSV；企業自助入口列為未來</td><td>約 4-6 週；前置：至少 1 家企業意向客戶</td><td>首批企業禮券成功發行並對帳</td></tr>
+<tr><td><span class="badge p2">P2-D</span> relief 救災</td><td>FR-23 至 FR-28、FR-62：組織（含驗證）、地圖、彙總、實收、離線佇列（僅數量認領）</td><td>約 14-18 週；前置：合作夥伴試點 4-6 週</td><td>至少一個組織完成真實或演練場景；尖峰壓測 5,000 RPS 讀取</td></tr>
+</tbody></table>
+<p class="muted">建議里程碑：W0 Spike 與 Schema 定稿；W5 內部 demo（建立 + 分享 + 認領）；W7 起封閉測試 8 週；W15 Go / No-Go。救災試點可與 P1 並行洽談。</p>
+
+<h2 id="s11">11. 待決問題 Open Questions</h2>
+<ol>
+<li><b>履約保證方式</b>：儲值點數、未兌換禮物卡與已兌換未使用的 gift_card 點數，採銀行足額保證或信託？參考台灣儲值卡（如星巴克隨行卡）的作法，成本、額度與細節由律師確認。（上線前阻斷項，見 8.7）</li>
+<li><b>禮物卡兌換後不可退現金</b>：條款是否符合禮券定型化契約規範？如不符，退款對象改為原購買者。</li>
+<li><b>星星與贊助點數期限</b>：星星 12 個月、reward_bonus 90 天到期，需律師確認使用條款載明方式。</li>
+<li><b>企業自助入口</b>：P2-C 由營運後台代建，企業自助購買與發放入口何時開發？</li>
+<li><b>已決（驚喜模式與眾籌）</b>：鎖定期間建立者只看整體完成度與「已下單 / 運送中」，看不到捐贈者；包裹送達即揭曉。解鎖時間為 <code>event_date</code> 當日 00:00 Asia/Taipei。</li>
+<li><b>發票開立時點</b>：儲值時或兌換（達標購買）時？禮物卡購買時或兌換時？企業禮券為三聯式；需會計師確認。</li>
+<li><b>服務費率</b>：人工代購暫定 8%（價差緩衝 10%），待營運驗證；目錄商品免服務費、不加緩衝（已決），商家分潤比例待談。</li>
+<li><b>目錄商家名單</b>：初期合作哪些商家？是否有 API、庫存與價格同步能力？</li>
+<li><b>已決（訪客換裝置找回）</b>：MVP 最小版為認領確認信的管理連結（FR-56），P1 為完整版（FR-30）。</li>
+<li><b>訪客通知渠道（維持）</b>：LINE Messaging API 需對方加官方帳號好友，故訪客通知以 Email 為主（已定）。</li>
+<li><b>技術風險（SSE 在 Cloud Run 與 CDN）</b>：逾時與連線數限制下，SSE 設重連機制，尖峰時降級為輪詢；保留為技術風險追蹤。</li>
+<li><b>已決（Cloudflare 部署形態，D48）</b>：Cloudflare Pages（使用者決定，成本考量）；Workers 列為備案。</li>
+<li><b>救災試點夥伴</b>：由誰擔任？成功標準與資料所有權、免責為何？</li>
+<li><b>已決（認領逾期）</b>：<code>wishlists.claim_ttl_hours</code>，personal / registry 預設 NULL（不逾期），relief 預設 48；<code>claims.expires_at</code> 由此計算，purchased 後清除，背景 job 轉 <code>expired</code> 並回補 <code>qty_claimed</code>。</li>
+<li><b>商業模式優先序</b>：代購服務費與目錄分潤為主；affiliate 揭露方式與聯盟平台選擇。</li>
+<li><b>Go / No-Go 門檻數字</b>：300 張清單、轉換率 &ge; 25%、40% 清單有認領，皆為假設，待確認。</li>
+<li><b>分析工具</b>：PostHog Cloud 或自架？資料落地區域與個資考量。</li>
+<li><b>Email 供應商</b>：Resend 或 AWS SES？</li>
+<li><b>電子發票加值中心</b>：與金流同家（綠界 / 藍新）或獨立？開立時點待會計師確認。</li>
+<li><b>金融紀錄保存年限</b>：依商業會計法，年限待會計師確認，用於帳號刪除的假名化保留。</li>
+<li><b>拒付風控參數</b>：新帳號 30 天內每日上限 NT$3,000、禮物卡延遲兌換最多 24 小時是否合適，待上線後依數據調整。</li>
+<li><b>救災組織驗證文件</b>：除立案證書與政府單位證明外是否接受其他佐證？審核 SLA 為何？</li>
+<li><b>未來方向（relief）</b>：可讓捐贈者用點數購買目錄物資直送據點，本版不做。</li>
+<li><b>品牌與網域</b>：wishsync.tw 是否已取得？</li>
+</ol>
+
+</div></main>
+</body>
+</html>

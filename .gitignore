@@ -1,0 +1,10 @@
+target/
+node_modules/
+.nuxt/
+.output/
+.wrangler/
+.env
+.DS_Store
+dist/
+.impeccable/
+*.log

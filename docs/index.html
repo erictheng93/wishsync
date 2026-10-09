@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WishSync 文件索引</title>
+<style>
+:root{--bg:#ffffff;--fg:#1f2328;--muted:#59636e;--border:#d1d9e0;--accent:#0b7a75;--accent-soft:#e6f4f3;--warn:#b35900;--code-bg:#f6f8fa}
+@media (prefers-color-scheme: dark){:root{--bg:#0d1117;--fg:#e6edf3;--muted:#9198a1;--border:#3d444d;--accent:#3fb8af;--accent-soft:#12302e;--warn:#e3a35b;--code-bg:#161b22}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,"Noto Sans TC","PingFang TC",sans-serif;line-height:1.7}
+main{max-width:880px;margin:0 auto;padding:48px 16px}
+h1{margin:0 0 4px;font-size:2rem}
+.sub{color:var(--muted);margin:0 0 32px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+a.card{display:block;border:1px solid var(--border);border-radius:12px;padding:20px;color:inherit;text-decoration:none;transition:border-color .15s}
+a.card:hover{border-color:var(--accent)}
+.no{font-size:.8rem;color:var(--accent);font-weight:700;letter-spacing:.05em}
+.card h2{margin:4px 0 6px;font-size:1.15rem}
+.card p{margin:0;color:var(--muted);font-size:.92rem}
+.aud{display:inline-block;margin-top:10px;font-size:.78rem;background:var(--accent-soft);color:var(--accent);padding:2px 8px;border-radius:999px}
+.note{margin-top:32px;padding:16px;border:1px solid var(--border);background:var(--code-bg);border-radius:4px;font-size:.92rem}
+table{border-collapse:collapse;width:100%;font-size:.9rem;margin-top:8px}
+th,td{border:1px solid var(--border);padding:6px 10px;text-align:left}
+th{background:var(--code-bg)}
+</style>
+</head>
+<body>
+<main>
+<h1>WishSync（心願同步）</h1>
+<p class="sub">產品規劃文件 v0.3 · 2026-10-08 · Draft（v0.2：眾籌改為點數錢包＋達標自動購買；v0.3：效仿星巴克，新增自動儲值、電子禮物卡、回饋星星、企業禮券）</p>
+<div class="grid">
+  <a class="card" href="01-prd.html"><div class="no">01</div><h2>PRD 產品需求文件</h2><p>問題、想法評估、技術棧評估、功能需求、KPI、路線圖。</p><span class="aud">全體 / 決策者</span></a>
+  <a class="card" href="02-master-user-flow.html"><div class="no">02</div><h2>Master User Flow</h2><p>主流程、狀態機、交易邊界、併發控制、背景工作、錯誤碼。</p><span class="aud">後端 Rust 工程師</span></a>
+  <a class="card" href="03-wireframe-user-journey.html"><div class="no">03</div><h2>Wireframe &amp; User Journey</h2><p>用戶旅程、User Flow、手機線框圖、元件規格、PWA、文案。</p><span class="aud">前端 Vue/Nuxt 工程師</span></a>
+  <a class="card" href="04-data-schema-api-contract.html"><div class="no">04</div><h2>Data Schema &amp; API Contract</h2><p>ER 圖、PostgreSQL DDL、API 契約、TS / Rust 型別。</p><span class="aud">前後端共同</span></a>
+</div>
+<div class="note">
+<strong>跨文件共同約定</strong>（四份文件都照這些寫）
+<table>
+<tr><th>項目</th><th>約定</th></tr>
+<tr><td>清單類型</td><td>personal（生日）· registry（孕婦／婚禮）· relief（救災，Phase 2）</td></tr>
+<tr><td>品項模式</td><td>quantity（數量認領，送禮者自行購買）· crowdfund（點數眾籌，Phase 2）</td></tr>
+<tr><td>點數</td><td>1 點 = NT$1，只能投入心願品項，任何人都無法提領給受捐者；達標後由平台自動下單（目錄商品）或人工代購</td></tr>
+<tr><td>點數來源</td><td>儲值（可退現金）· 禮物卡兌換（不可退現金）· 星星兌換的贊助點數（90 天到期）；認捐扣點順序：贊助 → 禮物卡 → 儲值</td></tr>
+<tr><td>認領狀態</td><td>reserved → purchased → delivered；cancelled／expired</td></tr>
+<tr><td>認捐狀態</td><td>pledged → captured（達標下單）；released（退回錢包）／reallocated（轉投其他品項）</td></tr>
+<tr><td>品項募集狀態</td><td>open → funded → fulfilled；expired（截止未達標）</td></tr>
+<tr><td>分期</td><td>P0 MVP（personal + registry 數量認領）· P1（連結預覽、通知、換裝置找回）· P2-A 錢包＋眾籌＋自動儲值 · P2-B 禮物卡＋回饋星星 · P2-C 企業禮券 · P2-D 救災</td></tr>
+<tr><td>API</td><td><code>https://api.wishsync.tw/api/v1</code>，錯誤格式 RFC 9457 problem+json，建立類 POST 必須帶 Idempotency-Key</td></tr>
+</table>
+</div>
+</main>
+</body>
+</html>

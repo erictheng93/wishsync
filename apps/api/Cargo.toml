@@ -1,0 +1,37 @@
+[package]
+name = "wishsync-api"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+axum = "0.8"
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "signal", "sync", "time"] }
+sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio", "tls-rustls", "postgres", "json", "uuid", "chrono", "macros", "migrate"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+uuid = { version = "1", features = ["serde", "v4"] }
+sha2 = "0.10"
+chrono = { version = "0.4", features = ["serde"] }
+tower-http = { version = "0.6", features = ["cors", "trace"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+rand = "0.8"
+base64 = "0.22"
+hmac = "0.12"
+hex = "0.4"
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+lettre = { version = "0.11", default-features = false, features = ["builder", "smtp-transport", "tokio1"] }
+image = { version = "0.25", default-features = false, features = ["jpeg", "png", "webp"] }
+futures-util = { version = "0.3", default-features = false }
+argon2 = "0.5"
+jsonwebtoken = "9"
+
+[dev-dependencies]
+tower = { version = "0.5", features = ["util"] }
+http-body-util = "0.1"
+
+# debug 建置下 argon2 太慢，測試會卡
+[profile.dev.package.argon2]
+opt-level = 3
+[profile.dev.package.blake2]
+opt-level = 3

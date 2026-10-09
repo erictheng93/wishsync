@@ -1,0 +1,29 @@
+name: ci
+on: [push, pull_request]
+jobs:
+  api:
+    runs-on: ubuntu-latest
+    services:
+      db:
+        image: postgis/postgis:16-3.4
+        env: { POSTGRES_USER: wishsync, POSTGRES_PASSWORD: wishsync, POSTGRES_DB: wishsync }
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U wishsync" --health-interval 2s --health-retries 30
+    env:
+      DATABASE_URL: postgres://wishsync:wishsync@localhost:5432/wishsync
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with: { workspaces: apps/api }
+      - run: cargo test --manifest-path apps/api/Cargo.toml
+  web:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: apps/web } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: apps/web/package-lock.json }
+      - run: npm ci
+      - run: npm run build

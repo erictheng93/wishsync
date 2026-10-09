@@ -1,0 +1,17 @@
+{
+  "name": "wishsync-web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "nuxt dev",
+    "build": "nuxt build",
+    "preview": "npm run build && wrangler pages dev",
+    "deploy": "npm run build && wrangler pages deploy"
+  },
+  "dependencies": {
+    "nuxt": "^4"
+  },
+  "devDependencies": {
+    "wrangler": "^4"
+  }
+}

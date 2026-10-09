@@ -1,0 +1,25 @@
+/* 共用設計 token（款式二：紅白實驗室）：訪客端 g- 與創建者端 c- 皆由此取值。無外部字型、無圓角、無陰影。 */
+:root{
+  --font:-apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC",sans-serif;
+  --red:#c8102e;--red-dark:#a30d25;
+  --bg:#fff;--bg-alt:#f4f4f4;--card:#fff;--fg:#1a1a1a;--mute:#666;--line:#d8d8d8;--fill:#f4f4f4;
+  --accent:var(--red);--accent-press:var(--red-dark);--accent-fg:#fff;--link:var(--red);
+  --ok:#1b7a3a;--bad:#c8102e;--bad-bg:#fbe9ec;--ok-bg:#e8f5ee;--glass:#fff;--scrim:rgba(0,0,0,.5);
+  --stripe:repeating-linear-gradient(45deg,var(--red) 0 8px,var(--red-dark) 8px 16px);
+  --ease:cubic-bezier(.25,.1,.25,1);--t:.2s;color-scheme:light dark;
+}
+@media (prefers-color-scheme:dark){:root{
+  --red:#e5334f;--red-dark:#b82840;
+  --bg:#0e0e0e;--bg-alt:#242424;--card:#181818;--fg:#f2f2f2;--mute:#a8a8a8;--line:#333;--fill:#242424;
+  --accent:#d92b47;--accent-press:#b82840;--accent-fg:#fff;--ok:#4cc474;--bad:#ff5a73;--bad-bg:#2c1218;--ok-bg:#12261a;--glass:#0e0e0e;--scrim:rgba(0,0,0,.7);
+}}
+*{-webkit-tap-highlight-color:transparent;border-radius:0}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font:400 16px/1.5 var(--font);letter-spacing:.02em;-webkit-font-smoothing:antialiased}
+h1{font-size:30px;line-height:1.2;font-weight:800;letter-spacing:.01em;margin:8px 0}
+h2{font-weight:800;letter-spacing:.02em}
+a{color:var(--link);text-decoration:none}
+:focus-visible{outline:2px solid var(--red);outline-offset:2px}
+@keyframes rise{from{transform:translateY(24px);opacity:0}to{transform:none;opacity:1}}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}

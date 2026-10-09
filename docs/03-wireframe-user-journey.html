@@ -1,0 +1,2261 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WishSync 線框圖與用戶旅程</title>
+<style>
+:root{--bg:#ffffff;--fg:#1f2328;--muted:#59636e;--border:#d1d9e0;--accent:#0b7a75;--accent-soft:#e6f4f3;--warn:#b35900;--code-bg:#f6f8fa;
+--blue:#0550ae;--blue-soft:#e3effd;--green:#1a7f37;--green-soft:#e2f5e7;--warn-soft:#fff1e0;--red:#b42318;--red-soft:#fdeceb;--g1:#eef1f4;--g2:#c3ccd5;--zebra:#f6f8fa;--on-accent:#ffffff}
+@media (prefers-color-scheme: dark){:root{--bg:#0d1117;--fg:#e6edf3;--muted:#9198a1;--border:#30363d;--accent:#3fb8b0;--accent-soft:#12302f;--warn:#e3a04f;--code-bg:#161b22;
+--blue:#79b8ff;--blue-soft:#14233a;--green:#56d364;--green-soft:#12301b;--warn-soft:#33240f;--red:#ff7b72;--red-soft:#3a1816;--g1:#21262d;--g2:#3d444d;--zebra:#161b22;--on-accent:#0d1117}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:12px}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,"Noto Sans TC","PingFang TC",sans-serif;line-height:1.7;font-size:15px}
+a{color:var(--accent)}
+.layout{display:flex;align-items:flex-start}
+nav.toc{position:sticky;top:0;width:230px;flex:none;height:100vh;overflow-y:auto;padding:16px 14px;border-right:1px solid var(--border);font-size:13px;background:var(--bg)}
+nav.toc b{display:block;margin-bottom:6px}
+nav.toc a{display:block;padding:3px 0;text-decoration:none;color:var(--muted)}
+nav.toc a:hover{color:var(--accent)}
+nav.toc a.sub{padding-left:12px;font-size:12px}
+main{flex:1;min-width:0;max-width:1100px;margin:0 auto;padding:0 24px 80px}
+header.top{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;justify-content:space-between;padding:16px 0;border-bottom:1px solid var(--border);margin-bottom:8px}
+header.top .t{font-weight:700;font-size:17px}
+h1{font-size:26px;margin:20px 0 4px}
+h2{font-size:21px;margin:44px 0 10px;padding-bottom:6px;border-bottom:2px solid var(--accent)}
+h3{font-size:17px;margin:28px 0 8px}
+h4{font-size:15px;margin:14px 0 4px}
+p,li{overflow-wrap:anywhere}
+code{background:var(--code-bg);border:1px solid var(--border);border-radius:4px;padding:0 4px;font-size:.88em;font-family:ui-monospace,Menlo,monospace;overflow-wrap:anywhere}
+.tw{overflow-x:auto;margin:10px 0}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{border:1px solid var(--border);padding:6px 9px;text-align:left;vertical-align:top;overflow-wrap:anywhere}
+th{background:var(--code-bg);white-space:nowrap}
+tbody tr:nth-child(even){background:var(--zebra)}
+.ph{display:inline-block;font-size:11px;font-weight:700;padding:0 7px;border-radius:10px;color:#fff;vertical-align:middle;line-height:1.7}
+.p0{background:#0b7a75}.p1{background:#0969da}.p2{background:#6e7781}
+.note{border:1px solid var(--border);background:var(--accent-soft);padding:10px 14px;margin:12px 0;border-radius:8px}
+.note.w{border-color:var(--warn);background:var(--warn-soft)}
+pre.mermaid{background:var(--code-bg);border:1px solid var(--border);border-radius:8px;padding:10px;overflow-x:auto;text-align:center}
+pre.code{background:var(--code-bg);border:1px solid var(--border);border-radius:8px;padding:10px;overflow-x:auto;font-size:12.5px;line-height:1.55}
+/* badges */
+.b{display:inline-block;font-size:12px;font-weight:600;padding:0 8px;border-radius:10px;border:1px solid;line-height:1.6;white-space:nowrap}
+.b.teal{color:var(--accent);background:var(--accent-soft);border-color:var(--accent)}
+.b.blue{color:var(--blue);background:var(--blue-soft);border-color:var(--blue)}
+.b.green{color:var(--green);background:var(--green-soft);border-color:var(--green)}
+.b.gray{color:var(--muted);background:var(--g1);border-color:var(--g2)}
+.b.orange{color:var(--warn);background:var(--warn-soft);border-color:var(--warn)}
+.b.red{color:var(--red);background:var(--red-soft);border-color:var(--red)}
+/* wireframe */
+.wf{display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start;margin:12px 0 8px}
+.phones{display:flex;flex-wrap:wrap;gap:16px;max-width:100%}
+.phone{width:375px;max-width:100%;min-height:600px;border:2px solid var(--fg);border-radius:28px;background:var(--bg);overflow:hidden;position:relative;display:flex;flex-direction:column;padding-top:8px;font-size:13px;line-height:1.45;flex:none}
+.phone .st{height:16px;font-size:11px;display:flex;justify-content:space-between;padding:0 20px;color:var(--muted)}
+.ab{padding:6px 14px 8px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border);font-weight:700;font-size:15px}
+.ab .sp{flex:1}
+.ab .ic{min-width:32px;min-height:32px;display:grid;place-items:center;border:1px solid var(--g2);border-radius:8px;font-size:12px;font-weight:600}
+.bd{padding:12px 14px;display:flex;flex-direction:column;gap:10px;flex:1}
+.btn{min-height:44px;border:1.5px solid var(--fg);border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;padding:8px 12px;text-align:center;line-height:1.3}
+.btn.pri{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.btn.dis{background:var(--g1);color:var(--muted);border:1.5px dashed var(--g2)}
+.btn.ghost{border-color:var(--g2);font-weight:500}
+.inp{min-height:44px;border:1px solid var(--g2);border-radius:8px;padding:8px 12px;display:flex;align-items:center;color:var(--muted);background:var(--bg)}
+.inp.ta{min-height:64px;align-items:flex-start;padding-top:8px}
+.lbl{font-size:12px;color:var(--muted);margin-bottom:2px}
+.lbl b{color:var(--fg)}
+.row{display:flex;gap:8px;align-items:center}
+.row>*{min-width:0}
+.fl{flex:1}
+.card{border:1px solid var(--g2);border-radius:12px;padding:10px;display:flex;gap:10px;background:var(--bg)}
+.card.off{background:var(--g1);color:var(--muted);border-style:dashed}
+.card .col{flex:1;display:flex;flex-direction:column;gap:6px;min-width:0}
+.im{width:60px;height:60px;background:var(--g1);border:1px dashed var(--g2);border-radius:8px;flex:none;display:grid;place-items:center;color:var(--muted);font-size:11px}
+.prog{height:10px;background:var(--g1);border-radius:6px;overflow:hidden;border:1px solid var(--g2)}
+.prog>i{display:block;height:100%;background:var(--accent)}
+.prog.s{height:6px}
+.seg{display:flex;border:1.5px solid var(--fg);border-radius:10px;overflow:hidden}
+.seg span{flex:1;min-height:44px;display:grid;place-items:center;font-weight:600;text-align:center;font-size:13px}
+.seg span.on{background:var(--accent);color:var(--on-accent)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{min-height:44px;min-width:56px;padding:0 12px;border:1px solid var(--g2);border-radius:22px;display:grid;place-items:center;font-weight:600}
+.chip.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+.sw{width:48px;height:28px;border-radius:14px;background:var(--accent);position:relative;flex:none}
+.sw:after{content:"";position:absolute;right:3px;top:3px;width:22px;height:22px;border-radius:50%;background:#fff}
+.sw.off{background:var(--g2)}.sw.off:after{right:auto;left:3px}
+.stp{display:flex;align-items:center;gap:0;border:1.5px solid var(--fg);border-radius:10px;width:fit-content}
+.stp span{min-width:44px;min-height:44px;display:grid;place-items:center;font-weight:700;font-size:16px}
+.stp span.v{border-left:1px solid var(--g2);border-right:1px solid var(--g2)}
+.scrim{position:absolute;inset:0;background:rgba(0,0,0,.4);z-index:1}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--bg);border-top:2px solid var(--fg);border-radius:18px 18px 0 0;padding:8px 14px 14px;display:flex;flex-direction:column;gap:8px;z-index:2}
+.grab{width:40px;height:4px;background:var(--g2);border-radius:2px;margin:0 auto 2px}
+.tabbar{display:flex;border-top:1px solid var(--border);margin-top:auto}
+.tabbar span{flex:1;min-height:48px;display:grid;place-items:center;font-size:11px;color:var(--muted)}
+.tabbar span.on{color:var(--accent);font-weight:700}
+.map{background:repeating-linear-gradient(45deg,var(--g1),var(--g1) 10px,var(--bg) 10px,var(--bg) 20px);border:1px solid var(--g2);border-radius:10px;position:relative;height:200px}
+.pin{position:absolute;width:22px;height:22px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2px solid #fff}
+.pin.c{background:#c62828}.pin.h{background:#e07b00}.pin.m{background:#c9a400}.pin.l{background:#2e7d32}
+.mask{background:repeating-linear-gradient(135deg,var(--g1),var(--g1) 6px,var(--g2) 6px,var(--g2) 12px);color:var(--fg);border-radius:6px;padding:4px 8px;font-weight:600;font-size:12px}
+.ann{position:absolute;right:6px;top:6px;background:var(--warn);color:#fff;font-size:11px;padding:2px 8px;border-radius:8px;z-index:3}
+.spec{flex:1 1 320px;min-width:0}
+.spec table{font-size:13px}
+.spec th{width:70px}
+.cap{font-size:12px;color:var(--muted);text-align:center;margin-top:4px;width:375px;max-width:100%}
+.ph1{display:flex;flex-direction:column}
+.small{font-size:12px;color:var(--muted)}
+@media (max-width:900px){
+.layout{display:block}
+nav.toc{position:static;width:auto;height:auto;border-right:0;border-bottom:1px solid var(--border);display:flex;flex-wrap:wrap;gap:2px 12px}
+nav.toc b{width:100%}
+nav.toc a.sub{display:none}
+main{padding:0 16px 60px}
+.phone{min-height:560px}
+}
+</style>
+</head>
+<body>
+<div class="layout">
+<nav class="toc" aria-label="目錄">
+<b>目錄</b>
+<a href="#s1">1. 文件資訊與設計原則</a>
+<a href="#s2">2. 資訊架構 Sitemap</a>
+<a href="#s3">3. 用戶旅程地圖</a>
+<a href="#s4">4. User Flow</a>
+<a href="#s5">5. 線框圖 Wireframes</a>
+<a class="sub" href="#w-home">首頁 /</a>
+<a class="sub" href="#w-login">登入 /login</a>
+<a class="sub" href="#w-new">建立清單 /w/new</a>
+<a class="sub" href="#w-edit">編輯品項</a>
+<a class="sub" href="#w-share">分享 sheet</a>
+<a class="sub" href="#w-public">公開分享頁 /s/{slug}</a>
+<a class="sub" href="#w-claim">認領 sheet</a>
+<a class="sub" href="#w-success">認領成功頁</a>
+<a class="sub" href="#w-fund">眾籌 sheet (P2)</a>
+<a class="sub" href="#w-me">我的認領</a>
+<a class="sub" href="#w-progress">完成度儀表板</a>
+<a class="sub" href="#w-relief">救災地圖 (P2-D)</a>
+<a class="sub" href="#w-site">據點頁 (P2-D)</a>
+<a class="sub" href="#w-fcard">公開頁眾籌卡片 (P2)</a>
+<a class="sub" href="#w-wallet">點數錢包 /wallet (P2-A/B)</a>
+<a class="sub" href="#w-topup">儲值 (P2)</a>
+<a class="sub" href="#w-realloc">未達標選擇 (P2)</a>
+<a class="sub" href="#w-fset">編輯品項眾籌設定 (P2)</a>
+<a class="sub" href="#w-addr">收件地址 (P2)</a>
+<a class="sub" href="#w-admin">營運後台 (P2-A)</a>
+<a class="sub" href="#w-gift">購買禮物卡 /gift (P2-B)</a>
+<a class="sub" href="#w-giftdone">購買完成分享 (P2-B)</a>
+<a class="sub" href="#w-redeem">兌換頁 /g/{code} (P2-B)</a>
+<a class="sub" href="#w-rewards">星星 /rewards (P2-B)</a>
+<a class="sub" href="#w-corp">企業禮券 (P2-C)</a>
+<a class="sub" href="#w-report">檢舉與下架</a>
+<a class="sub" href="#w-adminmvp">營運後台 /admin</a>
+<a class="sub" href="#w-settings">帳號設定 /me/settings</a>
+<a href="#s6">6. 元件規格表</a>
+<a href="#s7">7. 狀態管理與資料流</a>
+<a href="#s8">8. PWA 規格</a>
+<a href="#s9">9. OG / 分享預覽</a>
+<a href="#s10">10. 文案與微互動</a>
+<a href="#s11">11. 待決問題</a>
+<a href="#s12">12. 行為分析事件</a>
+<a href="#s13">13. 前端測試策略</a>
+<a href="#s14">14. 部署與環境</a>
+</nav>
+<main>
+<header class="top"><span class="t">WishSync 線框圖與用戶旅程</span><a href="index.html">← 文件索引</a></header>
+
+<h1>WishSync Wireframe / Mockup &amp; User Flow</h1>
+<p class="small">給前端 Vue / Nuxt 工程師的原型與流程說明。名稱、枚舉、API 路徑、前端路由皆對齊共用規格，不另行命名。</p>
+<div class="note w"><b>低保真聲明：</b>本文件的線框為<b>低保真</b>，只表達資訊架構、元件與狀態。MVP 上線前的高保真設計與 design tokens（色彩、字級、間距、元件）由設計師另行產出（路線圖並行項目），實作時以設計稿為準，本文的灰階與 accent 僅為示意。</div>
+
+<h2 id="s1">1. 文件資訊與設計原則</h2>
+<div class="tw"><table>
+<tbody>
+<tr><th>文件</th><td>03 — Wireframe / Mockup &amp; User Flow（用戶旅程與原型圖）</td></tr>
+<tr><th>版本</th><td>v0.4</td></tr>
+<tr><th>日期</th><td>2026-10-08</td></tr>
+<tr><th>狀態</th><td>Draft</td></tr>
+<tr><th>v0.4 變更</th><td>補齊上線前遺漏——行為分析、檢舉下架、MVP 營運後台、測試策略、環境與備份、MVP Email 通知、帳號刪除與資料匯出、信用卡拒付、電子發票、救災組織驗證、技術 Spike、P2 前 Go/No-Go 關卡。本文件對應：檢舉與下架畫面、/admin、/me/settings、個資告知與 Email 管理連結、圖片 EXIF 提示、發票選項、錢包凍結、已驗證組織徽章、第 12 至 14 節。</td></tr>
+<tr><th>v0.3 變更</th><td>效仿星巴克，新增自動儲值、電子禮物卡、回饋星星、企業禮券。核心原則不變：點數永遠不能提領成現金給受捐者（收卡者也不能變現），只能用在心願品項。</td></tr>
+<tr><th>v0.2 變更</th><td>眾籌改為點數錢包與達標自動購買，移到 Phase 2（MVP 只做數量型認領）。受捐者永遠不持有點數；點數達標後由平台自動購買該品項（商品目錄自動下單，或非目錄商品由營運人員人工代購）。</td></tr>
+<tr><th>讀者</th><td>前端工程師（Vue 3 / Nuxt + TypeScript）為主；次要：PM、後端工程師（對照 API 與錯誤碼）、QA（依狀態表寫測試案例）</td></tr>
+<tr><th>分期標示</th><td><span class="ph p0">P0</span> MVP（personal + registry）　<span class="ph p1">P1</span> 連結預覽、通知、到期提醒　<span class="ph p2">P2</span> 細分：<b>P2-A</b> 儲值錢包 + 點數眾籌 + 目錄 / 代購履約 + 自動儲值；<b>P2-B</b> 電子禮物卡 + 回饋星星；<b>P2-C</b> 企業禮券（初期由營運後台代建）；<b>P2-D</b> relief 救災與離線佇列</td></tr>
+<tr><th>相關文件</th><td>PRD、後端主流程、Schema / API（同一份共用規格）</td></tr>
+</tbody></table></div>
+
+<h3>設計原則</h3>
+<div class="tw"><table>
+<thead><tr><th>原則</th><td style="font-weight:700;background:var(--code-bg)">具體落實</td></tr></thead>
+<tbody>
+<tr><th>行動優先</th><td>以 375px 寬為基準設計，桌面僅置中放大（最大 480px 單欄 + 兩側留白）。主要動作放在拇指可及的下半部；表單一律用 bottom sheet，不跳全頁。</td></tr>
+<tr><th>3 次點擊內完成認領</th><td>點 LINE 連結進入 /s/{slug}（0 次）→ 點「我要送」（1）→ 在 sheet 填暱稱、按「確認認領」（2）→ 成功頁。數量預設 1、暱稱可由 localStorage 帶入，因此回訪者實際為 2 次。</td></tr>
+<tr><th>免註冊</th><td>數量型認領的送禮者全程不出現登入、註冊字樣；身分由 guest_token（localStorage + <code>X-Guest-Token</code>）維持。建立者需登入；<b>P2 眾籌投點需登入</b>（錢包要跨裝置、可退款、開發票），登入後以 <code>?redirect=</code> 回到原品項。</td></tr>
+<tr><th>LINE in-app browser 相容</th><td>不依賴 cookie 存活（以 header 為主）；不依賴 <code>beforeinstallprompt</code>、Background Sync、Web Share（LINE 內建瀏覽器支援度不一，需特性偵測並提供「複製連結」後備）；第三方 OAuth 跳轉前提示。</td></tr>
+<tr><th>WCAG 2.1 AA</th><td>文字對比 ≥ 4.5:1（大字 3:1）；進度條需有文字值（<code>role="progressbar"</code> + <code>aria-valuenow</code>），不單靠顏色；狀態徽章同時有文字與色彩；bottom sheet 為 <code>role="dialog" aria-modal</code>，焦點鎖定、Esc 關閉、關閉後焦點回到觸發按鈕；尊重 <code>prefers-reduced-motion</code>。</td></tr>
+<tr><th>觸控目標 ≥ 44px</th><td>所有按鈕、stepper、chip、列表可點區域最小 44×44 CSS px，相鄰目標間距 ≥ 8px。本文線框已按此尺寸繪製。</td></tr>
+<tr><th>隱私預設</th><td>公開頁只顯示「已認領 x / y」；<code>show_claimer_names</code> 開啟才顯示暱稱。驚喜模式下建立者介面使用 SurpriseMask 遮罩。</td></tr>
+</tbody></table></div>
+
+<h2 id="s2">2. 資訊架構 / Sitemap</h2>
+<p>四個使用者世界：營運人員（is_staff，/admin，MVP 即提供）、建立者（需登入，<code>app.wishsync.tw</code>）、訪客（免登入，/s 與 /me/claims）、P2 眾籌捐贈者與禮物卡購買 / 兌換者（需登入，/wallet、/gift、/g/{code}、/rewards）。<span class="ph p2">P2</span> 為點數錢包、禮物卡、星星、企業禮券、營運後台與救災模組。</p>
+<pre class="mermaid">
+flowchart TD
+  H["/ 首頁"]
+  L["/login 登入"]
+  D["/dashboard 我的清單"]
+  N["/w/new 建立清單"]
+  E["/w/{id}/edit 編輯品項"]
+  P["/w/{id}/progress 完成度儀表板"]
+  S["/s/{slug} 公開分享頁 SSR + OG"]
+  M["/me/claims 我的認領"]
+  R["/relief 救災地圖 P2"]
+  RS["/relief/sites/{slug} 據點頁 P2"]
+  O["/org/{id} 組織管理 P2"]
+  W["/wallet 點數錢包 P2"]
+  AO["/admin/orders 營運後台 P2-A"]
+  G["/gift 購買禮物卡 P2-B"]
+  GD["購買完成分享頁 P2-B"]
+  GC["/g/{code} 兌換頁 SSR + OG P2-B"]
+  RW["/rewards 星星與兌換 P2-B"]
+  AC["/admin/corporate 企業禮券 P2-C"]
+  T["/terms 服務條款"]
+  PV["/privacy 隱私權政策"]
+  AD["/admin 營運後台殼 MVP"]
+  ST["/me/settings 帳號設定"]
+  H -->|"開始建立"| L
+  H -->|"看範例"| S
+  L -->|"登入成功"| D
+  D --> N
+  D --> E
+  D --> P
+  N -->|"建立後"| E
+  E -->|"分享"| SH["ShareSheet"]
+  SH -.->|"連結散布 LINE FB 簡訊"| S
+  S -->|"我要送"| CS["ClaimSheet"]
+  S -->|"加入眾籌 P2 需登入"| FS["ContributeSheet P2"]
+  CS --> OK["認領成功頁"]
+  OK --> M
+  FS -->|"餘額不足 前往儲值"| TS["TopupSheet P2"]
+  TS --> W
+  W -->|"回來繼續投點"| S
+  FS -->|"投點成功"| W
+  W -->|"未達標選擇"| RA["ReallocateSheet P2"]
+  RA --> W
+  AO -.->|"is_staff"| W
+  W -->|"買禮物卡"| G
+  G -->|"付款完成"| GD
+  GD -.->|"連結散布 LINE"| GC
+  GC -->|"登入並兌換"| W
+  W -->|"星星"| RW
+  RW -->|"兌換贊助點數"| W
+  AC -.->|"is_staff 發放兌換連結"| GC
+  S -->|"我的認領"| M
+  M --> S
+  P --> E
+  H -->|"救災"| R
+  H --> T
+  H --> PV
+  CS -.->|"個資告知"| PV
+  D --> ST
+  AD -->|"檢舉佇列 下架 恢復"| S
+  AD -.->|"P2"| AO
+  AD -.->|"P2"| AC
+  R --> RS
+  RS --> CS
+  D -.-> O
+  O -.-> RS
+  classDef p2 fill:#eee,stroke:#6e7781,color:#333;
+  class R,RS,O,W,AO,FS,TS,RA,G,GD,GC,RW,AC p2;
+</pre>
+<div class="note">/dashboard 與 /org/{id} 本文未畫完整線框（結構同清單卡片列表與成員表格，見 5.29），請依元件規格表組裝。/s/{slug}（P2-B 另有 /g/{code}）為需要 SSR 與 OG 的路由，其餘建立者頁面可 <code>ssr: false</code>（SPA）以簡化 cookie 轉送。</div>
+
+<h2 id="s3">3. 用戶旅程地圖</h2>
+
+<h3>3.1 孕婦建立者（小愛，32 歲，懷孕 7 個月）<span class="ph p0">P0</span></h3>
+<p class="small">目標：在 LINE 家族群組發出待產清單，避免收到 5 個同款奶瓶卻缺尿布。</p>
+<div class="tw"><table>
+<thead><tr><th>階段</th><th>行為</th><th>想法</th><th>情緒</th><th>觸點</th><th>機會</th></tr></thead>
+<tbody>
+<tr><td>1 發現</td><td>朋友的 LINE 訊息帶來 WishSync 連結，或搜尋「待產清單 分享」</td><td>「上次收了三組奶瓶組，這次想先講清楚」</td><td>期待 / 略懷疑</td><td>首頁 /</td><td>首屏以「不重複、不尷尬」為訴求，放範例分享頁預覽</td></tr>
+<tr><td>2 登入建立</td><td>選 LINE 登入；選 registry、輸入名稱「小愛的待產清單」、預產期</td><td>「不想再記一組密碼」</td><td>順暢</td><td>/login、/w/new</td><td>LINE Login 置頂；registry 預設，活動日用日期選擇器</td></tr>
+<tr><td>3 加品項</td><td>逐項新增：奶瓶 ×10、奶粉 ×2（MVP 皆為數量認領）。<span class="ph p2">P2</span> 另加嬰兒推車：從商品目錄選，設為眾籌</td><td>「推車太貴，大家分攤比較好開口，但錢不要經過我的手」</td><td>認真 / 稍累</td><td>/w/{id}/edit、新增品項 sheet</td><td>P0 眾籌選項灰掉標示 P2；P1 貼網址自動帶入標題與圖片；P2 CatalogPicker 直接算出 target_points</td></tr>
+<tr><td>4 設驚喜與收件地址</td><td>開驚喜模式；<span class="ph p2">P2</span> 有眾籌品項時填收件地址（發佈前必填）</td><td>「我想保留拆禮物的驚喜，但包裹要寄得到」</td><td>安心</td><td>建立頁開關、收件地址設定</td><td>解釋「活動日前只看完成度與彙總（已下單 N / 運送中 M）」；說明地址只有你與履約人員看得到，捐贈者看不到</td></tr>
+<tr><td>5 分享</td><td>按「分享」→ 傳到家族群組、朋友群</td><td>「連結點開要一眼看懂」</td><td>期待</td><td>ShareSheet、LINE OG 預覽</td><td>OG 卡片含完成度與封面；LINE 分享帶 <code>openExternalBrowser</code> 選項</td></tr>
+<tr><td>6 追蹤</td><td>每週看 /w/{id}/progress；<span class="ph p2">P2</span> 眾籌品項看「募集中 / 已達標 / 已下單 / 運送中」</td><td>「還缺哪些？推車什麼時候會到？」（但不想被劇透）</td><td>滿足 / 偶爾焦慮</td><td>儀表板、Email 通知（MVP）</td><td>Email 通知第一筆認領即時、之後每日彙整，可在設定關閉（驚喜模式只寫「有 N 件新認領」）；缺口排序；驚喜模式下眾籌只顯示彙總（已下單 N / 運送中 M），不顯示逐品項對應與捐贈者；點數不會經過建立者，不需對帳</td></tr>
+<tr><td>7 活動日後</td><td>驚喜解鎖，查看誰送了什麼，寫謝卡；眾籌包裹送達即揭曉</td><td>「想知道謝誰」</td><td>感動</td><td>儀表板（解鎖後）</td><td>匿名捐贈者（is_anonymous）仍只顯示「匿名朋友」；匯出送禮名單（待決）</td></tr>
+</tbody></table></div>
+
+<h3>3.2 親友送禮者（阿明，小愛的同事）<span class="ph p0">P0</span></h3>
+<p class="small">目標：從 LINE 點開到認領完成，30 秒內，不註冊。</p>
+<div class="tw"><table>
+<thead><tr><th>階段</th><th>行為</th><th>想法</th><th>情緒</th><th>觸點</th><th>機會</th></tr></thead>
+<tbody>
+<tr><td>1 收到連結</td><td>在群組看到預覽卡，點開</td><td>「是什麼？要註冊嗎？」</td><td>好奇 / 怕麻煩</td><td>LINE OG 預覽卡</td><td>OG 標題直接寫「幫小愛挑禮物（已完成 40%）」</td></tr>
+<tr><td>2 瀏覽</td><td>在 LINE in-app browser 滑清單，看哪些還沒被認</td><td>「奶瓶還缺幾個？不想跟別人重複」</td><td>專注</td><td>/s/{slug}</td><td>已滿品項灰掉並排到底；即時更新（SSE）</td></tr>
+<tr><td>3 認領</td><td>點「我要送」，數量 2、輸入暱稱「阿明」，確認</td><td>「希望一次成功」</td><td>謹慎</td><td>ClaimSheet</td><td>暱稱記住；聯絡方式選填且說明用途</td></tr>
+<tr><td>4 成功</td><td>看到成功頁與提示「已存在此裝置」</td><td>「我買完怎麼回來標記？」</td><td>放心</td><td>認領成功頁、/me/claims</td><td>加入主畫面 / 用預設瀏覽器開啟引導（避免換瀏覽器遺失）</td></tr>
+<tr><td>5 購買與回報</td><td>買完後回到 /me/claims 標記「已購買」</td><td>「幫她確認我有買了」</td><td>輕鬆</td><td>/me/claims</td><td>P1 提醒通知；一鍵標記</td></tr>
+<tr><td>6 遇到阻礙</td><td>搶不贏：已被認完；或網路差送出失敗</td><td>「那我換別的」</td><td>失望 / 煩</td><td>錯誤提示</td><td>409 時自動重新整理並推薦其他品項；網路錯誤保留輸入可重試（Idempotency-Key 不變）</td></tr>
+</tbody></table></div>
+
+<h3>3.3 眾籌參與者（小芸，想分攤嬰兒推車）<span class="ph p2">P2-A</span></h3>
+<p class="small">目標：用點數湊出大件禮物；點數不會到小愛手上，達標後平台直接幫她買。路徑：登入 → 儲值 → 投點 → 看進度 → 達標通知 → 出貨通知。</p>
+<div class="tw"><table>
+<thead><tr><th>階段</th><th>行為</th><th>想法</th><th>情緒</th><th>觸點</th><th>機會</th></tr></thead>
+<tbody>
+<tr><td>1 看見大件並登入</td><td>在 /s/{slug} 看到推車「募集中 3,000 / 11,000 點」，點「加入眾籌」，被要求登入（LINE Login）</td><td>「我一個人買不起，但可以出一點；為什麼要登入？」</td><td>想參與 / 小猶豫</td><td>ItemCard（crowdfund）、/login</td><td>登入前先說明「點數錢包可跨裝置、可退款」；登入後自動回到同一品項並開啟投點 sheet</td></tr>
+<tr><td>2 儲值</td><td>餘額 200 點不足，點「儲值」，選 NT$1,000，用信用卡 / LINE Pay / Apple Pay 付款</td><td>「錢會不會直接給她？儲了沒用完怎麼辦？」</td><td>謹慎</td><td>TopupSheet、金流頁（TapPay 或綠界）</td><td>sheet 明講「1 點 = NT$1，點數只會用於購買此品項，受捐者無法提領，未使用可申請退回現金」；付款成功自動回到投點 sheet 並保留金額與留言</td></tr>
+<tr><td>3 投點</td><td>選 500 點，可勾匿名，按「投入 500 點」</td><td>「剩多少？會不會超過？」</td><td>專注</td><td>ContributeSheet（WalletBalance、剩餘 X 點）</td><td>剩餘不足時自動帶入 remaining_points；達標那一刻顯示「你幫忙湊齊了！」</td></tr>
+<tr><td>4 看進度</td><td>回到公開頁看進度條，或在 /wallet 看明細與「我的眾籌」</td><td>「還差多少？她知道我投了嗎？」</td><td>期待</td><td>/s/{slug}（SSE 即時）、/wallet</td><td>未達標前可撤回（DELETE /contributions/{id}）；撤回按鈕在 captured 後消失並說明原因</td></tr>
+<tr><td>5 達標通知</td><td>收到「已達標，已下單」通知，卡片徽章變「已下單」</td><td>「真的有買嗎？」</td><td>安心 / 成就感</td><td>通知（Email；LINE 為 P1）、ItemCard 徽章</td><td>通知附訂單狀態連結；失敗時說明點數已退回</td></tr>
+<tr><td>6 出貨通知</td><td>收到「運送中」→「已送達」</td><td>「小愛收到了吧」</td><td>滿足</td><td>通知、ItemCard 徽章</td><td>出貨 / 送達通知只發給捐贈者，不發給建立者；驚喜模式下不洩漏品項細節</td></tr>
+<tr><td>7 例外：未達標</td><td>截止日未湊滿，收到通知，選擇「退回錢包」或「轉投其他眾籌品項」</td><td>「沒買成，我的點數還在嗎？」</td><td>失望 → 釋懷</td><td>ReallocateSheet</td><td>預設退回；7 天內未選自動退回，避免點數卡住</td></tr>
+</tbody></table></div>
+
+<h3>3.4 救災志工（據點窗口，阿豪）<span class="ph p2">P2-D</span></h3>
+<p class="small">目標：在收容所收到物資後，快速登記實收；現場網路不穩。</p>
+<div class="tw"><table>
+<thead><tr><th>階段</th><th>行為</th><th>想法</th><th>情緒</th><th>觸點</th><th>機會</th></tr></thead>
+<tbody>
+<tr><td>1 被邀請</td><td>組織 coordinator 邀請成為 volunteer，LINE 登入</td><td>「快點開始，現場很忙」</td><td>緊迫</td><td>/login、/org/{id}</td><td>邀請連結一鍵加入並導向所屬據點</td></tr>
+<tr><td>2 看需求</td><td>開據點頁，依類別 / 緊急度看缺什麼</td><td>「飲用水最缺」</td><td>焦慮</td><td>/relief/sites/{slug}</td><td>critical 置頂、紅色且帶文字標籤</td></tr>
+<tr><td>3 收貨</td><td>貨車到站，點該品項「登記實收」填數量</td><td>「手套很髒，只想點兩下」</td><td>忙亂</td><td>登記實收 sheet</td><td>大按鈕、數字 stepper、拍照選填</td></tr>
+<tr><td>4 離線</td><td>山區訊號中斷，仍送出登記</td><td>「不要讓我重打一次」</td><td>擔心</td><td>離線佇列</td><td>顯示「已存本機，連線後自動送出」；Idempotency-Key 防重複</td></tr>
+<tr><td>5 同步與更新</td><td>連線恢復，佇列送出；調整據點狀態 paused/closed</td><td>「大家看到的需求要是對的」</td><td>鬆一口氣</td><td>據點頁、地圖</td><td>失敗項目明確標示並可重送</td></tr>
+</tbody></table></div>
+
+<h3>3.5 營運代購人員（阿華，平台 is_staff）<span class="ph p2">P2-A</span></h3>
+<p class="small">目標：把「非目錄商品」的達標訂單買好、填單號、更新出貨；出問題時讓點數安全退回。</p>
+<div class="tw"><table>
+<thead><tr><th>階段</th><th>行為</th><th>想法</th><th>情緒</th><th>觸點</th><th>機會</th></tr></thead>
+<tbody>
+<tr><td>1 接單</td><td>收到「有新的代購單」提醒，開 /admin/orders，篩選 concierge + pending</td><td>「哪些先處理？」</td><td>忙碌</td><td>/admin/orders</td><td>依達標時間排序；顯示商品連結、target_points、服務費</td></tr>
+<tr><td>2 核對</td><td>打開商品網址核對規格與現價，查看收件資訊（會留稽核紀錄）</td><td>「價格有沒有漲？超過緩衝嗎？」</td><td>謹慎</td><td>訂單詳情</td><td>顯示 price_snapshot 與緩衝，現價超標時引導標記失敗</td></tr>
+<tr><td>3 購買</td><td>到外部電商用公司帳號購買</td><td>「單號別貼錯」</td><td>專注</td><td>外部電商</td><td>一鍵複製收件資訊（不顯示於列表）</td></tr>
+<tr><td>4 回填</td><td>填 merchant_order_id、實際花費，狀態改「已下單」</td><td>「省下的差額會退回大家」</td><td>順暢</td><td>PATCH sheet</td><td>實際花費低於目標時預覽退回差額；必填欄位檢核</td></tr>
+<tr><td>5 出貨與送達</td><td>貨到倉或直寄後填 tracking_no，狀態改「運送中」「已送達」</td><td>「建立者和捐贈者都在等」</td><td>責任感</td><td>PATCH sheet</td><td>狀態變更即觸發通知；送達即解鎖揭曉</td></tr>
+<tr><td>6 例外</td><td>缺貨、漲價超過緩衝或商家拒單：標記「購買失敗」並填原因</td><td>「大家的點數要全部退回去」</td><td>壓力</td><td>PATCH sheet（failed）</td><td>二次確認說明「所有已用於購買的點數將退回各捐贈者錢包」</td></tr>
+</tbody></table></div>
+
+<h3>3.6 送禮物卡的人（小美，想送同事寶寶禮物）<span class="ph p2">P2-B</span></h3>
+<p class="small">目標：買一張心意卡傳給對方，不用猜品項；對方拿到的點數只能用在心願品項。</p>
+<div class="tw"><table>
+<thead><tr><th>階段</th><th>行為</th><th>想法</th><th>情緒</th><th>觸點</th><th>機會</th></tr></thead>
+<tbody>
+<tr><td>1 想到要送</td><td>不知道同事缺什麼，從錢包頁或朋友訊息進入「買禮物卡」</td><td>「直接給錢怪怪的，想要有心意」</td><td>猶豫</td><td>/wallet、/gift</td><td>卡面與祝福語讓禮物卡像「禮物」而非現金</td></tr>
+<tr><td>2 登入</td><td>點購買後被要求登入（LINE Login）</td><td>「買東西還要登入…」</td><td>小阻力</td><td>/login?redirect=/gift</td><td>登入後保留已選面額與祝福語（祝福語以整筆訂單為單位）</td></tr>
+<tr><td>3 選卡</td><td>選面額 500、2 張、卡面「寶寶」、寫祝福語與署名</td><td>「看起來像真的卡片嗎？」</td><td>愉快</td><td>GiftCardPicker、GiftCardPreview</td><td>即時預覽卡面；說明「點數只能用於心願品項，無法兌現」</td></tr>
+<tr><td>4 付款</td><td>用信用卡 / LINE Pay / Apple Pay 付款</td><td>「付款成功了嗎？」</td><td>緊張</td><td>金流頁、等待頁</td><td>付款中顯示進度，失敗明確說「沒有扣款」</td></tr>
+<tr><td>5 分享</td><td>在完成頁用 LINE 傳送每張卡的連結</td><td>「連結傳錯了或之後想再傳，還找得到嗎？」</td><td>放心</td><td>購買完成分享頁（ShareSheet 變體）</td><td>每張卡獨立傳送鈕；連結之後可在 /wallet 已購禮物卡重看與重新分享（未兌換期間）</td></tr>
+<tr><td>6 追蹤</td><td>到 /wallet 的「已購禮物卡」看是否兌換</td><td>「對方收到了嗎？」</td><td>期待</td><td>/wallet 已購禮物卡列表</td><td>狀態「未兌換 / 已兌換」；未兌換可退款</td></tr>
+<tr><td>7 例外</td><td>傳錯人或不想送了，對未兌換的卡申請退款</td><td>「還能退嗎？」</td><td>焦慮</td><td>退款確認</td><td>原路退款；已兌換則說明無法退款（GIFT_CARD_NOT_REFUNDABLE）</td></tr>
+</tbody></table></div>
+
+<h3>3.7 收到禮物卡的人（阿明，LINE 點開 → 登入 → 兌換 → 投入心願）<span class="ph p2">P2-B</span></h3>
+<div class="tw"><table>
+<thead><tr><th>階段</th><th>行為</th><th>想法</th><th>情緒</th><th>觸點</th><th>機會</th></tr></thead>
+<tbody>
+<tr><td>1 收到</td><td>在 LINE 收到「小美送你一張禮物卡」預覽卡，點開</td><td>「是什麼？要錢嗎？」</td><td>好奇</td><td>LINE OG 預覽（卡面）</td><td>OG 標題含寄送者與面額，卡面像實體禮物</td></tr>
+<tr><td>2 看卡</td><td>看到卡面、祝福語、面額 500 點</td><td>「謝謝小美！那要拿來做什麼？」</td><td>開心</td><td>/g/{code}</td><td>清楚說明：點數只能用於心願品項，無法兌現</td></tr>
+<tr><td>3 登入</td><td>按「登入並兌換」，用 LINE 登入</td><td>「為什麼要登入？」</td><td>小阻力</td><td>/login?redirect=/g/{code}</td><td>說明「點數放在你的錢包，跨裝置都能用」；登入後自動回到本頁</td></tr>
+<tr><td>4 兌換</td><td>按「兌換到我的錢包」</td><td>「兌換成功了嗎？」</td><td>期待</td><td>/g/{code}、Turnstile</td><td>成功畫面顯示錢包餘額與下一步</td></tr>
+<tr><td>5 投入心願</td><td>回到朋友的清單連結，把點數投入嬰兒推車</td><td>「我也可以投自己的或別人的清單嗎？」</td><td>投入感</td><td>/s/{slug}、ContributeSheet</td><td>可投入任何清單（含自己的）；不可轉送、不可退現金</td></tr>
+<tr><td>6 回饋</td><td>品項達標後獲得星星，之後在 /rewards 兌換贊助點數</td><td>「還有星星可拿？」</td><td>驚喜</td><td>/rewards</td><td>說明星星來自達標的認捐，不來自禮物卡兌換</td></tr>
+<tr><td>7 例外</td><td>卡已被兌換或連結打錯</td><td>「我是不是點錯了？」</td><td>困惑</td><td>錯誤狀態</td><td>已兌換顯示明確說明；錯誤碼一律顯示「無效的連結」，不洩漏碼是否存在</td></tr>
+</tbody></table></div>
+
+<h3>3.8 企業福委會窗口（陳小姐，想發生育津貼禮券給員工）<span class="ph p2">P2-C</span></h3>
+<p class="small">初期由營運後台代建，窗口本人不直接操作系統，企業自助入口列為未來。</p>
+<div class="tw"><table>
+<thead><tr><th>階段</th><th>行為</th><th>想法</th><th>情緒</th><th>觸點</th><th>機會</th></tr></thead>
+<tbody>
+<tr><td>1 詢問</td><td>聯絡營運，說明要發 50 張 1,000 點的禮券</td><td>「能開統編發票嗎？」</td><td>謹慎</td><td>客服 / 業務</td><td>提供企業禮券說明頁與合約範本（待決）</td></tr>
+<tr><td>2 建立</td><td>營運在 /admin/corporate 建立企業與批次（草稿）</td><td>「流程要簡單」</td><td>期待</td><td>營運後台</td><td>批次含數量、面額、總額、發票資訊</td></tr>
+<tr><td>3 付款</td><td>收到發票與匯款資訊，銀行轉帳</td><td>「匯完怎麼確認？」</td><td>等待</td><td>Email、銀行</td><td>營運確認入帳後標記已入帳並通知窗口</td></tr>
+<tr><td>4 發放</td><td>收到兌換連結（CSV 或系統寄送給員工 Email）</td><td>「怎麼發給員工？」</td><td>安心</td><td>CSV 或員工 Email</td><td>CSV 只能匯出一次，需提醒妥善保存</td></tr>
+<tr><td>5 員工兌換</td><td>員工依 3.7 流程兌換</td><td>「有沒有人還沒領？」</td><td>關心</td><td>/g/{code}</td><td>未來企業自助入口提供兌換率報表</td></tr>
+<tr><td>6 例外</td><td>有人離職未兌換，依合約整批退款</td><td>「沒領的可以退嗎？」</td><td>謹慎</td><td>營運作業</td><td>未兌換卡可作廢退款，已兌換不可</td></tr>
+</tbody></table></div>
+
+<h2 id="s4">4. User Flow</h2>
+
+<h3>4.1 建立清單（建立者）<span class="ph p0">P0</span></h3>
+<pre class="mermaid">
+flowchart TD
+  A["進入首頁 /"] --> B{"已登入?"}
+  B -->|"否"| C["/login 選 Email OTP / LINE / Google"]
+  B -->|"是"| G
+  C --> C1{"登入方式"}
+  C1 -->|"Email OTP"| C2["POST /auth/otp/request"]
+  C2 -->|"429 RATE_LIMITED"| C2E["顯示請 60 秒後再試"]
+  C2 --> C3["輸入 6 碼 POST /auth/otp/verify"]
+  C3 -->|"錯誤碼"| C3E["欄位錯誤 可重送"]
+  C3 -->|"成功"| G["/dashboard"]
+  C1 -->|"LINE 或 Google"| C4["GET /auth/oauth/provider/start"]
+  C4 --> C5["callback 設定 ws_session"]
+  C5 -->|"使用者取消"| C5E["回 /login 顯示已取消"]
+  C5 --> G
+  G --> H["/w/new 選類型 名稱 活動日 驚喜模式"]
+  H --> H1{"驗證"}
+  H1 -->|"VALIDATION_FAILED"| H2["欄位下方顯示錯誤"]
+  H2 --> H
+  H1 -->|"通過"| I["POST /wishlists status=draft"]
+  I -->|"網路錯誤"| I1["保留表單 顯示重試"]
+  I --> J["/w/id/edit 新增品項 sheet"]
+  J --> K["POST /wishlists/id/items"]
+  K -->|"圖片"| K1["POST /uploads/presign 後直傳 R2"]
+  K1 -->|"上傳失敗"| K2["顯示圖片失敗 可略過"]
+  K --> L{"至少 1 個品項?"}
+  L -->|"否"| L1["發佈鈕停用 提示先新增品項"]
+  L -->|"是"| M["PATCH /wishlists/id status=active"]
+  M -->|"409 WISHLIST_NOT_PUBLISHABLE"| M1["提示缺少的發佈條件"]
+  M1 --> J
+  M --> N["ShareSheet 複製連結 LINE QR"]
+  N --> O["完成"]
+</pre>
+
+<h3>4.2 訪客認領（含已被認領完、網路錯誤）<span class="ph p0">P0</span></h3>
+<pre class="mermaid">
+flowchart TD
+  A["LINE 點開連結"] --> B["SSR 載入 /s/slug"]
+  B -->|"404 NOT_FOUND 或 private"| B1["不存在或已關閉頁"]
+  B -->|"status=closed WISHLIST_CLOSED"| B2["清單已結束 唯讀"]
+  B --> C["瀏覽品項 訂閱 SSE"]
+  C --> D{"品項已滿?"}
+  D -->|"是"| D1["按鈕灰掉 顯示已被認領完"]
+  D -->|"否"| E["點 我要送"]
+  E --> F["ClaimSheet 數量 暱稱 聯絡 留言"]
+  F --> F1{"表單驗證"}
+  F1 -->|"暱稱空白"| F2["欄位錯誤提示"]
+  F2 --> F
+  F1 -->|"通過"| G["樂觀更新 qty_claimed 加 n"]
+  G --> H["POST /items/id/claims 帶 Idempotency-Key"]
+  H -->|"201"| I["存 guest_token 到 localStorage"]
+  I --> J["認領成功頁"]
+  H -->|"409 CLAIM_ALREADY_EXISTS"| CA["回滾 提示已認領過 改開修改我的認領"]
+  CA --> CA1["PATCH /claims/id 改數量"]
+  H -->|"409 ITEM_FULLY_CLAIMED"| K["回滾樂觀更新 重抓品項"]
+  K --> K1{"仍有剩餘?"}
+  K1 -->|"是"| K2["提示剩 k 個 自動調整數量"]
+  K2 --> F
+  K1 -->|"否"| D1
+  H -->|"429 RATE_LIMITED"| L["請稍後再試 倒數"]
+  H -->|"503 READ_ONLY_MODE"| RO["系統維護中 可瀏覽但暫不能認領"]
+  H -->|"網路錯誤或逾時"| M["回滾 顯示重試 保留輸入"]
+  M -->|"重試 同一個 Idempotency-Key"| H
+  M -->|"離線"| M1["顯示離線橫幅 停用送出"]
+  J --> N["我的認領 /me/claims"]
+  N --> O["PATCH 標記已購買 或 DELETE 取消"]
+</pre>
+
+<h3>4.3 加入眾籌（點數流程）<span class="ph p2">P2-A</span></h3>
+<pre class="mermaid">
+flowchart TD
+  A["/s/slug 眾籌品項 funding_status=open"] --> B["點 加入眾籌"]
+  B --> C{"已登入?"}
+  C -->|"否"| C1["/login?redirect= 登入後回到本品項"]
+  C1 --> D
+  C -->|"是"| D["ContributeSheet 顯示 GET /wallet 餘額 與剩餘點數"]
+  D --> E["選快選點數 或自訂 可勾匿名"]
+  E --> F{"點數大於 remaining_points?"}
+  F -->|"是"| F1["自動帶入 remaining_points 並提示"]
+  F1 --> G
+  F -->|"否"| G{"餘額足夠?"}
+  G -->|"否"| H["顯示 點數不足 還差 x 點"]
+  H --> I["TopupSheet POST /wallet/topups"]
+  I --> I1["金流頁 TapPay 或綠界"]
+  I1 -->|"PAYMENT_FAILED 402"| I2["付款失敗 沒有扣款 可重試或換方式"]
+  I2 --> I
+  I1 -->|"付款成功 webhook 入帳"| I3["輪詢 GET /wallet 直到餘額更新"]
+  I3 --> D2["回到 ContributeSheet 保留點數與留言"]
+  D2 --> G
+  G -->|"是"| J["樂觀更新 然後 POST /items/id/contributions 帶 Idempotency-Key"]
+  J -->|"201 pledged"| K{"pledged_points 等於 target_points?"}
+  K -->|"否"| K2["toast 已投入 x 點 還差 y 點"]
+  K -->|"是"| K3["funded 已達標 等待下單"]
+  J -->|"409 INSUFFICIENT_POINTS"| H
+  J -->|"409 CROWDFUND_TARGET_EXCEEDED"| L["回滾 帶入 remaining_points 讓使用者確認"]
+  L --> E
+  J -->|"409 ITEM_FUNDED"| M["回滾 提示已達標 關閉 sheet 刷新卡片"]
+  J -->|"409 FUNDING_EXPIRED"| M2["回滾 提示募集已截止 關閉 sheet 刷新卡片"]
+  J -->|"網路錯誤"| N["回滾 保留輸入 同一個 Idempotency-Key 重試"]
+  J -->|"503 READ_ONLY_MODE"| RO["系統維護中 暫不能投點"]
+  K2 --> P["撤回 DELETE /contributions/id 僅 open 可"]
+  P -->|"409 CONTRIBUTION_LOCKED"| P1["已用於購買 無法撤回"]
+</pre>
+<div class="note w">眾籌一律<b>硬上限</b>：pledged_points 不會超過 target_points。點數扣款與品項累加在同一個交易，前端不得假設投點一定成功，必須處理 <code>INSUFFICIENT_POINTS</code>、<code>CROWDFUND_TARGET_EXCEEDED</code>、<code>ITEM_FUNDED</code>、<code>FUNDING_EXPIRED</code> 四種 409。</div>
+
+<h3>4.4 建立者查看完成度 <span class="ph p0">P0</span>（眾籌訂單狀態為 <span class="ph p2">P2</span>）</h3>
+<pre class="mermaid">
+flowchart TD
+  A["/dashboard"] --> B["選擇清單"]
+  B --> C["/w/id/progress"]
+  C --> D["GET /wishlists/id/dashboard"]
+  D -->|"loading"| D1["骨架畫面"]
+  D -->|"錯誤"| D2["重試鈕"]
+  D --> E{"surprise_mode 且 今天早於 event_date?"}
+  E -->|"是"| F["只顯示整體完成度 與眾籌彙總 已下單 N 運送中 M 不顯示逐品項對應"]
+  E -->|"否"| G["顯示各品項明細 與誰認領了什麼"]
+  F --> H{"有眾籌品項? P2"}
+  G --> H
+  H -->|"是"| I["顯示 funding_status 與訂單狀態 已下單 運送中 已送達"]
+  H -->|"否"| K["缺口品項 一鍵分享提醒"]
+  I --> I1{"收件地址已填?"}
+  I1 -->|"否"| I2["提示補填收件地址 SHIPPING_ADDRESS_REQUIRED"]
+  I1 -->|"是"| K
+  F --> L["活動日當天 0 點解鎖 重新載入"]
+  L --> G
+</pre>
+<div class="note">眾籌的點數不會經過建立者，儀表板<b>沒有</b>「待確認收款」。驚喜模式鎖定期間看不到捐贈者；包裹送達本身即為揭曉。</div>
+
+<h3>4.5 救災據點更新 <span class="ph p2">P2-D</span></h3>
+<pre class="mermaid">
+flowchart TD
+  A["志工登入 LINE"] --> B["/org/id 選所屬據點"]
+  B --> C["/relief/sites/slug"]
+  C --> D{"角色"}
+  D -->|"volunteer"| E["登記實收"]
+  D -->|"coordinator 或 owner"| F["編輯需求 調整緊急度 切換 site_status"]
+  E --> G["填實收數量 照片選填"]
+  G --> H{"網路"}
+  H -->|"線上"| I["POST /items/id/receipts 帶 Idempotency-Key"]
+  H -->|"離線"| J["寫入本機佇列 顯示待同步"]
+  J -->|"連線恢復"| K["Background Sync 或前景重送"]
+  K --> I
+  I -->|"201"| L["更新品項 已收 x 件"]
+  I -->|"403 FORBIDDEN"| M["顯示無權限"]
+  I -->|"錯誤"| N["保留於佇列 可手動重送"]
+  F --> O["PATCH /sites/id"]
+  O --> P["地圖與需求彙總更新"]
+  P --> Q["GET /public/relief/needs/summary"]
+</pre>
+
+<h3>4.6 截止未達標：選擇退回或轉投 <span class="ph p2">P2-A</span></h3>
+<pre class="mermaid">
+flowchart TD
+  A["funding_deadline 到 且 pledged_points 小於 target_points"] --> B["funding_status 轉 expired"]
+  B --> C["通知捐贈者 7 天選擇期"]
+  C --> D["捐贈者開 /wallet 的 ReallocateSheet"]
+  D --> E{"選擇"}
+  E -->|"退回錢包 預設"| F["DELETE /contributions/id 選擇期內可用 轉 released"]
+  F --> F1["ledger release 加點 點數回到錢包"]
+  E -->|"轉投同清單其他眾籌品項"| G["列出同清單 funding_status=open 的品項 與剩餘點數"]
+  G --> H["POST /contributions/id/reallocate target_item_id"]
+  H -->|"201"| I["原筆 reallocated 新建一筆 pledged"]
+  H -->|"409 REALLOCATION_NOT_ALLOWED"| J["目標非 open 或剩餘不足 請改選"]
+  J --> G
+  H -->|"網路錯誤"| H1["保留選擇 重試"]
+  C --> K{"7 天內都沒選?"}
+  K -->|"是"| L["自動 released 退回錢包 並通知"]
+  F1 --> M["可再投其他品項 或申請退回現金"]
+</pre>
+
+<h3>4.7 達標後履約與營運代購 <span class="ph p2">P2-A</span></h3>
+<pre class="mermaid">
+flowchart TD
+  A["pledged_points 等於 target_points 品項 funded"] --> B["建立 purchase_orders pending"]
+  B --> C{"fulfillment_type"}
+  C -->|"catalog"| D["下單 job 呼叫合作商家 API"]
+  C -->|"concierge"| E["出現在 /admin/orders 待處理佇列"]
+  E --> F["staff 核對商品 手動購買"]
+  F --> G["PATCH /admin/orders/id 填 merchant_order_id 與實際花費"]
+  D -->|"成功"| H["訂單 placed 卡片顯示已下單"]
+  G --> H
+  D -->|"缺貨 漲價 拒單"| X["訂單 failed"]
+  F -->|"買不到"| X
+  X --> Y["所有 captured 轉 released 點數退回各捐贈者 通知建立者與捐贈者"]
+  H --> I["商家 webhook 或 staff 填 tracking_no 轉 shipped"]
+  I --> J["delivered 卡片顯示已送達 驚喜揭曉"]
+  G -->|"實際花費低於目標"| K["差額依認捐比例退回錢包"]
+</pre>
+
+<h3>4.8 購買禮物卡 <span class="ph p2">P2-B</span></h3>
+<pre class="mermaid">
+flowchart TD
+  A["/gift"] --> B{"已登入?"}
+  B -->|"否"| B1["/login?redirect=/gift"]
+  B1 --> C
+  B -->|"是"| C["選面額 張數 卡面 祝福語 署名"]
+  C --> D{"驗證"}
+  D -->|"VALIDATION_FAILED"| D1["欄位錯誤提示"]
+  D1 --> C
+  D -->|"通過"| E["選付款方式 POST /gift-cards/orders"]
+  E --> F["金流頁 TapPay 或綠界"]
+  F -->|"PAYMENT_FAILED 402"| F1["付款失敗 沒有扣款 可重試或換方式"]
+  F1 --> E
+  F -->|"付款成功 webhook"| G["輪詢 GET /gift-cards/orders/id 直到 paid"]
+  G -->|"逾時"| G1["稍後會入帳 可到 /wallet 已購禮物卡查看與重新分享"]
+  G -->|"paid"| H["購買完成分享頁 顯示 cards 陣列的 share_url"]
+  H --> I["用 LINE 傳送 或複製連結"]
+  I --> J["/wallet 已購禮物卡 狀態 active 可隨時重看連結"]
+  J --> K{"想退款?"}
+  K -->|"未兌換"| L["POST /gift-cards/id/refund 原路退款"]
+  K -->|"已兌換"| M["409 GIFT_CARD_NOT_REFUNDABLE"]
+</pre>
+
+<h3>4.9 禮物卡兌換（含已兌換 / 無效碼）<span class="ph p2">P2-B</span></h3>
+<pre class="mermaid">
+flowchart TD
+  A["LINE 點開 /g/code"] --> B["SSR GET /public/gift-cards/code"]
+  B -->|"404 GIFT_CARD_INVALID"| B1["無效的禮物卡連結 請向送禮的人確認"]
+  B -->|"已兌換 不可兌換"| B2["這張卡已經兌換過了"]
+  B --> C["顯示卡面 祝福語 面額 兌換到我的錢包"]
+  C --> D{"已登入?"}
+  D -->|"否"| D1["登入 LINE Google Email 完成後回 /g/code"]
+  D1 --> E
+  D -->|"是"| E["POST /gift-cards/claim 帶 Idempotency-Key 與 Turnstile"]
+  E -->|"200"| F["兌換成功 點數存入錢包 gift_card 批次"]
+  F --> G["去朋友的心願清單 或到 /wallet 查看"]
+  G --> J["ContributeSheet 投入心願"]
+  E -->|"409 GIFT_CARD_ALREADY_CLAIMED"| B2
+  E -->|"404 GIFT_CARD_INVALID"| B1
+  E -->|"429 RATE_LIMITED"| H["操作太頻繁 請稍後再試"]
+  E -->|"Turnstile 失敗或網路錯誤"| I["保留頁面 重試 同一個 Idempotency-Key"]
+  I --> E
+</pre>
+<div class="note w">防暴力猜碼：兌換頁與 claim 端點都有 Turnstile 與限流；任何碼錯誤一律顯示同一個「無效的連結」，不分「不存在」與「格式錯誤」。</div>
+
+<h3>4.10 星星賺取與兌換 <span class="ph p2">P2-B</span></h3>
+<pre class="mermaid">
+flowchart TD
+  A["認捐 captured 品項達標下單"] --> B["每 50 點得 1 星 無條件捨去"]
+  B --> C["/rewards 顯示星星餘額 與等級"]
+  A --> X["訂單失敗點數退回 星星扣回 最多扣到 0"]
+  C --> D{"12 個月累積大於等於 300 星?"}
+  D -->|"是"| D1["升級 gold"]
+  D -->|"否"| D2["維持 green"]
+  C --> E["選兌換選項 RedeemOfferCard"]
+  E --> F{"星星足夠 且 等級符合?"}
+  F -->|"否"| F1["按鈕停用 顯示還差 x 星 或 金等級限定"]
+  F -->|"是"| G["確認 sheet POST /rewards/redemptions offer_id"]
+  G -->|"201"| H["建立贊助點數批次 90 天到期 扣星星"]
+  G -->|"409 INSUFFICIENT_STARS"| G1["回滾 重抓餘額 提示星星不足"]
+  G -->|"網路錯誤"| G2["保留選擇 同一個 Idempotency-Key 重試"]
+  H --> I["投點時優先使用即將到期的贊助點數"]
+  C --> Y["星星 12 個月到期 即將到期提示"]
+</pre>
+
+<h3>4.11 管理連結恢復（換裝置找回認領）<span class="ph p0">P0</span></h3>
+<pre class="mermaid">
+flowchart TD
+  A["信件連結 /me/claims#r=token"] --> B["前端讀取 hash 後立即以 replaceState 清除網址"]
+  B --> C["POST /guest/recover 帶 token"]
+  C -->|"200 回新的 guest token"| D["寫入 localStorage 並由伺服器設 ws_guest cookie"]
+  D --> E["GET /guest/me 顯示我的認領"]
+  C -->|"404 NOT_FOUND 無效 過期 已用"| F["顯示管理連結已失效 說明只能用一次 30 天內有效"]
+  F --> G["引導回原分享連結重新認領 或聯絡客服"]
+  C -->|"網路錯誤"| H["保留 token 於記憶體 顯示重試"]
+  H --> C
+</pre>
+<div class="note">信件裡不放 guest token，只放一次性恢復權杖，且放在 URL hash（<code>#r=</code>）以避免進入伺服器日誌與 Referer。每次寄信都會產生新權杖，舊的不受影響直到過期（30 天）或被使用。</div>
+
+<h2 id="s5">5. 線框圖 Wireframes</h2>
+<div class="note w">v0.2 / v0.3：所有眾籌、錢包、禮物卡、星星、企業禮券相關畫面（5.9、5.14 至 5.25，其中 5.26 至 5.28 為 MVP）皆為 <span class="ph p2">P2</span>（子階段 P2-A 至 P2-C）；MVP 的 5.4、5.6、5.11 只呈現數量型認領，眾籌欄位以灰色 P2 標示。</div>
+<div class="note">線框為低保真：灰階 + 青綠 accent。虛線 = 灰掉 / 停用。所有可點區域高度 ≥ 44px。每個線框下方的表格即實作依據。以下 <code>API</code> 皆省略前綴 <code>/api/v1</code>。</div>
+
+<!-- 5.1 HOME -->
+<h3 id="w-home">5.1 首頁 / <span class="ph p0">P0</span></h3>
+<div class="wf">
+<div><div class="phone">
+<div class="st"><span>9:41</span><span>LINE</span></div>
+<div class="ab">WishSync<span class="sp"></span><div class="ic">登入</div></div>
+<div class="bd">
+<div style="font-size:22px;font-weight:700;line-height:1.3">想要的，剛好有人送。<br>不重複，不漏掉。</div>
+<div class="lbl">建立心願清單，傳給親友，他們不用註冊就能認領。</div>
+<div class="btn pri">開始建立清單</div>
+<div class="btn ghost">看範例清單</div>
+<div class="card" style="flex-direction:column"><b>三步驟</b><div class="row"><span class="b teal">1</span>列出想要的</div><div class="row"><span class="b teal">2</span>傳給 LINE 好友</div><div class="row"><span class="b teal">3</span>即時看到誰認領</div></div>
+<div class="row"><div class="card fl" style="flex-direction:column"><b>生日 / 個人</b><span class="lbl">personal</span></div><div class="card fl" style="flex-direction:column"><b>待產 / 婚禮</b><span class="lbl">registry</span></div></div>
+<div class="lbl" style="text-align:center">救災物資地圖（<span class="b gray">P2</span>）→</div>
+<div class="lbl" style="text-align:center">服務條款・隱私權政策・Cookie 與本機儲存說明</div>
+</div></div><div class="cap">/ 首頁（訪客未登入）</div></div>
+<div class="spec"><div class="tw"><table><tbody>
+<tr><th>元件</th><td>AppHeader、HeroBlock、CtaButton、TypeCard、ExampleLink。已登入時主 CTA 改「我的清單」導向 /dashboard。</td></tr>
+<tr><th>狀態</th><td>loading：靜態 SSR 不需 loading。error：無。離線：顯示 OfflineBanner，靜態內容仍可看（SW 快取）。</td></tr>
+<tr><th>互動</th><td>「開始建立清單」→ /login（已登入則 /w/new）；「看範例清單」→ 固定 demo slug 的 /s/{slug}；救災入口在 P2 啟用前隱藏（feature flag）。</td></tr>
+<tr><th>API</th><td>GET <code>/me</code>（判斷登入；401 視為未登入，不顯示錯誤）</td></tr>
+</tbody></table></div></div></div>
+
+<!-- 5.2 LOGIN -->
+<h3 id="w-login">5.2 登入 /login <span class="ph p0">P0</span></h3>
+<div class="wf">
+<div class="phones">
+<div><div class="phone">
+<div class="st"><span>9:41</span><span></span></div>
+<div class="ab">‹ 登入</div>
+<div class="bd">
+<div class="btn pri" style="background:#067a35;border-color:#067a35;color:#fff;color:#fff">使用 LINE 登入</div>
+<div class="btn">使用 Google 登入</div>
+<div style="text-align:center" class="lbl">或使用 Email</div>
+<div><div class="lbl"><b>Email</b></div><div class="inp">name@example.com</div></div>
+<div class="btn pri">寄送驗證碼</div>
+<div class="lbl" style="text-align:center">送禮的朋友不需要登入，直接用分享連結即可。</div>
+</div></div><div class="cap">步驟 1：選擇方式 / Email</div></div>
+<div><div class="phone">
+<div class="st"><span>9:41</span><span></span></div>
+<div class="ab">‹ 輸入驗證碼</div>
+<div class="bd">
+<div>驗證碼已寄到 <b>name@example.com</b></div>
+<div class="row"><div class="inp fl" style="justify-content:center">4</div><div class="inp fl" style="justify-content:center">8</div><div class="inp fl" style="justify-content:center">2</div><div class="inp fl" style="justify-content:center">_</div><div class="inp fl" style="justify-content:center">_</div><div class="inp fl" style="justify-content:center">_</div></div>
+<div style="color:var(--red);font-size:12px">驗證碼不正確，請再試一次（錯誤示範）</div>
+<div class="btn pri">確認登入</div>
+<div class="btn ghost dis">45 秒後可重新寄送</div>
+<div class="lbl">沒收到？請檢查垃圾郵件匣，或改用 LINE / Google 登入。</div>
+</div></div><div class="cap">步驟 2：OTP</div></div>
+</div>
+<div class="spec"><div class="tw"><table><tbody>
+<tr><th>元件</th><td>OAuthButton（provider: line|google）、EmailField、OtpInput（6 格，<code>autocomplete="one-time-code"</code>、<code>inputmode="numeric"</code>）、ResendTimer</td></tr>
+<tr><th>狀態</th><td>loading：按鈕內 spinner 並停用；error：欄位下紅字（OTP 錯誤 / <code>RATE_LIMITED</code> 顯示倒數）；OAuth 取消：回到本頁並顯示「已取消登入」；離線：按鈕停用並提示。</td></tr>
+<tr><th>互動</th><td>LINE / Google 為整頁跳轉（<code>window.location</code>），跳轉前於 LINE in-app browser 內顯示一行「將開啟 LINE 登入頁」。OTP 輸入第 6 碼自動送出。登入成功導回 <code>?redirect=</code> 或 /dashboard。</td></tr>
+<tr><th>API</th><td>POST <code>/auth/otp/request</code>；POST <code>/auth/otp/verify</code>；GET <code>/auth/oauth/{provider}/start</code>（provider = line|google）；callback 由後端 302 回前端並設定 <code>ws_session</code>。</td></tr>
+</tbody></table></div></div></div>
+
+<!-- 5.3 NEW -->
+<h3 id="w-new">5.3 建立清單 /w/new <span class="ph p0">P0</span></h3>
+<div class="wf">
+<div><div class="phone">
+<div class="st"><span>9:41</span><span></span></div>
+<div class="ab">‹ 建立清單</div>
+<div class="bd">
+<div><div class="lbl"><b>清單類型</b></div><div class="seg"><span class="on">個人心願<br><small style="font-size:11px">personal</small></span><span>禮物登記<br><small style="font-size:11px">registry</small></span></div></div>
+<div><div class="lbl"><b>清單名稱</b></div><div class="inp">例如：小愛的待產清單</div><div class="lbl" style="text-align:right">0 / 40</div></div>
+<div><div class="lbl"><b>活動日</b>（選填）</div><div class="inp">2026 / 12 / 20　📅</div></div>
+<div class="card" style="align-items:center"><div class="col"><b>驚喜模式</b><span class="lbl">活動日前，你只看得到完成度，看不到誰送了什麼。</span></div><div class="sw"></div></div>
+<div class="lbl" style="color:var(--warn)">開啟驚喜模式需設定活動日。</div>
+<div class="card" style="align-items:center"><div class="col"><b>顯示認領者暱稱給其他訪客</b><span class="lbl">預設關閉（show_claimer_names）</span></div><div class="sw off"></div></div>
+<div class="btn pri" style="margin-top:auto">建立並新增品項</div>
+</div></div><div class="cap">/w/new</div></div>
+<div class="spec"><div class="tw"><table><tbody>
+<tr><th>元件</th><td>SegmentedControl（type）、TextField（title，必填 1–40 字）、DateField（event_date，原生 <code>&lt;input type="date"&gt;</code>）、SwitchRow ×2（surprise_mode、show_claimer_names）</td></tr>
+<tr><th>狀態</th><td>loading：送出時按鈕 spinner；error：<code>VALIDATION_FAILED</code> 對應欄位顯示錯誤，其餘 toast；離線：停用送出並保留草稿（localStorage）。type 只開放 personal / registry；relief 由 P2 的 /org 流程建立。</td></tr>
+<tr><th>互動</th><td>surprise_mode 開啟但 event_date 空白 → 日期欄紅框並捲動到該欄；切換 type 為 personal 時，數量欄預設隱藏（預設 1）。成功後導向 /w/{id}/edit。</td></tr>
+<tr><th>API</th><td>POST <code>/wishlists</code>（body: wishlist_type, title, event_date, surprise_mode, show_claimer_names；建立後 status=draft）</td></tr>
+</tbody></table></div></div></div>
+
+<!-- 5.4 EDIT -->
+<h3 id="w-edit">5.4 編輯品項 /w/{id}/edit（含新增品項 bottom sheet）<span class="ph p0">P0</span></h3>
+<div class="wf">
+<div class="phones">
+<div><div class="phone">
+<div class="st"><span>9:41</span><span></span></div>
+<div class="ab">‹ 小愛的待產清單<span class="sp"></span><span class="b gray">draft</span></div>
+<div class="bd">
+<div class="row"><div class="btn fl ghost">分享</div><div class="btn fl ghost">進度</div></div>
+<div class="card"><div class="im">圖</div><div class="col"><b>寶寶奶瓶 240ml</b><span class="lbl">需要 10・數量認領・<span class="b orange">高</span></span></div><div class="ic" style="align-self:center;min-width:44px;min-height:44px;display:grid;place-items:center">⋮</div></div>
+<div class="card"><div class="im">處理中</div><div class="col"><b>NB 尿布 2 包</b><span class="lbl">需要 2・數量認領・<span class="b orange">高</span>・圖片處理中</span></div><div class="ic" style="align-self:center;min-width:44px;min-height:44px;display:grid;place-items:center">⋮</div></div>
+<div class="card"><div class="im">圖</div><div class="col"><b>奶粉 1 號 800g</b><span class="lbl">需要 2・數量認領・<span class="b gray">中</span></span></div><div class="ic" style="align-self:center;min-width:44px;min-height:44px;display:grid;place-items:center">⋮</div></div>
+<div class="lbl" style="text-align:center">拖曳 ⋮⋮ 調整順序</div>
+<div class="btn" style="border-style:dashed">＋ 新增品項</div>
+<div class="btn pri" style="margin-top:auto">發佈並分享</div>
+</div></div><div class="cap">清單編輯（MVP：僅數量型品項）</div></div>
+<div><div class="phone" style="min-height:700px">
+<div class="st"><span>9:41</span><span></span></div>
+<div class="ab">‹ 小愛的待產清單</div>
+<div class="bd"><div class="card"><div class="im">圖</div><div class="col"><b>寶寶奶瓶 240ml</b></div></div></div>
+<div class="scrim"></div>
+<div class="sheet">
+<div class="grab"></div><b>新增品項</b>
+<div class="row"><div class="im" style="width:56px;height:56px">＋圖片</div><div class="fl"><div class="lbl"><b>名稱</b>（必填）</div><div class="inp">例如：奶瓶</div></div></div>
+<div class="lbl">圖片限 JPG、PNG、WebP，5 MB 以內。上傳後會移除位置等隱藏資訊（EXIF），請勿上傳含個資的照片。</div>
+<div><div class="lbl">商品網址（選填）<span class="b blue">P1 自動帶入標題與圖片</span></div><div class="inp">https://</div></div>
+<div class="row"><div class="fl"><div class="lbl">取得方式</div>
+<div class="seg"><span class="on">數量認領</span><span class="dis" style="color:var(--muted);background:var(--g1)">眾籌（P2）</span></div></div></div>
+<div class="row"><div class="fl"><div class="lbl"><b>需要數量</b></div><div class="stp"><span>－</span><span class="v">1</span><span>＋</span></div></div><div class="fl"><div class="lbl">參考價格 NT$</div><div class="inp">1,200</div></div></div>
+<div><div class="lbl">優先度</div><div class="chips"><span class="chip on">高</span><span class="chip">中</span><span class="chip">低</span></div></div>
+<div class="row"><div class="btn ghost fl">取消</div><div class="btn pri fl" style="flex:2">儲存品項</div></div>
+</div></div><div class="cap">新增品項 bottom sheet（MVP 只能選數量認領；眾籌設定見 5.18）</div></div>
+</div>
+<div class="spec"><div class="tw"><table><tbody>
+<tr><th>元件</th><td>EditorHeader、ItemCard（編輯模式含 ⋮ 選單）、SortableList（vuedraggable / 或長按拖曳）、ItemFormSheet（含 ImageUploader、FundingModeSwitch、QtyStepper、PriorityChips）</td></tr>
+<tr><th>狀態</th><td>loading：清單骨架；empty：「還沒有品項，先新增第一個吧」+ 大按鈕；error：存檔失敗 toast 並保留表單；圖片上傳中：縮圖上進度環，上傳失敗顯示「重新上傳」；<code>image_status</code>：pending（背景去除 EXIF 中，編輯頁顯示「圖片處理中」佔位，可繼續儲存）→ ready（顯示圖片）；rejected（顯示「圖片未通過，請換一張」並提供重新上傳）；none（無圖，顯示類型佔位圖）；離線：可編輯本機草稿但停用儲存。已有認領的品項：<code>qty_needed</code> 不可低於 <code>qty_claimed</code>（<code>QTY_BELOW_CLAIMED</code>）；funding_mode 不可改（<code>ITEM_HAS_CLAIMS</code>）。</td></tr>
+<tr><th>互動</th><td><b>MVP 的 funding_mode 只能是 quantity</b>，「眾籌」選項灰掉並標「P2」，不可點。圖片選取後先檢查格式（image/jpeg、png、webp）與大小（≤ 5 MB），壓縮（最長邊 1280px）再 PUT 到 presigned URL；伺服器端會去除 EXIF（含 GPS 座標）後才公開，前端仍需顯示提示文字，避免孕婦或家庭住址外洩。貼網址欄在 P0 僅儲存為 <code>url</code> 文字；P1 啟用後 blur 時呼叫 link-preview 自動填入並可修改。「發佈並分享」：至少 1 項；不符條件時 API 回 409 <code>WISHLIST_NOT_PUBLISHABLE</code>，列出缺少條件。</td></tr>
+<tr><th>API</th><td>GET <code>/wishlists/{id}</code>；POST <code>/wishlists/{id}/items</code>；PATCH <code>/items/{item_id}</code>；DELETE <code>/items/{item_id}</code>；POST <code>/wishlists/{id}/items/reorder</code>；POST <code>/uploads/presign</code> 後 PUT R2；PATCH <code>/wishlists/{id}</code>（status=active）；<span class="ph p1">P1</span> POST <code>/link-preview</code></td></tr>
+</tbody></table></div></div></div>
+
+<!-- 5.5 SHARE -->
+<h3 id="w-share">5.5 分享 bottom sheet <span class="ph p0">P0</span></h3>
+<div class="wf">
+<div><div class="phone" style="min-height:560px">
+<div class="st"><span>9:41</span><span></span></div>
+<div class="ab">‹ 小愛的待產清單<span class="sp"></span><span class="b teal">active</span></div>
+<div class="bd"><div class="card"><div class="im">圖</div><div class="col"><b>寶寶奶瓶 240ml</b></div></div><div class="card"><div class="im">圖</div><div class="col"><b>嬰兒推車</b></div></div></div>
+<div class="scrim"></div>
+<div class="sheet">
+<div class="grab"></div><b>分享你的清單</b>
+<div class="inp" style="color:var(--fg)">wishsync.tw/s/aB3dE7gH9k</div>
+<div class="btn">複製連結</div>
+<div class="btn pri" style="background:#067a35;border-color:#067a35;color:#fff;color:#fff">用 LINE 傳給朋友</div>
+<div class="row"><div class="btn ghost fl">Facebook</div><div class="btn ghost fl">簡訊</div></div>
+<div class="row" style="align-items:flex-start"><div class="im" style="width:96px;height:96px;font-size:12px">QR code</div><div class="lbl fl">給現場或印在邀請卡上。<br><b>下載 QR 圖片</b></div></div>
+<div class="row"><div class="sw"></div><div class="lbl fl">連結加上 <code>openExternalBrowser=1</code>，在 LINE 內點開時改用預設瀏覽器</div></div>
+</div></div><div class="cap">ShareSheet</div></div>
+<div class="spec"><div class="tw"><table><tbody>
+<tr><th>元件</th><td>ShareSheet、CopyButton（成功後文字變「已複製 ✓」2 秒）、QrCode（前端產生，建議 <code>qrcode</code> 套件 SVG 輸出）、ExternalBrowserToggle</td></tr>
+<tr><th>狀態</th><td>draft 狀態的清單開啟分享時：先提示「尚未發佈，朋友打開會看到不存在」並提供「先發佈」。error：複製失敗（Clipboard API 受限）時改顯示可全選的輸入框。離線：連結可複製，LINE 分享停用。</td></tr>
+<tr><th>互動</th><td>LINE 分享使用 <code>https://line.me/R/share?text=</code> 帶文字 + 連結（需 URL encode）；FB 用 sharer.php；簡訊用 <code>sms:?&amp;body=</code>。有 <code>navigator.share</code> 時優先使用原生分享。開關預設關；開啟後所有分享連結附加 <code>?openExternalBrowser=1</code>（slug 路由須忽略此參數）。</td></tr>
+<tr><th>API</th><td>無新增 API；連結由 <code>GET /wishlists/{id}</code> 回傳的 <code>slug</code> 組成。若 status=draft，先 PATCH <code>/wishlists/{id}</code> 設為 active。</td></tr>
+</tbody></table></div></div></div>
+
+<!-- 5.6 PUBLIC -->
+<h3 id="w-public">5.6 公開分享頁 /s/{slug} <span class="ph p0">P0</span></h3>
+<div class="wf">
+<div class="phones">
+<div><div class="phone" style="min-height:760px">
+<div class="st"><span>9:41</span><span>LINE</span></div>
+<div class="ab">WishSync<span class="sp"></span><div class="ic">我的認領</div></div>
+<div class="bd">
+<div><div style="font-size:19px;font-weight:700">小愛的待產清單</div><div class="lbl">預產期 2026/12/20・由 小愛 建立</div></div>
+<div><div class="row"><b>完成度 40%</b><span class="fl"></span><span class="lbl">4 / 10 項</span></div><div class="prog" role="progressbar" aria-valuenow="40"><i style="width:40%"></i></div></div>
+<div class="card"><div class="im">圖</div><div class="col"><b>寶寶奶瓶 240ml</b><span class="lbl">已認領 6 / 10 <span class="b orange">高</span></span><div class="prog s"><i style="width:60%"></i></div><div class="btn pri">我要送</div></div></div>
+<div class="card"><div class="im">圖</div><div class="col"><b>NB 尿布 2 包</b><span class="lbl">已認領 1 / 2 <span class="b orange">高</span></span><div class="prog s"><i style="width:50%"></i></div><div class="btn pri">我要送</div></div></div>
+<div class="card off"><div class="im">圖</div><div class="col"><b>奶粉 1 號 800g</b><span class="lbl">已認領 2 / 2</span><div class="btn dis">已被認領完</div></div></div>
+</div>
+<div class="lbl" style="text-align:center;padding:6px">● 即時更新中</div>
+<div class="lbl" style="text-align:center;padding:0 6px 8px"><b style="text-decoration:underline">檢舉此清單</b>・服務條款・隱私權政策</div>
+</div><div class="cap">正常（品項依 剩餘優先 → 已滿 排序）</div></div>
+<div><div class="phone" style="min-height:760px">
+<div class="st"><span>9:41</span><span>LINE</span></div>
+<div class="ab">WishSync</div>
+<div class="bd">
+<div style="background:var(--warn-soft);border:1px solid var(--warn);border-radius:8px;padding:8px;color:var(--warn);font-size:12px">目前離線，顯示的是上次載入的內容，認領功能暫停。</div>
+<div style="font-size:19px;font-weight:700">小愛的待產清單</div>
+<div class="prog"><i style="width:40%"></i></div>
+<div class="card"><div class="im">圖</div><div class="col"><b>寶寶奶瓶 240ml</b><span class="lbl">已認領 6 / 10</span><div class="btn dis">離線中，暫時無法認領</div></div></div>
+<div style="background:var(--code-bg);border:1px dashed var(--g2);border-radius:8px;padding:8px;font-size:12px">LINE 內建瀏覽器提示：想把這份認領保存到手機桌面？點右上角 ⋯ 選「用預設瀏覽器開啟」。 <b>[知道了]</b></div>
+<div class="card"><div class="im"></div><div class="col"><div class="mask">　　　　</div><div class="mask" style="width:60%">　</div></div></div>
+<div class="lbl" style="text-align:center">↑ loading 骨架卡片（SSR 完成前或 SSE 重連時）</div>
+</div></div><div class="cap">離線 / loading / LINE 引導橫幅</div></div>
+<div><div class="phone" style="min-height:560px">
+<div class="st"><span>9:41</span><span>LINE</span></div>
+<div class="ab">WishSync<span class="sp"></span><div class="ic">我的認領</div></div>
+<div class="bd">
+<div style="font-size:19px;font-weight:700">小愛的待產清單</div>
+<div class="card"><div class="im">圖</div><div class="col"><b>寶寶奶瓶 240ml</b><span class="lbl">已認領 6 / 10・<b>你已認領 2 件</b></span><div class="prog s"><i style="width:60%"></i></div><div class="btn">修改我的認領</div></div></div>
+<div class="card"><div class="im">圖</div><div class="col"><b>NB 尿布 2 包</b><span class="lbl">已認領 1 / 2</span><div class="prog s"><i style="width:50%"></i></div><div class="btn pri">我要送</div></div></div>
+</div></div><div class="cap">已認領過同品項：按鈕變「修改我的認領」</div></div>
+<div><div class="phone" style="min-height:560px">
+<div class="st"><span>9:41</span><span>Safari</span></div>
+<div class="ab">WishSync<span class="sp"></span><span class="b orange">驚喜模式中</span></div>
+<div class="bd">
+<div style="font-size:19px;font-weight:700">小愛的待產清單</div>
+<div class="lbl">你正以建立者身分瀏覽，解鎖前不顯示各品項進度。</div>
+<div class="card"><div class="im">圖</div><div class="col"><b>寶寶奶瓶 240ml</b><div class="mask">驚喜模式中</div><div class="btn dis">建立者不可認領自己的清單</div></div></div>
+<div class="card"><div class="im">圖</div><div class="col"><b>NB 尿布 2 包</b><div class="mask">驚喜模式中</div></div></div>
+</div></div><div class="cap">建立者本人開啟公開頁（surprise_mode 鎖定中）</div></div>
+</div>
+<div class="spec"><div class="tw"><table><tbody>
+<tr><th>元件</th><td>PublicHeader、WishlistCard（標題區）、ProgressBar、ItemCard（public 模式）、StatusBadge、OfflineBanner、InAppBrowserHint、ClaimSheet（見 5.7）；<span class="ph p2">P2</span> 眾籌品項卡片與 ContributeSheet（見 5.9、5.14）</td></tr>
+<tr><th>狀態</th><td>loading：SSR 已帶資料，hydration 後 SSE 連線；SSE 重連中顯示灰點。empty：品項為 0 時顯示「建立者還在準備清單，晚點再回來看看」。error：404 / private → 「找不到這份清單」；<code>WISHLIST_CLOSED</code> → 唯讀橫幅「這份清單已結束」。已滿：按鈕灰掉、顯示「已被認領完」、卡片排序至底。離線：橫幅 + 按鈕停用。品項 <code>image_status</code> 非 ready（pending / rejected / none）時公開頁一律顯示灰色佔位圖（pending 時可帶「圖片處理中」，不顯示尚未去除 EXIF 的圖片）；ready 後由 SSE <code>item.updated</code> 或下次載入替換。<code>WISHLIST_REMOVED</code>（410）→ 顯示下架頁（見 5.26）。頁尾固定有「檢舉此清單」（見 5.26）、服務條款與隱私權政策連結。</td></tr>
+<tr><th>互動</th><td>完成度採伺服器回傳的 <code>completion_pct</code>（前端不自行計算）。SSE <code>item.updated</code> 事件就地更新該卡（進度條動畫 300ms，reduced-motion 則無動畫）；<code>wishlist.updated</code> 重抓整份。若 <code>show_claimer_names</code> 為 true，卡片下方顯示「阿明、小美 已認領」。若訪客有 <code>guest_token</code> 且對該品項有認領，卡片顯示「你已認領 2 件」按鈕由「我要送」變為「修改我的認領」（開啟同一個 sheet 的編輯模式，送出走 PATCH <code>/claims/{claim_id}</code>）。若仍誤送 POST，API 回 409 <code>CLAIM_ALREADY_EXISTS</code>，前端提示「你已經認領過這個品項，已幫你切換到修改」。建立者本人（<code>GET /me</code> 的 user.id 等於公開頁回傳的 <code>owner.id</code>，且 <code>surprise_mode</code> 為 true）開啟自己 surprise_mode 鎖定中的公開頁時，品項 x/y 以「驚喜模式中」遮罩取代（軟性遮蔽；已知限制：建立者可用無痕視窗看到，接受）。</td></tr>
+<tr><th>API</th><td>GET <code>/public/wishlists/{slug}</code>（SSR 於 server 取用）；GET <code>/public/wishlists/{slug}/events</code>（SSE）；GET <code>/guest/me</code>（有 token 時，標示自己的認領）</td></tr>
+</tbody></table></div></div></div>
+
+<!-- 5.7 CLAIM -->
+<h3 id="w-claim">5.7 認領 bottom sheet <span class="ph p0">P0</span></h3>
+<div class="wf">
+<div class="phones">
+<div><div class="phone" style="min-height:640px">
+<div class="st"><span>9:41</span><span>LINE</span></div>
+<div class="ab">WishSync</div>
+<div class="bd"><div class="card"><div class="im">圖</div><div class="col"><b>寶寶奶瓶 240ml</b></div></div></div>
+<div class="scrim"></div>
+<div class="sheet">
+<div class="grab"></div><b>認領「寶寶奶瓶 240ml」</b>
+<div class="lbl">還缺 4 個，你要送幾個？</div>
+<div class="stp"><span>－</span><span class="v">2</span><span>＋</span></div>
+<div><div class="lbl"><b>你的暱稱</b>（必填）</div><div class="inp">阿明</div></div>
+<div><div class="lbl">聯絡方式（選填，只有建立者看得到）</div><div class="inp">LINE ID 或電話</div></div>
+<div><div class="lbl">Email（選填）：留 Email 可收到確認信與「管理我的認領」連結，換手機也找得回來</div><div class="inp">name@example.com</div></div>
+<div><div class="lbl">留言（選填）</div><div class="inp">恭喜！</div></div>
+<div class="btn pri">確認認領</div>
+<div class="lbl" style="text-align:center">不需註冊。認領後可隨時修改或取消。<br>我們如何使用你的資料：<b style="text-decoration:underline">個資蒐集告知</b>（不需勾選）</div>
+</div></div><div class="cap">ClaimSheet</div></div>
+<div><div class="phone" style="min-height:640px">
+<div class="st"><span>9:41</span><span>LINE</span></div>
+<div class="ab">WishSync</div>
+<div class="bd"><div class="card"><div class="im">圖</div><div class="col"><b>寶寶奶瓶 240ml</b></div></div></div>
+<div class="scrim"></div>
+<div class="sheet">
+<div class="grab"></div><b>剛剛被別人認領了</b>
+<div style="background:var(--red-soft);border:1px solid var(--red);color:var(--red);border-radius:8px;padding:8px">抱歉，只剩 1 個了（ITEM_FULLY_CLAIMED）。</div>
+<div class="stp"><span>－</span><span class="v">1</span><span>＋</span></div>
+<div class="btn pri">改成認領 1 個</div>
+<div class="btn ghost">看看其他品項</div>
+</div></div><div class="cap">409 錯誤狀態（部分剩餘）</div></div>
+</div>
+<div class="spec"><div class="tw"><table><tbody>
+<tr><th>元件</th><td>BottomSheet（基底）、ClaimSheet、QtyStepper（min 1、max = 剩餘量）、TextField ×3、InlineAlert</td></tr>
+<tr><th>狀態</th><td>idle / submitting（按鈕 spinner，欄位唯讀）/ error-validation（暱稱空白、字數超限）/ error-409（見右圖，stepper max 重設為最新剩餘；剩 0 則關閉 sheet 並把卡片灰掉）/ error-network（「網路不穩，再試一次」，保留輸入與同一個 Idempotency-Key）/ error-429 / offline（送出停用）。已滿品項不會開啟此 sheet。</td></tr>
+<tr><th>互動</th><td>開啟時暱稱預填 localStorage 的 <code>ws_nickname</code>，焦點落在「確認認領」（有暱稱）或暱稱欄（無）。送出：先樂觀更新卡片 <code>qty_claimed</code>，成功後關 sheet 並導向成功頁；失敗則回滾。送出鍵於請求期間停用防連點；Idempotency-Key 在 sheet 開啟時產生（<code>crypto.randomUUID()</code>），重試沿用，成功或關閉後重產。暱稱與聯絡方式欄位旁顯示「個資蒐集告知」連結（連到 /privacy 對應段落，開新分頁或 sheet），<b>不強制勾選</b>。填了 Email 時，成功後寄出確認信，內含「管理我的認領」連結（一次性恢復權杖）與退訂連結（等同換裝置找回的最小版）；Email 不顯示給其他訪客。Email 欄位預設空白，不從 localStorage 帶入。</td></tr>
+<tr><th>API</th><td>POST <code>/items/{item_id}/claims</code>（headers: <code>Idempotency-Key</code>、<code>X-Guest-Token</code>（若已有）；body: qty, display_name, contact, note, email（選填）；回應含首次的 guest_token）。錯誤：<code>ITEM_FULLY_CLAIMED</code>(409)、<code>VALIDATION_FAILED</code>、<code>RATE_LIMITED</code>、<code>WISHLIST_CLOSED</code>、<code>IDEMPOTENCY_CONFLICT</code>、<code>CLAIM_ALREADY_EXISTS</code>(409，同一訪客對同品項已有有效認領，改用 PATCH <code>/claims/{claim_id}</code>)、<code>READ_ONLY_MODE</code>(503)</td></tr>
+</tbody></table></div></div></div>
+
+<!-- 5.8 SUCCESS -->
+<h3 id="w-success">5.8 認領成功頁 <span class="ph p0">P0</span></h3>
+<div class="wf">
+<div class="phones">
+<div><div class="phone">
+<div class="st"><span>9:41</span><span>Safari</span></div>
+<div class="ab">‹ 回到清單</div>
+<div class="bd" style="align-items:center;text-align:center">
+<div style="width:72px;height:72px;border-radius:50%;background:var(--accent-soft);border:2px solid var(--accent);display:grid;place-items:center;font-size:32px;color:var(--accent)">✓</div>
+<div style="font-size:20px;font-weight:700">認領成功！</div>
+<div>你認領了 <b>寶寶奶瓶 240ml × 2</b><br><span class="lbl">謝謝你，阿明</span></div>
+<div class="card" style="text-align:left;flex-direction:column;width:100%"><b>已存在此裝置</b><span class="lbl">這份認領已存在這支手機的瀏覽器。之後可在「我的認領」查看、標記已購買，或取消。</span></div>
+<div class="btn pri" style="width:100%">查看我的認領</div>
+<div class="btn ghost" style="width:100%">回到清單繼續看</div>
+<div class="card" style="text-align:left;flex-direction:column;width:100%;border-style:dashed"><b>加入主畫面</b><span class="lbl">點 Safari 底部「分享」→「加入主畫面」，下次一鍵回來。</span><span class="lbl">[ 稍後 ]　[ 不再提醒 ]</span></div>
+</div></div><div class="cap">iOS Safari / Android Chrome</div></div>
+<div><div class="phone">
+<div class="st"><span>9:41</span><span>LINE</span></div>
+<div class="ab">‹ 回到清單</div>
+<div class="bd" style="align-items:center;text-align:center">
+<div style="width:72px;height:72px;border-radius:50%;background:var(--accent-soft);border:2px solid var(--accent);display:grid;place-items:center;font-size:32px;color:var(--accent)">✓</div>
+<div style="font-size:20px;font-weight:700">認領成功！</div>
+<div class="card" style="text-align:left;flex-direction:column;width:100%"><b>已存在此裝置</b><span class="lbl">可在「我的認領」查看。</span></div>
+<div class="card" style="text-align:left;flex-direction:column;width:100%;border-color:var(--warn);background:var(--warn-soft)"><b>建議用預設瀏覽器開啟</b><span class="lbl">LINE 內建瀏覽器關閉後，認領紀錄可能找不到。點右上角 ⋯ →「用預設瀏覽器開啟」。</span><div class="btn">用預設瀏覽器開啟</div></div>
+<div class="btn pri" style="width:100%">查看我的認領</div>
+</div></div><div class="cap">LINE in-app browser（取代加入主畫面提示）</div></div>
+</div>
+<div class="spec"><div class="tw"><table><tbody>
+<tr><th>元件</th><td>EmailSentNotice（有留 Email 時顯示「已寄出管理連結到 n***@example.com」）、SuccessHero、ClaimSummary、InstallHint（偵測 standalone / iOS / Android / LINE 後選擇內容）、ExternalBrowserHint</td></tr>
+<tr><th>狀態</th><td>此頁為 /s/{slug} 上的全螢幕 overlay（用 <code>?claimed=id</code> 或 route state），重新整理仍可還原（由 GET /guest/me 驗證）；已加入主畫面（<code>display-mode: standalone</code>）則不顯示安裝提示。error：若寫入 localStorage 失敗（私密模式），顯示警告「無法儲存於此裝置，請截圖保存」。</td></tr>
+<tr><th>互動</th><td>「稍後」下次再提示；「不再提醒」寫入 <code>ws_hint_dismissed</code>。iOS 偵測不到安裝事件，只顯示步驟圖示。Android Chrome 若捕捉到 <code>beforeinstallprompt</code>，提示按鈕直接觸發原生安裝。</td></tr>
+<tr><th>API</th><td>無新增；資料來自 POST claims 的回應。重整還原使用 GET <code>/guest/me</code></td></tr>
+</tbody></table></div></div></div>
+
+<!-- 5.9 FUND -->
+<h3 id="w-fund">5.9 眾籌 bottom sheet（點數投入）<span class="ph p2">P2-A</span></h3>
+<div class="wf">
+<div class="phones">
+<div><div class="phone" style="min-height:700px">
+<div class="st"><span>9:41</span><span>LINE</span></div>
+<div class="ab">WishSync</div>
+<div class="bd"><div class="card"><div class="im">圖</div><div class="col"><b>嬰兒推車</b></div></div></div>
+<div class="scrim"></div>
+<div class="sheet">
+<div class="grab"></div><b>投點支持「嬰兒推車」</b>
+<div class="row"><span class="lbl fl">我的錢包餘額</span><b>3,200 點</b></div>
+<div style="background:var(--warn-soft);border:1px solid var(--warn);color:var(--warn);border-radius:8px;padding:6px 8px;font-size:12px">將優先使用即將到期的贊助點數（200 點，11/15 到期），其次禮物卡點數，最後儲值點數。</div>
+<div class="lbl">目標 11,000 點・已湊 3,000・<b>剩餘 8,000 點</b></div>
+<div class="prog s"><i style="width:27%"></i></div>
+<div><div class="lbl"><b>要投多少點？</b>（1 點 = NT$1）</div><div class="chips"><span class="chip">100</span><span class="chip on">500</span><span class="chip">1,000</span><span class="chip">2,000</span><span class="chip">自訂</span></div></div>
+<div class="row"><div class="inp" style="min-width:44px;justify-content:center">☑</div><div class="fl">匿名投入<br><span class="lbl">建立者解鎖後也只會看到「匿名朋友」</span></div></div>
+<div class="inp">留言（選填）</div>
+<div class="btn pri">投入 500 點</div>
+<div class="lbl" style="text-align:center">點數只會用於購買此品項，受捐者無法提領。未達標可退回或轉投。</div>
+</div></div><div class="cap">餘額足夠</div></div>
+<div><div class="phone" style="min-height:700px">
+<div class="st"><span>9:41</span><span>LINE</span></div>
+<div class="ab">WishSync</div>
+<div class="bd"><div class="card"><div class="im">圖</div><div class="col"><b>嬰兒推車</b></div></div></div>
+<div class="scrim"></div>
+<div class="sheet">
+<div class="grab"></div><b>投點支持「嬰兒推車」</b>
+<div class="row"><span class="lbl fl">我的錢包餘額</span><b>200 點</b></div>
+<div class="lbl">剩餘 8,000 點</div>
+<div class="chips"><span class="chip">100</span><span class="chip on">500</span><span class="chip">1,000</span></div>
+<div style="background:var(--red-soft);border:1px solid var(--red);color:var(--red);border-radius:8px;padding:8px">點數不足，還差 300 點。儲值後會回到這裡繼續。</div>
+<div class="btn pri">儲值（建議 NT$300 以上）</div>
+<div class="btn ghost">改投 200 點</div>
+</div></div><div class="cap">餘額不足（INSUFFICIENT_POINTS）</div></div>
+<div><div class="phone" style="min-height:700px">
+<div class="st"><span>9:41</span><span>LINE</span></div>
+<div class="ab">WishSync</div>
+<div class="bd"><div class="card"><div class="im">圖</div><div class="col"><b>嬰兒推車</b></div></div></div>
+<div class="scrim"></div>
+<div class="sheet">
+<div class="grab"></div><b>只差一點點了</b>
+<div class="row"><span class="lbl fl">我的錢包餘額</span><b>3,200 點</b></div>
+<div class="lbl"><b>剩餘 300 點</b></div>
+<div class="prog s"><i style="width:97%"></i></div>
+<div style="background:var(--warn-soft);border:1px solid var(--warn);color:var(--warn);border-radius:8px;padding:8px">只剩 300 點就達標了，已幫你帶入 300 點。</div>
+<div class="stp"><span>－</span><span class="v">300</span><span>＋</span></div>
+<div class="btn pri">投入 300 點，完成達標</div>
+<div class="lbl" style="text-align:center">點數只會用於購買此品項，受捐者無法提領。</div>
+</div></div><div class="cap">剩餘不足：自動帶入 remaining_points（409 CROWDFUND_TARGET_EXCEEDED 後也是此狀態）</div></div>
+</div>
+<div class="spec"><div class="tw"><table><tbody>
+<tr><th>元件</th><td>ContributeSheet、WalletBalance、AmountChips、QtyStepper（點數版，max = remaining_points）、FundingProgress（ProgressBar）、InlineAlert、TopupSheet（餘額不足時開啟，見 5.16）</td></tr>
+<tr><th>狀態</th><td>idle / submitting / error-insufficient / error-409-exceeded（帶入 remaining_points）/ error-409-funded（<code>ITEM_FUNDED</code>：關閉 sheet、卡片改「已達標」、點數未被扣）/ error-network（保留輸入、同 Idempotency-Key）/ <code>READ_ONLY_MODE</code> / 未登入（導向 /login?redirect=）。離線：停用投入。funding_status 非 open：不開啟此 sheet。</td></tr>
+<tr><th>互動</th><td>開啟時載入 <code>GET /wallet</code> 餘額。快選點數（100 / 500 / 1,000 / 2,000）若大於剩餘，改為「剩餘 X 點」單一快選；自訂輸入大於剩餘則自動帶入 <code>remaining_points</code> 並顯示提示。餘額不足時主按鈕變「儲值」，儲值完成後回到本 sheet 並保留點數、匿名、留言。送出：先樂觀更新卡片 pledged_points 與錢包餘額，失敗則回滾。成功後若 pledged_points = target_points，顯示「你幫忙湊齊了」並進入已達標狀態。固定說明文案「點數只會用於購買此品項，受捐者無法提領」，不可省略。扣點順序由伺服器決定（贊助點數最早到期優先 → 禮物卡 → 儲值），前端只顯示說明，不讓使用者選批次；退回時回到原批次，已過期的贊助點數部分作廢。投點成功後若餘額低於自動儲值門檻，伺服器會非同步自動儲值，前端以 toast 告知「已為你自動儲值」，認捐本身不等待扣卡。</td></tr>
+<tr><th>API</th><td>GET <code>/wallet</code>；POST <code>/items/{item_id}/contributions</code>（需 <code>ws_session</code>、<code>Idempotency-Key</code>；body: points, message, is_anonymous）；DELETE <code>/contributions/{id}</code>（撤回，僅 open）。錯誤：<code>INSUFFICIENT_POINTS</code>、<code>CROWDFUND_TARGET_EXCEEDED</code>（附 remaining_points）、<code>ITEM_FUNDED</code>、<code>FUNDING_EXPIRED</code>、<code>CONTRIBUTION_LOCKED</code>、<code>UNAUTHORIZED</code>、<code>VALIDATION_FAILED</code>、<code>WISHLIST_CLOSED</code>、<code>READ_ONLY_MODE</code></td></tr>
+</tbody></table></div></div></div>
+
+<!-- 5.10 ME -->
+<h3 id="w-me">5.10 我的認領 /me/claims <span class="ph p0">P0</span></h3>
+<div class="wf">
+<div><div class="phone">
+<div class="st"><span>9:41</span><span></span></div>
+<div class="ab">我的認領</div>
+<div class="bd">
+<div style="background:var(--red-soft);border:1px solid var(--red);color:var(--red);border-radius:8px;padding:8px;font-size:12px">這個管理連結已失效（只能使用一次，且 30 天內有效）。請回到朋友分享的清單連結，或聯絡客服。（示範：恢復失敗）</div>
+<div class="row"><div class="lbl fl">阿明（此裝置）</div><div class="lbl"><b>改暱稱</b></div></div>
+<div class="lbl"><b>小愛的待產清單</b></div>
+<div class="card"><div class="im">圖</div><div class="col"><b>寶寶奶瓶 240ml × 2</b><div><span class="b teal">已認領</span></div><div class="row"><div class="btn fl ghost">標記已購買</div><div class="btn fl ghost">取消</div></div></div></div>
+<div class="card"><div class="im">圖</div><div class="col"><b>奶粉 1 號 × 1</b><div><span class="b blue">已購買</span></div><div class="btn ghost">標記已送達</div></div></div>
+<div class="card"><div class="im">圖</div><div class="col"><b>圍兜 × 3</b><div><span class="b green">已送達</span></div></div></div>
+<div class="lbl" style="text-align:center">沒看到之前的認領？可能是在不同瀏覽器。<b>怎麼找回？</b>（留過 Email 的認領，可從確認信的管理連結回來）</div>
+</div></div><div class="cap">/me/claims</div></div>
+<div class="spec"><div class="tw"><table><tbody>
+<tr><th>元件</th><td>GuestHeader、ClaimGroup（依清單分組）、ClaimRow（含 ItemThumb、StatusBadge、動作按鈕）、NicknameEditor、RecoverHelp、<span class="ph p0">P0</span> 刪除我的暱稱與聯絡方式（<code>DELETE /guest/me</code>，二次確認；claims 保留為「已刪除的訪客」）</td></tr>
+<tr><th>狀態</th><td>loading：骨架；empty：「你還沒有認領任何東西。收到朋友的清單連結後，就能在這裡管理。」；error：重試；無 guest_token：顯示 empty 並提示可能換了瀏覽器；已取消 / 已逾期項目收合在「過去的紀錄」。離線：顯示快取清單，動作停用。</td></tr>
+<tr><th>互動</th><td><b>信件管理連結進入</b>（<code>/me/claims#r={token}</code>）：頁面載入時由前端讀 hash、以 <code>history.replaceState</code> 清除後呼叫 POST <code>/guest/recover</code>，成功即取得新的 guest token（存 localStorage，伺服器同時設 ws_guest cookie）並載入認領；無效、過期、已用一律 404 <code>NOT_FOUND</code>，顯示頂部「管理連結已失效」提示（見上圖）而非一般空狀態，不揭露失效原因。流程見 4.11。「標記已購買」→ PATCH claim status=purchased（樂觀更新）；purchased 後出現「標記已送達」→ PATCH status=delivered（認領者本人、owner、org owner/coordinator 皆可標記）；「取消」二次確認後 DELETE（庫存釋回，其他訪客即時看到）。reserved 才可取消；purchased 以後取消需確認文案「建立者會收到通知」。點品項回該 /s/{slug}。</td></tr>
+<tr><th>API</th><td>GET <code>/guest/me</code>；PATCH <code>/guest/me</code>（暱稱）；POST <code>/guest/recover</code>（body: token；hash 進入時）；PATCH <code>/claims/{claim_id}</code>；DELETE <code>/claims/{claim_id}</code>。此頁只有數量型認領；<span class="ph p2">P2</span> 眾籌投點紀錄在 /wallet（需登入，見 5.15）</td></tr>
+</tbody></table></div></div></div>
+
+<!-- 5.11 PROGRESS -->
+<h3 id="w-progress">5.11 完成度儀表板 /w/{id}/progress <span class="ph p0">P0</span>（眾籌訂單列為 <span class="ph p2">P2</span>）</h3>
+<div class="wf">
+<div class="phones">
+<div><div class="phone" style="min-height:700px">
+<div class="st"><span>9:41</span><span></span></div>
+<div class="ab">‹ 完成度<span class="sp"></span><span class="b teal">active</span></div>
+<div class="bd">
+<div class="card" style="flex-direction:column"><div class="row"><b style="font-size:22px">62%</b><span class="lbl fl">數量品項 15 / 24</span></div><div class="prog"><i style="width:62%"></i></div></div>
+<div class="lbl"><b>品項明細</b></div>
+<div class="card" style="flex-direction:column"><div class="row"><b class="fl">寶寶奶瓶 240ml</b><span class="lbl">6 / 10</span></div><div class="prog s"><i style="width:60%"></i></div><span class="lbl">阿明 ×2（已認領）、小美 ×4（已購買）</span></div>
+<div class="card" style="flex-direction:column"><div class="row"><b class="fl">奶粉 1 號</b><span class="b green">已完成</span></div><div class="prog s"><i style="width:100%"></i></div></div>
+<div class="lbl"><b>眾籌品項</b> <span class="ph p2">P2</span></div>
+<div class="card" style="flex-direction:column"><div class="row"><b class="fl">嬰兒推車</b><span class="b blue">運送中</span></div><div class="prog s"><i style="width:100%"></i></div><span class="lbl">11,000 / 11,000 點・12 人投入（阿明、小美…）・訂單 #1024</span></div>
+<div class="card" style="flex-direction:column"><div class="row"><b class="fl">嬰兒床</b><span class="b teal">募集中</span></div><div class="prog s"><i style="width:40%"></i></div><span class="lbl">4,800 / 12,000 點・剩 12 天截止</span></div>
+</div></div><div class="cap">一般模式</div></div>
+<div><div class="phone" style="min-height:700px">
+<div class="st"><span>9:41</span><span></span></div>
+<div class="ab">‹ 完成度<span class="sp"></span><span class="b orange">驚喜模式</span></div>
+<div class="bd">
+<div style="background:var(--warn-soft);border:1px solid var(--warn);border-radius:8px;padding:8px;font-size:12px">驚喜模式：解鎖前只顯示整體完成度與眾籌彙總，不顯示各品項進度、逐品項訂單狀態與誰送了什麼。<b>還有 73 天解鎖</b>（2026/12/20 00:00 台北時間）</div>
+<div class="card" style="flex-direction:column"><div class="row"><b style="font-size:22px">62%</b><span class="lbl fl">整體完成度</span></div><div class="prog"><i style="width:62%"></i></div></div>
+<div class="lbl"><b>品項明細</b></div>
+<div class="card" style="flex-direction:column"><div class="row"><b class="fl">寶寶奶瓶 240ml</b><span class="mask">進度已隱藏</span></div></div>
+<div class="lbl"><b>眾籌彙總</b> <span class="ph p2">P2</span></div>
+<div class="card" style="flex-direction:column"><div class="row"><b class="fl">眾籌品項 3 件</b></div><div class="row"><span class="b blue">已下單 1</span><span class="b blue">運送中 1</span><span class="b teal">募集中 1</span></div><span class="lbl">不顯示是哪一件，也不顯示捐贈者。包裹送達即揭曉。</span></div>
+</div></div><div class="cap">驚喜模式（活動日前，SurpriseMask）：只有眾籌彙總，沒有逐品項對應與「待確認款項」</div></div>
+</div>
+<div class="spec"><div class="tw"><table><tbody>
+<tr><th>元件</th><td>ProgressSummary、ProgressBar、ItemProgressRow、ClaimerList、OrderStatusRow（P2）、FundingStatusBadge（P2）、SurpriseMask、UnlockCountdown</td></tr>
+<tr><th>狀態</th><td>loading：骨架；empty：尚無任何認領「還沒有人認領，去分享連結吧」+ 分享按鈕；error：重試；已解鎖：自動在活動日 0:00（Asia/Taipei）重新載入。離線：顯示上次資料並標示時間。眾籌品項缺收件地址：顯示警示並導向 5.19。</td></tr>
+<tr><th>互動</th><td>由伺服器決定是否遮罩：前端<b>只信任 API 回傳</b>，SurpriseMask 僅為顯示元件，不可用 CSS 模糊假遮罩。鎖定期間（surprise_mode=true 且 now &lt; unlock_at，即 event_date 當日 00:00 Asia/Taipei）API 只回整體彙總（<code>completion_pct</code> 等），每品項 <code>qty_claimed</code> / <code>pledged_points</code> 為 null，不含 claims、暱稱、聯絡方式、留言；眾籌只回彙總計數（已下單 N / 運送中 M），不含逐品項對應；解鎖後才回各品項 <code>display_status</code>。前端遇 null 一律渲染 SurpriseMask，不顯示 x/y。點數不經過建立者，因此<b>沒有確認收款動作</b>。可手動下拉重新整理。</td></tr>
+<tr><th>API</th><td>GET <code>/wishlists/{id}/dashboard</code>；PATCH <code>/claims/{claim_id}</code>（owner 可標記 delivered；驚喜鎖定期間實際上只有認領者本人能標）；<span class="ph p2">P2</span> GET <code>/wishlists/{id}/orders</code>（訂單狀態）</td></tr>
+</tbody></table></div></div></div>
+
+<!-- 5.12 RELIEF MAP -->
+<h3 id="w-relief">5.12 救災地圖 /relief <span class="ph p2">P2-D</span></h3>
+<div class="wf">
+<div><div class="phone" style="min-height:680px">
+<div class="st"><span>9:41</span><span></span></div>
+<div class="ab">救災據點<span class="sp"></span><div class="ic">篩選</div></div>
+<div class="bd" style="padding-top:8px">
+<div class="map"><span class="pin c" style="left:60px;top:50px"></span><span class="pin h" style="left:170px;top:90px"></span><span class="pin m" style="left:250px;top:40px"></span><span class="pin l" style="left:120px;top:140px"></span><div class="ic" style="position:absolute;right:8px;bottom:8px;background:var(--bg);min-width:44px;min-height:44px;border:1px solid var(--g2);border-radius:8px;display:grid;place-items:center">◎</div></div>
+<div class="chips"><span class="chip on">全部</span><span class="chip">水</span><span class="chip">食物</span><span class="chip">醫療</span></div>
+<div class="card"><span class="b red" style="align-self:flex-start">緊急</span><div class="col"><b>花蓮光復國小收容所</b><span class="lbl">1.2 km・缺 飲用水、泡麵</span></div></div>
+<div class="card"><span class="b orange" style="align-self:flex-start">高</span><div class="col"><b>鳳林活動中心</b><span class="lbl">8.5 km・缺 嬰兒奶粉</span></div></div>
+<div class="card off"><span class="b gray" style="align-self:flex-start">暫停</span><div class="col"><b>萬榮國小</b><span class="lbl">paused</span></div></div>
+</div></div><div class="cap">/relief（地圖 + 底部據點清單）</div></div>
+<div class="spec"><div class="tw"><table><tbody>
+<tr><th>元件</th><td>ReliefMap（建議 MapLibre GL + OpenStreetMap 向量圖磚，待決）、SiteMarker（顏色 + 形狀 + 緊急度文字）、SiteListSheet、CategoryChips、UrgencyBadge、LocateButton</td></tr>
+<tr><th>狀態</th><td>loading：地圖骨架 + 清單骨架；empty：「這個範圍沒有據點，試著縮小篩選或移動地圖」；error：「無法載入據點」+ 重試；離線：顯示上次快取的清單（地圖圖磚不可用時以清單為主）；位置權限被拒：預設台灣全島視野並提示。</td></tr>
+<tr><th>互動</th><td>緊急度色標：critical 紅、high 橘、medium 黃、low 綠；<b>色標必須同時有文字與形狀</b>（色盲友善）。地圖移動結束（debounce 400ms）以 bbox 查詢；「附近」用 <code>near</code> + <code>radius_km</code>。標記叢集化（&gt; 50 個）。清單與地圖雙向連動（點清單項目聚焦標記）。僅 visibility=public 且 site_status=active 的據點顯示（paused 灰色）。</td></tr>
+<tr><th>API</th><td>GET <code>/public/relief/sites?bbox=minLng,minLat,maxLng,maxLat</code> 或 <code>?near=lat,lng&amp;radius_km=</code>；GET <code>/public/relief/needs/summary?bbox=…</code>（全區需求彙總）</td></tr>
+</tbody></table></div></div></div>
+
+<!-- 5.13 SITE -->
+<h3 id="w-site">5.13 據點頁 /relief/sites/{slug} <span class="ph p2">P2-D</span></h3>
+<div class="wf">
+<div class="phones">
+<div><div class="phone" style="min-height:700px">
+<div class="st"><span>9:41</span><span></span></div>
+<div class="ab">‹ 花蓮光復國小收容所</div>
+<div class="bd">
+<div class="row"><span class="b red">緊急</span><span class="lbl fl">花蓮縣光復鄉・更新於 10 分鐘前</span></div>
+<div class="row"><span class="b green">✓ 已驗證組織</span><span class="lbl fl">好鄰居協會</span></div>
+<div class="chips"><span class="chip on">全部</span><span class="chip">水</span><span class="chip">食物</span><span class="chip">醫療</span><span class="chip">衛生</span></div>
+<div class="lbl"><b>緊急（critical）</b></div>
+<div class="card"><div class="col"><b>瓶裝飲用水 600ml</b><span class="lbl">需要 2,000・已認捐 800・已收 300</span><div class="prog s"><i style="width:15%"></i></div><div class="btn pri">我要認捐</div></div></div>
+<div class="lbl"><b>高（high）</b></div>
+<div class="card"><div class="col"><b>成人尿布 L</b><span class="lbl">需要 200・已認捐 200・已收 0</span><div class="prog s"><i style="width:0%"></i></div><div class="btn dis">已被認捐完</div></div></div>
+<div class="lbl" style="margin-top:6px"><span class="b gray">志工</span> 已登入為 阿豪</div>
+<div class="btn">登記實收</div>
+</div></div><div class="cap">據點頁（志工視角底部有「登記實收」）</div></div>
+<div><div class="phone" style="min-height:700px">
+<div class="st"><span>9:41</span><span></span></div>
+<div class="ab">‹ 花蓮光復國小收容所</div>
+<div class="bd"><div class="card"><div class="col"><b>瓶裝飲用水 600ml</b></div></div></div>
+<div class="scrim"></div>
+<div class="sheet">
+<div class="grab"></div><b>登記實收：瓶裝飲用水</b>
+<div style="background:var(--warn-soft);border:1px solid var(--warn);border-radius:8px;padding:6px 8px;font-size:12px;color:var(--warn)">離線中：會先存在本機，連線後自動送出（待同步 1）</div>
+<div class="lbl">實收數量</div>
+<div class="stp"><span>－</span><span class="v">300</span><span>＋</span></div>
+<div class="chips"><span class="chip">+10</span><span class="chip">+50</span><span class="chip">+100</span></div>
+<div><div class="lbl">備註或照片（選填）</div><div class="inp">箱數、車牌…</div></div>
+<div class="btn pri">儲存實收</div>
+</div></div><div class="cap">登記實收 sheet（離線佇列）</div></div>
+</div>
+<div class="spec"><div class="tw"><table><tbody>
+<tr><th>元件</th><td>SiteHeader、CategoryTabs、UrgencyGroup、NeedCard（= ItemCard relief 變體）、PledgeSheet（= ClaimSheet）、ReceiptSheet、SyncQueueBadge</td></tr>
+<tr><th>狀態</th><td><b>組織驗證</b>：<code>verification_status=verified</code> 的組織據點顯示「已驗證組織」徽章（文字 + 圖示）；未驗證組織的據點只能是 link 可見，不上地圖、不出現在據點列表，建立 public 據點時 API 回 403 <code>ORG_NOT_VERIFIED</code>，/org/{id} 顯示「驗證審核中」並說明限制。loading / empty（「這個據點目前沒有需求」）/ error / 已滿（已被認捐完，灰掉）/ site_status=paused（頂部橫幅「此據點暫停接收物資」，認捐停用）/ closed（唯讀）/ 離線（認捐停用，志工登記實收走佇列）。</td></tr>
+<tr><th>互動</th><td>需求依 <code>relief_urgency</code>（critical → low）分組，組內依 <code>relief_category</code> 排序。「我要認捐」沿用訪客免註冊的 ClaimSheet（數量 stepper + 暱稱，不收集災民個資）。「登記實收」僅對 org_role 為 volunteer / coordinator / owner 顯示。離線佇列：IndexedDB 存放請求與其 Idempotency-Key，連線恢復（<code>online</code> 事件 / Background Sync）後重送；iOS Safari 無 Background Sync，改在 App 前景時 flush。</td></tr>
+<tr><th>API</th><td>GET <code>/public/wishlists/{slug}</code>（據點即 relief 型 wishlist，路由直接使用 slug；GET /public/relief/sites 每筆已回傳 slug）；POST <code>/items/{item_id}/claims</code>（認捐）；POST <code>/items/{item_id}/receipts</code>（實收）；PATCH <code>/sites/{id}</code>（coordinator / owner 調整狀態與緊急度）；SSE <code>/public/wishlists/{slug}/events</code></td></tr>
+</tbody></table></div></div></div>
+
+
+<!-- 5.14 FUNDING CARDS -->
+<h3 id="w-fcard">5.14 公開頁眾籌品項卡片 /s/{slug} <span class="ph p2">P2-A</span></h3>
+<div class="wf">
+<div><div class="phone" style="min-height:860px">
+<div class="st"><span>9:41</span><span>LINE</span></div>
+<div class="ab">WishSync<span class="sp"></span><div class="ic">我的認領</div></div>
+<div class="bd">
+<div class="card"><div class="im">圖</div><div class="col"><div class="row"><b class="fl">嬰兒推車</b><span class="b teal">募集中</span></div><span class="lbl">3,000 / 11,000 點・5 人投入・剩 12 天</span><div class="prog s" role="progressbar" aria-valuenow="27"><i style="width:27%"></i></div><div class="btn pri">加入眾籌</div></div></div>
+<div class="card"><div class="im">圖</div><div class="col"><div class="row"><b class="fl">嬰兒床</b><span class="b green">已達標</span></div><span class="lbl">12,000 / 12,000 點・等待下單</span><div class="prog s"><i style="width:100%"></i></div><div class="btn dis">已達標</div></div></div>
+<div class="card"><div class="im">圖</div><div class="col"><div class="row"><b class="fl">消毒鍋</b><span class="b blue">已下單</span></div><span class="lbl">3,200 / 3,200 點</span><div class="prog s"><i style="width:100%"></i></div></div></div>
+<div class="card"><div class="im">圖</div><div class="col"><div class="row"><b class="fl">安全座椅</b><span class="b blue">運送中</span></div><span class="lbl">9,800 / 9,800 點</span><div class="prog s"><i style="width:100%"></i></div></div></div>
+<div class="card off"><div class="im">圖</div><div class="col"><div class="row"><b class="fl">吸乳器</b><span class="b green">已送達</span></div><span class="lbl">6,500 / 6,500 點</span></div></div>
+<div class="card off"><div class="im">圖</div><div class="col"><div class="row"><b class="fl">學步車</b><span class="b orange">未達標</span></div><span class="lbl">2,000 / 6,000 點・募集已截止</span><div class="prog s"><i style="width:33%"></i></div><div class="btn dis">募集已截止</div></div></div>
+</div></div><div class="cap">六種 display_status 顯示</div></div>
+<div class="spec"><div class="tw"><table><tbody>
+<tr><th>元件</th><td>ItemCard（crowdfund 變體）、ProgressBar（format=points）、FundingStatusBadge、DeadlineLabel</td></tr>
+<tr><th>狀態</th><td>募集中：顯示「加入眾籌」。已達標：按鈕灰掉。已下單 / 運送中 / 已送達：只顯示徽章，無按鈕（公開頁不顯示追蹤編號）。未達標：卡片灰掉，捐贈者另在 /wallet 處理。已滿 / 載入 / 離線 / 空狀態同 5.6。</td></tr>
+<tr><th>互動</th><td>徽章直接使用 API 回傳的 <code>display_status</code>（open / funded / ordered / shipped / delivered / expired），前端<b>不再自行推導</b>：open 募集中、funded 已達標、ordered 已下單、shipped 運送中、delivered 已送達、expired 未達標（對照見 10.3）。進度為 <code>pledged_points / target_points</code>，硬上限，不會超過 100%。SSE <code>item.updated</code> 同樣帶 pledged_points 與 display_status。建立者本人（比對 <code>owner.id</code> 與 <code>GET /me</code>）於驚喜模式鎖定期間看到「驚喜模式中」遮罩，不顯示逐品項狀態。倒數剩 24 小時內改為警示色並含文字。</td></tr>
+<tr><th>API</th><td>GET <code>/public/wishlists/{slug}</code>；SSE <code>/public/wishlists/{slug}/events</code>（眾籌品項帶 display_status）；POST <code>/items/{item_id}/contributions</code>（見 5.9）</td></tr>
+</tbody></table></div></div></div>
+
+<!-- 5.15 WALLET -->
+<h3 id="w-wallet">5.15 點數錢包 /wallet（分批餘額、自動儲值、已購禮物卡）<span class="ph p2">P2-A</span> <span class="ph p2">P2-B</span></h3>
+<div class="wf">
+<div class="phones">
+<div><div class="phone" style="min-height:900px">
+<div class="st"><span>9:41</span><span></span></div>
+<div class="ab">點數錢包<span class="sp"></span><div class="ic">⭐ 星星</div></div>
+<div class="bd">
+<div class="card" style="flex-direction:column;background:var(--accent-soft);border-color:var(--accent)"><span class="lbl">目前總餘額（1 點 = NT$1）</span><b style="font-size:28px">3,200 點</b>
+<div class="row"><span class="fl">儲值點數（可退現金）</span><b>2,000</b></div>
+<div class="row"><span class="fl">禮物卡點數（不可退現金）</span><b>1,000</b></div>
+<div class="row"><span class="fl">贊助點數</span><b>200</b></div>
+<div style="background:var(--warn-soft);border:1px solid var(--warn);color:var(--warn);border-radius:8px;padding:6px 8px;font-size:12px">200 點贊助點數將於 11/15 到期，剩 12 天。投點時會優先使用。</div>
+<div class="row"><div class="btn pri fl">儲值</div><div class="btn fl">買禮物卡</div></div>
+<span class="lbl">點數不設使用期限（贊助點數除外），只能用於心願品項，無法兌現。</span></div>
+<div class="card" style="align-items:center"><div class="col"><b>自動儲值：開啟</b><span class="lbl">低於 300 點時自動儲值 NT$1,000・本月已用 NT$2,000 / 10,000</span></div><div class="btn ghost" style="min-width:64px">設定</div></div>
+<div class="lbl"><b>我的認捐</b></div>
+<div class="card"><div class="col"><b>嬰兒推車・1,500 點</b><div><span class="b teal">募集中</span></div></div></div>
+<div class="card"><div class="col"><b>學步車・500 點</b><div><span class="b orange">未達標</span></div><div class="btn">選擇退回或轉投（剩 6 天）</div></div></div>
+<div class="lbl"><b>已購禮物卡</b></div>
+<div class="card"><div class="col"><b>NT$500 禮物卡（寶寶卡面）</b><span class="lbl">10/06 購買・給 阿明</span><div class="row"><span class="b teal">未兌換</span><div class="btn ghost fl">重新分享</div><div class="btn ghost fl">申請退款</div></div></div></div>
+<div class="card"><div class="col"><b>NT$500 禮物卡（寶寶卡面）</b><div class="row"><span class="b green">已兌換</span><span class="lbl">10/07 已兌換，無法退款</span></div></div></div>
+<div class="lbl"><b>點數明細</b></div>
+<div class="chips"><span class="chip on">全部</span><span class="chip">儲值</span><span class="chip">投入</span><span class="chip">退回</span><span class="chip">禮物卡</span></div>
+<div class="row"><div class="fl">兌換禮物卡<br><span class="lbl">10/07 08:30</span></div><b style="color:var(--green)">+1,000</b></div>
+<div class="row"><div class="fl">投入「嬰兒推車」<br><span class="lbl">10/06 21:15</span></div><b>-1,500</b></div>
+<div class="row"><div class="fl">點數到期<br><span class="lbl">10/01</span></div><b>-50</b></div>
+</div></div><div class="cap">/wallet（LotBalanceBreakdown、自動儲值列、我的認捐、已購禮物卡、明細）</div></div>
+<div><div class="phone" style="min-height:900px">
+<div class="st"><span>9:41</span><span></span></div>
+<div class="ab">點數錢包</div>
+<div class="bd"><div class="card"><div class="col"><b>餘額 3,200 點</b></div></div></div>
+<div class="scrim"></div>
+<div class="sheet">
+<div class="grab"></div><b>自動儲值</b>
+<div class="row"><div class="fl">開啟自動儲值<br><span class="lbl">餘額偏低時，用已綁定的信用卡自動加值</span></div><div class="sw"></div></div>
+<div><div class="lbl"><b>餘額低於</b></div><div class="chips"><span class="chip">100</span><span class="chip on">300</span><span class="chip">500</span><span class="chip">1,000</span></div></div>
+<div><div class="lbl"><b>每次儲值</b></div><div class="chips"><span class="chip">NT$500</span><span class="chip on">NT$1,000</span><span class="chip">NT$2,000</span><span class="chip">NT$5,000</span></div></div>
+<div><div class="lbl"><b>每月上限</b></div><div class="inp">NT$10,000</div></div>
+<div class="inp">信用卡 •••• 4242　更換</div>
+<div class="lbl">達到每月上限後不再自動扣款，會通知你，不影響投點。隨時可以關閉。</div>
+<div class="btn pri">儲存設定</div>
+<div class="btn ghost">關閉並刪除卡片</div>
+</div></div><div class="cap">AutoTopupSheet</div></div>
+<div><div class="phone" style="min-height:900px">
+<div class="st"><span>9:41</span><span></span></div>
+<div class="ab">點數錢包</div>
+<div class="bd"><div class="card"><div class="col"><b>餘額 3,200 點</b></div></div></div>
+<div class="scrim"></div>
+<div class="sheet">
+<div class="grab"></div><b>申請退回現金</b>
+<div class="lbl">可退回：<b>2,000 點（NT$2,000）</b>，僅限儲值點數</div>
+<div style="background:var(--code-bg);border:1px solid var(--border);border-radius:8px;padding:6px 8px;font-size:12px">禮物卡點數 1,000 與贊助點數 200 不可退現金，只能用於心願品項。</div>
+<div><div class="lbl"><b>退回點數</b></div><div class="inp">2,000</div></div>
+<div style="background:var(--red-soft);border:1px solid var(--red);color:var(--red);border-radius:8px;padding:6px 8px;font-size:12px">示範：輸入 2,500 時顯示「超過可退金額」（NOT_CASH_REFUNDABLE）</div>
+<div class="lbl">申請後狀態：<span class="b gray">已申請</span> → <span class="b blue">處理中</span> → <span class="b green">已退款</span></div>
+<div class="btn pri">送出申請</div>
+<div class="btn ghost">取消</div>
+</div></div><div class="cap">申請退款 sheet（只能退儲值批次）</div></div>
+<div><div class="phone" style="min-height:420px">
+<div class="st"><span>9:41</span><span></span></div>
+<div class="ab">點數錢包<span class="sp"></span><span class="b red">已凍結</span></div>
+<div class="bd">
+<div style="background:var(--red-soft);border:1px solid var(--red);color:var(--red);border-radius:8px;padding:10px">你的錢包目前已凍結，暫時無法儲值、投點、兌換或退款。請聯絡客服了解原因（WALLET_FROZEN）。</div>
+<div class="card" style="flex-direction:column"><span class="lbl">目前餘額</span><b style="font-size:24px">0 點</b></div>
+<div class="btn dis">儲值</div><div class="btn dis">投入心願</div><div class="btn dis">申請退款</div>
+<div class="btn">聯絡客服</div>
+</div></div><div class="cap">錢包凍結狀態（拒付 / 盜刷處理中）</div></div>
+</div>
+<div class="spec"><div class="tw"><table><tbody>
+<tr><th>元件</th><td>WalletBalance、LotBalanceBreakdown（儲值可退 / 禮物卡 / 贊助點數 + 到期提示）、AutoTopupSheet、TopupSheet（5.16）、MyContributionList、ReallocateSheet（5.17）、PurchasedGiftCardList（含 StatusBadge 與退款）、CashRefundSheet、LedgerList</td></tr>
+<tr><th>狀態</th><td><b>錢包凍結</b>（<code>point_wallets.status=frozen</code>，信用卡拒付 / 盜刷處理中）：頁面頂部紅色橫幅，所有寫入動作（儲值、投點、兌換禮物卡、退款）停用；伺服器對這些動作回 403 <code>WALLET_FROZEN</code>，前端顯示同一段說明並提供聯絡客服。loading 骨架；empty：「還沒有點數紀錄。儲值或收下朋友的禮物卡，就能支持心願。」；error 重試；未登入導向 /login?redirect=/wallet；離線：顯示快取餘額並標「可能不是最新」，寫入停用；儲值入帳中：餘額旁「入帳中」；自動儲值：未設定 / 已開啟 / 本月已達上限（顯示「本月已達上限，暫停自動儲值」）。贊助點數 <code>bonus_expiring_soon</code> 為真時顯示警示橫幅（含文字與日期，不只靠顏色）。</td></tr>
+<tr><th>互動</th><td>總餘額 = 各批次剩餘點數加總，由 <code>GET /wallet</code> 回傳 <code>refundable_points</code>、<code>gift_points</code>、<code>bonus_points</code>、<code>bonus_expiring_soon</code>，前端不自行加總。退款申請上限為 <code>refundable_points</code>，超過時 API 回 409 <code>NOT_CASH_REFUNDABLE</code>。申請當下即扣點（ledger 記 cash_refund），營運駁回則以調整退回。已購禮物卡：未兌換才顯示「申請退款」，二次確認後原路退款；已兌換顯示說明並隱藏按鈕。未兌換的卡顯示「查看連結 / 重新分享」，點開以 GET <code>/gift-cards/orders/{id}</code> 取得 <code>share_url</code>（補發）；卡片一旦已兌換、已退款或已作廢，連結即不可取得，按鈕隱藏。明細標籤：topup 儲值、pledge 投入、release 退回、cash_refund 退款至現金、adjustment 調整、gift_claim 兌換禮物卡、reward_bonus 星星兌換點數、expire 點數到期。「⭐ 星星」進入 /rewards。</td></tr>
+<tr><th>API</th><td>GET <code>/wallet</code>；GET <code>/wallet/contributions?status=&amp;cursor=</code>；GET / PUT / DELETE <code>/wallet/auto-topup</code>；POST <code>/wallet/cash-refunds</code>（<code>Idempotency-Key</code>）；GET <code>/gift-cards/purchased</code>；POST <code>/gift-cards/{id}/refund</code>；DELETE <code>/contributions/{id}</code>；POST <code>/contributions/{id}/reallocate</code>。錯誤：<code>NOT_CASH_REFUNDABLE</code>、<code>GIFT_CARD_NOT_REFUNDABLE</code>、<code>AUTO_TOPUP_LIMIT_REACHED</code>（只出現在設定頁與通知）</td></tr>
+</tbody></table></div></div></div>
+
+<!-- 5.16 TOPUP -->
+<h3 id="w-topup">5.16 儲值 TopupSheet <span class="ph p2">P2-A</span></h3>
+<div class="wf">
+<div class="phones">
+<div><div class="phone" style="min-height:700px">
+<div class="st"><span>9:41</span><span>LINE</span></div>
+<div class="ab">點數錢包</div>
+<div class="bd"><div class="card"><div class="col"><b>餘額 200 點</b></div></div></div>
+<div class="scrim"></div>
+<div class="sheet">
+<div class="grab"></div><b>儲值點數</b>
+<div class="lbl"><b>儲值金額</b></div>
+<div class="chips"><span class="chip">NT$500</span><span class="chip on">NT$1,000</span><span class="chip">NT$2,000</span><span class="chip">NT$5,000</span><span class="chip">自訂</span></div><div class="lbl">自訂範圍 NT$100 至 NT$50,000</div>
+<div class="lbl">將獲得 <b>1,000 點</b>（1 點 = NT$1）</div>
+<div class="lbl"><b>付款方式</b></div>
+<div class="row"><div class="inp fl" style="color:var(--fg);border-color:var(--accent)">◉ 信用卡</div><div class="inp fl">○ LINE Pay</div></div>
+<div class="inp">○ Apple Pay</div>
+<div class="lbl"><b>電子發票</b></div>
+<div class="chips"><span class="chip on">會員載具</span><span class="chip">手機條碼</span><span class="chip">捐贈碼</span><span class="chip">公司統編</span></div>
+<div class="btn pri">前往付款 NT$1,000</div>
+<div class="lbl">點數只能用於購買心願清單的眾籌品項，不可轉給他人，受捐者無法提領。未使用的點數可申請退回現金。</div>
+</div></div><div class="cap">步驟 1：選金額與付款方式</div></div>
+<div><div class="phone" style="min-height:700px">
+<div class="st"><span>9:41</span><span>LINE</span></div>
+<div class="ab">儲值結果</div>
+<div class="bd" style="align-items:center;text-align:center">
+<div style="width:64px;height:64px;border-radius:50%;border:3px dashed var(--accent);display:grid;place-items:center">…</div>
+<b>正在確認入帳</b><span class="lbl">付款成功後約數秒內入帳，請勿關閉本頁。</span>
+<div class="btn ghost" style="width:100%">稍後再看</div>
+<hr style="width:100%;border:0;border-top:1px solid var(--border)">
+<div style="width:64px;height:64px;border-radius:50%;background:var(--accent-soft);border:2px solid var(--accent);display:grid;place-items:center;font-size:28px;color:var(--accent)">✓</div>
+<b>儲值成功，已入帳 1,000 點</b>
+<div class="btn pri" style="width:100%">回去投點</div>
+<hr style="width:100%;border:0;border-top:1px solid var(--border)">
+<div style="background:var(--red-soft);border:1px solid var(--red);color:var(--red);border-radius:8px;padding:8px;width:100%">付款沒有成功，沒有扣款（PAYMENT_FAILED）。</div>
+<div class="btn" style="width:100%">換一種付款方式</div>
+</div></div><div class="cap">步驟 2：處理中 / 成功 / 失敗（三種狀態示意）</div></div>
+</div>
+<div class="spec"><div class="tw"><table><tbody>
+<tr><th>元件</th><td>TopupSheet、AmountChips、PaymentMethodRadio、TopupResult（含輪詢）、LegalNotice</td></tr>
+<tr><th>狀態</th><td>idle / creating（POST topups）/ redirecting（跳金流頁或開 TapPay 欄位）/ processing（等 webhook 入帳，輪詢）/ success / failed（<code>PAYMENT_FAILED</code> 402）/ timeout（超過 60 秒仍未入帳：顯示「稍後會自動入帳，可到 /wallet 查看」）。離線：停用。</td></tr>
+<tr><th>互動</th><td>點數入帳以 webhook 為準，前端不得因跳回網站就先加點數；輪詢 <code>GET /wallet</code>（2 秒一次，最多 60 秒）。LINE in-app browser 的第三方付款頁跳轉前先提示；LINE Pay / Apple Pay 的可用性依環境偵測，不可用的選項隱藏而非灰掉。從投點 sheet 進入時，儲值完成導回原品項並重新開啟 ContributeSheet。發票選項（D42）：預設會員載具，另有手機條碼、捐贈碼、公司統編（B2B 需填統編與抬頭，格式前端先驗證）；選擇於付款前以請求 body 的巢狀 <code>invoice</code> 物件送出（<code>{carrier_type, carrier_id, donate_code, buyer_tax_id, buyer_name}</code>，依類型只填相關欄位）並隨訂單保存，現金退款時由後端開折讓或作廢。信用卡一律 3D 驗證（跳轉前先提示）。新帳號 30 天內每日儲值與禮物卡購買合計上限 NT$3,000，超過時 API 回 409 <code>TOPUP_LIMIT_EXCEEDED</code>（附 <code>limit_amount</code>、<code>remaining_amount</code>），額度涵蓋手動儲值、自動儲值與禮物卡購買（不含營運建立的企業禮券），前端顯示今日剩餘額度並把金額上限壓到 remaining_amount；超限直接拒絕，風控標記不影響此錯誤碼。錢包凍結時回 <code>WALLET_FROZEN</code>（403），見 5.15。快選金額與上下限（500 / 1,000 / 2,000 / 5,000；100 至 50,000）取自 <code>GET /config/public</code>，不寫死在前端；金額超出範圍時 <code>VALIDATION_FAILED</code>。</td></tr>
+<tr><th>API</th><td>POST <code>/wallet/topups</code>（<code>Idempotency-Key</code>；body: amount, method（card | line_pay | apple_pay）, invoice（巢狀物件）；provider 由後端依 method 決定，前端不傳；回傳金流前端參數）；GET <code>/config/public</code>（<code>topup_presets</code>、<code>topup_min_amount</code>、<code>topup_max_amount</code>）；GET <code>/wallet</code>；入帳由後端 POST <code>/webhooks/payments/{provider}</code> 處理（前端不呼叫）</td></tr>
+</tbody></table></div></div></div>
+
+<!-- 5.17 REALLOCATE -->
+<h3 id="w-realloc">5.17 未達標選擇 ReallocateSheet <span class="ph p2">P2-A</span></h3>
+<div class="wf">
+<div><div class="phone" style="min-height:720px">
+<div class="st"><span>9:41</span><span>LINE</span></div>
+<div class="ab">點數錢包</div>
+<div class="bd"><div class="card"><div class="col"><b>學步車・500 點</b></div></div></div>
+<div class="scrim"></div>
+<div class="sheet">
+<div class="grab"></div><b>「學步車」沒有湊齊</b>
+<div class="lbl">募集 2,000 / 6,000 點，已截止。你投入的 500 點請選擇處理方式，<b>還有 6 天</b>，未選擇會自動退回錢包。</div>
+<div class="card" style="border-color:var(--accent);background:var(--accent-soft)"><div class="col"><b>◉ 退回我的錢包（預設）</b><span class="lbl">500 點會立刻回到餘額</span></div></div>
+<div class="card"><div class="col"><b>○ 轉投其他募集中的品項</b>
+<div class="row"><span class="fl">嬰兒推車</span><span class="lbl">剩 8,000 點</span></div>
+<div class="row"><span class="fl">嬰兒床</span><span class="lbl">剩 7,200 點</span></div>
+<div class="row" style="color:var(--muted)"><span class="fl">安全座椅</span><span class="lbl">剩 300 點，不足 500，不能轉投</span></div></div></div>
+<div class="btn pri">確認</div>
+<div class="btn ghost">稍後再決定</div>
+</div></div><div class="cap">ReallocateSheet</div></div>
+<div class="spec"><div class="tw"><table><tbody>
+<tr><th>元件</th><td>ReallocateSheet、RadioCard、TargetItemList（只列同清單且 funding_status=open）、CountdownLabel</td></tr>
+<tr><th>狀態</th><td>loading（取同清單 open 眾籌品項）；empty（同清單沒有其他 open 眾籌品項：隱藏「轉投」選項，只剩退回）；error-409 <code>REALLOCATION_NOT_ALLOWED</code>（目標已非 open 或剩餘不足：刷新列表並提示改選）；選擇期已過：顯示「已自動退回錢包」。</td></tr>
+<tr><th>互動</th><td>預設選「退回」。轉投目標若剩餘點數小於本筆點數，該列灰掉並說明原因（不自動拆分）。轉投成功後原筆顯示「已轉投」，新筆為「已投入」。入口：通知連結與 /wallet「我的認捐」列。選擇期天數取自 <code>reallocation_window_days</code>，期滿後 DELETE 回 <code>CONTRIBUTION_LOCKED</code>（系統已自動退回）。</td></tr>
+<tr><th>API</th><td>POST <code>/contributions/{id}/reallocate</code>（body: target_item_id）；「退回錢包」呼叫 DELETE <code>/contributions/{id}</code>（item 為 open，或 expired 且在 <code>reallocation_window_days</code>（7 天）選擇期內可用，其餘回 <code>CONTRIBUTION_LOCKED</code>）；選擇期天數取自 <code>GET /config/public</code>；GET <code>/public/wishlists/{slug}</code>（取同清單品項）</td></tr>
+</tbody></table></div></div></div>
+
+<!-- 5.18 FUNDING SETTINGS -->
+<h3 id="w-fset">5.18 編輯品項：眾籌設定（目錄 vs 人工代購）<span class="ph p2">P2-A</span></h3>
+<div class="wf">
+<div class="phones">
+<div><div class="phone" style="min-height:760px">
+<div class="st"><span>9:41</span><span></span></div>
+<div class="ab">‹ 小愛的待產清單</div>
+<div class="bd"><div class="card"><div class="im">圖</div><div class="col"><b>寶寶奶瓶 240ml</b></div></div></div>
+<div class="scrim"></div>
+<div class="sheet">
+<div class="grab"></div><b>新增眾籌品項</b>
+<div class="seg"><span>數量認領</span><span class="on">眾籌</span></div>
+<div class="lbl"><b>商品來源</b></div>
+<div class="seg"><span class="on">從商品目錄選</span><span>貼網址（人工代購）</span></div>
+<div class="inp">搜尋商品，例如：嬰兒推車　🔍</div>
+<div class="card" style="border-color:var(--accent);background:var(--accent-soft)"><div class="im">圖</div><div class="col"><b>Aprica 輕量推車</b><span class="lbl">某某母嬰・有貨</span><span class="lbl">商品價 10,000 ＋ 運費 200</span></div></div>
+<div class="card"><div class="im">圖</div><div class="col"><b>Combi 雙向推車</b><span class="lbl">缺貨（不可選）</span></div></div>
+<div class="card" style="flex-direction:column"><div class="row"><span class="fl">商品價</span><span>10,000</span></div><div class="row"><span class="fl">運費</span><span>200</span></div><div class="row"><span class="fl">價差緩衝</span><span>0</span></div><div class="row"><b class="fl">目標 target_points</b><b>10,200 點</b></div></div>
+<div class="lbl">募集截止：2026/12/20 23:59（預設為活動日）</div>
+<div class="btn pri">儲存品項</div>
+</div></div><div class="cap">A：從商品目錄選（CatalogPicker）</div></div>
+<div><div class="phone" style="min-height:760px">
+<div class="st"><span>9:41</span><span></span></div>
+<div class="ab">‹ 小愛的待產清單</div>
+<div class="bd"><div class="card"><div class="im">圖</div><div class="col"><b>寶寶奶瓶 240ml</b></div></div></div>
+<div class="scrim"></div>
+<div class="sheet">
+<div class="grab"></div><b>新增眾籌品項</b>
+<div class="seg"><span>數量認領</span><span class="on">眾籌</span></div>
+<div class="seg"><span>從商品目錄選</span><span class="on">貼網址（人工代購）</span></div>
+<div class="inp">https://shop.example.com/stroller</div>
+<div class="row"><div class="fl"><div class="lbl"><b>名稱</b></div><div class="inp">進口推車</div></div><div class="fl"><div class="lbl"><b>預估價格</b></div><div class="inp">10,000</div></div></div>
+<div class="inp">預估運費　200</div>
+<div class="card" style="flex-direction:column"><div class="row"><span class="fl">商品價</span><span>10,000</span></div><div class="row"><span class="fl">運費</span><span>200</span></div><div class="row"><span class="fl">代購服務費 8%</span><span>800</span></div><div class="row"><span class="fl">價差緩衝 10%</span><span>1,000</span></div><div class="row"><b class="fl">目標 target_points</b><b>12,000 點</b></div></div>
+<div style="background:var(--warn-soft);border:1px solid var(--warn);color:var(--warn);border-radius:8px;padding:6px 8px;font-size:12px">這類商品由營運人員手動代購，達標後約 3 個工作天內下單（<code>concierge_sla_business_days</code>）。實際花費低於目標時，差額會退回捐贈者。</div>
+<div class="btn pri">儲存品項</div>
+</div></div><div class="cap">B：貼網址，人工代購（concierge）</div></div>
+</div>
+<div class="spec"><div class="tw"><table><tbody>
+<tr><th>元件</th><td>ItemFormSheet（眾籌分支）、FundingModeSwitch、FulfillmentTypeSwitch（catalog / concierge）、CatalogPicker（搜尋 + 無限捲動 + 缺貨標示）、TargetPointsBreakdown、DeadlinePicker</td></tr>
+<tr><th>狀態</th><td>CatalogPicker：loading / empty（「找不到商品，可改用貼網址人工代購」）/ error / 缺貨（stock_status 不可選）。表單：<code>VALIDATION_FAILED</code>；<code>CATALOG_PRODUCT_UNAVAILABLE</code>（選定後商品下架或缺貨：刷新並提示改選）。已有投點的眾籌品項：target_points、fulfillment_type 鎖定。數量型 qty_needed 固定 1。</td></tr>
+<tr><th>互動</th><td>target_points = 商品價 ＋ 運費 ＋ 服務費 / 緩衝。表單內明細為預覽，費率取自 <code>GET /config/public</code>（<code>concierge_fee_rate</code> 0.08、<code>concierge_buffer_rate</code> 0.10），實際 target_points 與 <code>price_snapshot_amount</code> 以伺服器計算並於儲存後回傳為準。目錄商品與人工代購可在同一清單並存。截止日預設為活動日 23:59 台北時間，可提早但不可晚於活動日（待決）。眾籌品項儲存前不要求收件地址，但<b>發佈前必須已填</b>（見 5.19）。</td></tr>
+<tr><th>API</th><td>GET <code>/catalog/products?q=&amp;cursor=</code>；GET <code>/catalog/products/{id}</code>（價格欄位 <code>price_amount</code>、<code>shipping_fee_amount</code>）；GET <code>/config/public</code>；POST <code>/wishlists/{id}/items</code>（funding_mode=crowdfund, fulfillment_type, catalog_product_id, funding_deadline）；PATCH <code>/items/{item_id}</code>；PATCH <code>/wishlists/{id}</code>（發佈，缺地址回 <code>SHIPPING_ADDRESS_REQUIRED</code>）</td></tr>
+</tbody></table></div></div></div>
+
+<!-- 5.19 ADDRESS -->
+<h3 id="w-addr">5.19 收件地址設定 <span class="ph p2">P2-A</span></h3>
+<div class="wf">
+<div><div class="phone">
+<div class="st"><span>9:41</span><span></span></div>
+<div class="ab">‹ 收件地址</div>
+<div class="bd">
+<div style="background:var(--accent-soft);border:1px solid var(--accent);border-radius:8px;padding:8px;font-size:12px">這份地址只有你與履約人員看得到，捐贈者不會看到。眾籌品項達標後，包裹會寄到這裡。</div>
+<div><div class="lbl"><b>收件人姓名</b></div><div class="inp">王小愛</div></div>
+<div><div class="lbl"><b>聯絡電話</b></div><div class="inp">0912-345-678</div></div>
+<div><div class="lbl"><b>收件地址</b></div><div class="inp ta">台北市大安區…</div></div>
+<div style="background:var(--red-soft);border:1px solid var(--red);color:var(--red);border-radius:8px;padding:8px;font-size:12px">尚未填寫收件地址，無法發佈含眾籌品項的清單（SHIPPING_ADDRESS_REQUIRED）。（錯誤狀態示意）</div>
+<div class="btn pri" style="margin-top:auto">儲存地址</div>
+</div></div><div class="cap">/w/{id}/edit 內的收件地址頁</div></div>
+<div class="spec"><div class="tw"><table><tbody>
+<tr><th>元件</th><td>ShippingAddressForm、PrivacyNotice、InlineAlert</td></tr>
+<tr><th>狀態</th><td>idle / saving / error-validation / 已儲存（顯示遮罩後的地址摘要，例如「台北市大安區***」）。離線：停用。</td></tr>
+<tr><th>互動</th><td>地址欄位級加密，GET 時只回遮罩摘要，編輯時需重新輸入完整內容（或明確按「顯示完整地址」並記稽核）。清單含眾籌品項時，編輯頁頂部固定顯示地址狀態。驚喜模式下，地址是建立者自己的資料，仍可編輯；其他人的頁面不會出現。</td></tr>
+<tr><th>API</th><td>PUT <code>/wishlists/{id}/shipping-address</code>；GET <code>/wishlists/{id}</code>（含地址是否已填）</td></tr>
+</tbody></table></div></div></div>
+
+<!-- 5.20 ADMIN -->
+<h3 id="w-admin">5.20 營運後台 /admin/orders <span class="ph p2">P2-A</span></h3>
+<div class="wf">
+<div class="phones">
+<div><div class="phone" style="min-height:760px">
+<div class="st"><span>9:41</span><span></span></div>
+<div class="ab">訂單 <span class="b gray">STAFF</span></div>
+<div class="bd">
+<div class="chips"><span class="chip on">待處理</span><span class="chip">已下單</span><span class="chip">運送中</span><span class="chip">失敗</span></div>
+<div class="chips"><span class="chip on">全部</span><span class="chip">目錄</span><span class="chip">代購</span></div>
+<div class="card" style="flex-direction:column"><div class="row"><b class="fl">#1024 嬰兒推車</b><span class="b gray">待下單</span></div><span class="lbl">代購・目標 11,000 點・達標 10/08 10:12</span><span class="lbl">商品連結：shop.example.com/…</span><div class="btn pri">開啟並處理</div></div>
+<div class="card" style="flex-direction:column"><div class="row"><b class="fl">#1023 消毒鍋</b><span class="b blue">已下單</span></div><span class="lbl">目錄・3,200 點・單號 M-88231</span><div class="btn ghost">更新出貨</div></div>
+<div class="card" style="flex-direction:column"><div class="row"><b class="fl">#1021 學步車</b><span class="b red">購買失敗</span></div><span class="lbl">缺貨・點數已退回 4 位捐贈者</span></div>
+</div></div><div class="cap">訂單列表（手機版；桌面版為表格）</div></div>
+<div><div class="phone" style="min-height:760px">
+<div class="st"><span>9:41</span><span></span></div>
+<div class="ab">‹ 訂單 #1024</div>
+<div class="bd"><div class="card"><div class="col"><b>嬰兒推車</b></div></div></div>
+<div class="scrim"></div>
+<div class="sheet">
+<div class="grab"></div><b>更新訂單 #1024</b>
+<div class="row"><span class="fl lbl">收件資訊</span><span class="b gray">查看（留稽核紀錄）</span></div>
+<div><div class="lbl"><b>狀態</b></div><div class="chips"><span class="chip">已下單</span><span class="chip on">運送中</span><span class="chip">已送達</span><span class="chip">失敗</span></div></div>
+<div class="inp">商家訂單編號 M-88231</div>
+<div class="row"><div class="inp fl">amount 10,300</div><div class="inp fl">追蹤編號</div></div>
+<div class="lbl">實際花費（amount）低於目標 11,000，差額 700 點將依認捐比例退回各捐贈者錢包。</div>
+<div class="inp ta" style="min-height:44px">失敗原因（選「失敗」時必填）</div>
+<div class="btn pri">儲存</div>
+</div></div><div class="cap">PATCH 訂單 sheet（實際花費以 amount 回報）</div></div>
+</div>
+<div class="spec"><div class="tw"><table><tbody>
+<tr><th>元件</th><td>OrderFilterBar、OrderCard / OrderTable、OrderUpdateSheet、AddressRevealButton（稽核）、StatusBadge（order status）</td></tr>
+<tr><th>狀態</th><td>loading / empty（「目前沒有待處理的訂單」）/ error / 非 staff：<code>STAFF_ONLY</code> 403 顯示「這個頁面僅限營運人員」。狀態變更為 failed 時二次確認「所有已用於購買的點數將退回各捐贈者錢包」。離線：停用寫入。</td></tr>
+<tr><th>互動</th><td>列表預設「待處理 + 代購」，依達標時間舊到新。收件資訊預設遮罩，點「查看」才解密並寫 audit_logs。狀態單向前進：pending → placed → shipped → delivered；failed / cancelled 為終點。送達（delivered）會使品項 fulfilled 並揭曉驚喜。路由守衛：依 <code>GET /me</code> 的 is_staff 判斷，非 staff 不顯示入口。此頁掛在 /admin 營運後台殼內（共用導覽與 STAFF_ONLY 守衛，見 5.27）。</td></tr>
+<tr><th>API</th><td>GET <code>/admin/orders?status=&amp;fulfillment_type=</code>；PATCH <code>/admin/orders/{id}</code>（需 is_staff；body: status, merchant_order_id, tracking_no, <code>amount</code>（實際花費，初值 = target_points）, failure_reason）</td></tr>
+</tbody></table></div></div></div>
+
+
+
+<!-- 5.21 GIFT -->
+<h3 id="w-gift">5.21 購買禮物卡 /gift <span class="ph p2">P2-B</span></h3>
+<div class="wf">
+<div><div class="phone" style="min-height:860px">
+<div class="st"><span>9:41</span><span>LINE</span></div>
+<div class="ab">‹ 送禮物卡</div>
+<div class="bd">
+<div class="card" style="flex-direction:column;background:var(--accent-soft);border-color:var(--accent);align-items:center;text-align:center"><span class="lbl">預覽（GiftCardPreview）</span><b style="font-size:24px">NT$500</b><span>祝寶寶健康平安</span><span class="lbl">來自 小美</span></div>
+<div><div class="lbl"><b>卡面主題</b></div><div class="chips"><span class="chip on">寶寶</span><span class="chip">生日</span><span class="chip">感謝</span><span class="chip">婚禮</span></div></div>
+<div><div class="lbl"><b>面額</b>（點數，1 點 = NT$1）</div><div class="chips"><span class="chip">300</span><span class="chip on">500</span><span class="chip">1,000</span><span class="chip">2,000</span><span class="chip">3,000</span></div></div>
+<div><div class="lbl"><b>張數</b>（1 至 10 張）</div><div class="stp"><span>－</span><span class="v">2</span><span>＋</span></div></div>
+<div><div class="lbl">祝福語（選填）<span class="lbl">　同一筆訂單的卡片共用祝福語</span></div><div class="inp ta">祝寶寶健康平安</div></div>
+<div><div class="lbl"><b>署名</b></div><div class="inp">小美</div></div>
+<div class="row"><b class="fl">合計</b><b style="font-size:18px">NT$1,000</b></div>
+<div class="lbl"><b>付款方式</b></div>
+<div class="row"><div class="inp fl" style="color:var(--fg);border-color:var(--accent)">◉ 信用卡</div><div class="inp fl">○ LINE Pay</div></div>
+<div class="lbl"><b>電子發票</b></div>
+<div class="chips"><span class="chip on">會員載具</span><span class="chip">手機條碼</span><span class="chip">捐贈碼</span><span class="chip">公司統編</span></div>
+<div class="btn pri">前往付款</div>
+<div class="lbl">收到禮物卡的人，點數只能用於心願品項，無法兌現。未兌換的卡可申請退款。</div>
+</div></div><div class="cap">/gift（需登入）</div></div>
+<div class="spec"><div class="tw"><table><tbody>
+<tr><th>元件</th><td>GiftCardPicker（主題 + 面額 + 張數，選項來自 config）、GiftCardPreview（即時卡面預覽，與 OG 圖共用樣式）、MessageField、PaymentMethodRadio、LegalNotice</td></tr>
+<tr><th>狀態</th><td>idle / validating / creating / redirecting / processing / error（<code>VALIDATION_FAILED</code>、<code>PAYMENT_FAILED</code>）。未登入：點「前往付款」時才導向 /login?redirect=/gift，並保留已填內容（sessionStorage）。離線：停用。<code>READ_ONLY_MODE</code>：停用購買。</td></tr>
+<tr><th>互動</th><td>面額、張數上限、卡面主題全部來自 <code>GET /config/public</code>（<code>gift_card_face_values</code> 目前為 300 / 500 / 1,000 / 2,000 / 3,000、<code>gift_card_max_quantity</code> 10、<code>gift_card_themes</code> 含 id、名稱、圖片網址），前端不寫死；config 載入失敗時顯示重試，不提供預設值。發票選項同儲值頁（會員載具預設、手機條碼、捐贈碼、公司統編），以巢狀 <code>invoice</code> 物件送出；高風險訂單的卡片可能延遲最多 24 小時才可兌換（<code>claimable_at</code>），完成頁需說明。合計即時計算。<b>祝福語與署名以訂單為單位，同一筆訂單的卡片共用</b>，不支援逐張設定；想給不同人不同祝福語，請分開下單。祝福語與署名會顯示在收卡者頁面，需過濾不當內容（由伺服器處理）。</td></tr>
+<tr><th>API</th><td>GET <code>/config/public</code>；POST <code>/gift-cards/orders</code>（<code>Idempotency-Key</code>；body: quantity, face_value_points, theme, message, sender_display_name, method, invoice（巢狀物件）；回 order_id 與金流參數，欄位名以 Schema 為準）；付款完成經 webhook 入帳，前端輪詢 GET <code>/gift-cards/orders/{id}</code>（共用 <code>/webhooks/payments/{provider}</code>）</td></tr>
+</tbody></table></div></div></div>
+
+<!-- 5.22 GIFT DONE -->
+<h3 id="w-giftdone">5.22 購買完成分享頁 <span class="ph p2">P2-B</span></h3>
+<div class="wf">
+<div><div class="phone" style="min-height:760px">
+<div class="st"><span>9:41</span><span>LINE</span></div>
+<div class="ab">購買完成</div>
+<div class="bd">
+<div style="text-align:center"><div style="width:56px;height:56px;border-radius:50%;background:var(--accent-soft);border:2px solid var(--accent);display:inline-grid;place-items:center;font-size:26px;color:var(--accent)">✓</div><br><b>已付款 NT$1,000，共 2 張</b></div>
+<div style="background:var(--warn-soft);border:1px solid var(--warn);color:var(--warn);border-radius:8px;padding:8px;font-size:12px">卡片已建立。連結可現在傳給朋友，之後也能隨時到「錢包 → 已購禮物卡」重看與重新分享（卡片兌換或退款前）。</div>
+<div class="card" style="flex-direction:column"><div class="row"><b class="fl">第 1 張・NT$500</b><span class="b teal">未兌換</span></div><span class="lbl">app.wishsync.tw/g/7K3Q…（已遮罩顯示）</span><div class="btn pri" style="background:#067a35;border-color:#067a35;color:#fff;color:#fff">用 LINE 傳送</div><div class="btn ghost">複製連結</div></div>
+<div class="card" style="flex-direction:column"><div class="row"><b class="fl">第 2 張・NT$500</b><span class="b teal">未兌換</span></div><span class="lbl">app.wishsync.tw/g/Q9XM…（已遮罩顯示）</span><div class="btn pri" style="background:#067a35;border-color:#067a35;color:#fff;color:#fff">用 LINE 傳送</div><div class="btn ghost">複製連結</div></div>
+<div class="btn">全部複製</div>
+<div class="btn ghost">到錢包看已購禮物卡</div>
+</div></div><div class="cap">購買完成分享頁（每張卡獨立連結）</div></div>
+<div class="spec"><div class="tw"><table><tbody>
+<tr><th>元件</th><td>ShareSheet（禮物卡變體）、GiftLinkRow、CopyButton、StatusBadge（gift_card）、OneTimeNotice</td></tr>
+<tr><th>狀態</th><td>processing（輪詢 GET /gift-cards/orders/{id}，status 為 pending）/ ready（status=paid，顯示 <code>cards[].share_url</code>）/ timeout（超過 60 秒仍 pending：「付款已收到，連結產生中，可稍後到錢包的已購禮物卡查看」）/ failed。重新整理頁面：重新以 order id 輪詢即可還原，連結仍在。複製失敗：顯示可全選的輸入框。</td></tr>
+<tr><th>互動</th><td>LINE 分享用 <code>https://line.me/R/share?text=</code> 帶祝福語與連結（連結需 URL encode）；有 <code>navigator.share</code> 時優先使用。連結由伺服器保存（加密），卡片未兌換、未退款、未作廢前可重複取得；卡片一旦 claimed / refunded / void，分享連結即不再回傳。頁面設 <code>Cache-Control: no-store</code>，連結不寫入 localStorage，只存在記憶體。</td></tr>
+<tr><th>API</th><td>GET <code>/gift-cards/orders/{id}</code>（status pending → paid；paid 後回傳 <code>cards[].share_url</code>）；列表與狀態用 GET <code>/gift-cards/purchased</code></td></tr>
+</tbody></table></div></div></div>
+
+<!-- 5.23 REDEEM -->
+<h3 id="w-redeem">5.23 兌換頁 /g/{code} <span class="ph p2">P2-B</span></h3>
+<div class="wf">
+<div class="phones">
+<div><div class="phone" style="min-height:760px">
+<div class="st"><span>9:41</span><span>LINE</span></div>
+<div class="ab">WishSync</div>
+<div class="bd" style="align-items:center;text-align:center">
+<div class="lbl">小美 送你一張心願禮物卡</div>
+<div class="card" style="flex-direction:column;width:100%;background:var(--accent-soft);border-color:var(--accent);padding:20px"><b style="font-size:30px">500 點</b><span>祝寶寶健康平安</span><span class="lbl">來自 小美</span></div>
+<div class="btn pri" style="width:100%">登入並兌換</div>
+<div class="lbl">兌換到你的錢包後，可以投入任何心願清單的品項。</div>
+<div style="background:var(--code-bg);border:1px solid var(--border);border-radius:8px;padding:8px;font-size:12px;text-align:left">點數只能用於心願品項，無法兌現，也不能轉送給別人。</div>
+</div></div><div class="cap">未登入（已登入時按鈕為「兌換到我的錢包」）</div></div>
+<div><div class="phone" style="min-height:760px">
+<div class="st"><span>9:41</span><span>LINE</span></div>
+<div class="ab">WishSync</div>
+<div class="bd" style="align-items:center;text-align:center">
+<div style="width:64px;height:64px;border-radius:50%;background:var(--accent-soft);border:2px solid var(--accent);display:grid;place-items:center;font-size:28px;color:var(--accent)">✓</div>
+<b style="font-size:18px">兌換成功</b>
+<span>500 點已存入你的錢包</span>
+<div class="lbl">目前餘額 500 點（禮物卡點數）</div>
+<div class="btn pri" style="width:100%">回到朋友的清單</div>
+<div class="btn ghost" style="width:100%">查看我的錢包</div>
+<hr style="width:100%;border:0;border-top:1px solid var(--border)">
+<div style="background:var(--red-soft);border:1px solid var(--red);color:var(--red);border-radius:8px;padding:8px;width:100%">這張禮物卡已經被兌換過了。（GIFT_CARD_ALREADY_CLAIMED）</div>
+<div style="background:var(--red-soft);border:1px solid var(--red);color:var(--red);border-radius:8px;padding:8px;width:100%">無效的禮物卡連結，請向送禮的人確認。（GIFT_CARD_INVALID）</div>
+<div style="background:var(--warn-soft);border:1px solid var(--warn);color:var(--warn);border-radius:8px;padding:8px;width:100%">這張禮物卡尚未開放兌換，預計 10/09 14:00 起可兌換。（GIFT_CARD_NOT_YET_CLAIMABLE）<div class="btn dis" style="margin-top:6px">兌換到我的錢包（尚未開放）</div></div>
+</div></div><div class="cap">成功 / 已兌換 / 無效碼 / 尚未開放兌換（四種狀態示意）</div></div>
+</div>
+<div class="spec"><div class="tw"><table><tbody>
+<tr><th>元件</th><td>GiftCardPreview、RedeemButton（含 Turnstile）、LegalNotice、InlineAlert、LotBalanceBreakdown（成功後）</td></tr>
+<tr><th>狀態</th><td>loading（SSR 已帶資料）；ready；未登入；redeeming；success；<code>GIFT_CARD_ALREADY_CLAIMED</code>（409）；<code>GIFT_CARD_NOT_YET_CLAIMABLE</code>（409，附 <code>claimable_at</code>：高風險訂單延遲兌換，按鈕停用並顯示「預計 X 時間起可兌換」，時間到前不輪詢，可手動重新整理）；<code>GIFT_CARD_INVALID</code>（404，頁面 SSR 回 404 狀態碼）；<code>RATE_LIMITED</code>；Turnstile 失敗；離線：停用。已兌換的頁面不顯示面額與祝福語給非兌換者（以伺服器回傳為準）。</td></tr>
+<tr><th>互動</th><td>登入後 <code>?redirect=</code> 回到本頁並<b>自動帶回</b>碼（碼只放在 URL 與 sessionStorage，不放 localStorage），使用者再按一次「兌換到我的錢包」才送出，避免誤兌。成功後點數存入 gift_card 批次（不可退現金、不設期限）。頁面設 <code>Referrer-Policy: no-referrer</code> 與 <code>noindex</code>，避免碼外洩。收卡者可把點數投入任何清單，包含自己的清單；沒有「轉送」功能。LINE in-app browser 內登入跳轉前先提示。</td></tr>
+<tr><th>API</th><td>GET <code>/public/gift-cards/{code}</code>（SSR；只回面額、卡面、祝福語、寄送者暱稱、是否可兌換；錯誤一律 404 <code>GIFT_CARD_INVALID</code>）；POST <code>/gift-cards/claim</code>（body: code；<code>Idempotency-Key</code>、Turnstile token、需 <code>ws_session</code>）</td></tr>
+</tbody></table></div></div></div>
+
+<!-- 5.24 REWARDS -->
+<h3 id="w-rewards">5.24 回饋星星 /rewards <span class="ph p2">P2-B</span></h3>
+<div class="wf">
+<div class="phones">
+<div><div class="phone" style="min-height:860px">
+<div class="st"><span>9:41</span><span></span></div>
+<div class="ab">我的星星<span class="sp"></span><span class="b green">Green</span></div>
+<div class="bd">
+<div class="card" style="flex-direction:column"><div class="row"><b style="font-size:28px">180 ⭐</b><span class="fl"></span><span class="b green">Green</span></div>
+<div class="prog" role="progressbar" aria-valuenow="60"><i style="width:60%"></i></div>
+<span class="lbl">12 個月內累積 180 / 300 星，升級 Gold 還差 120 星</span></div>
+<div style="background:var(--warn-soft);border:1px solid var(--warn);color:var(--warn);border-radius:8px;padding:6px 8px;font-size:12px">30 顆星星將於 2026/12/31 到期。</div>
+<div class="lbl"><b>兌換贊助點數</b>（贊助點數 90 天內使用）</div>
+<div class="card" style="flex-direction:column"><div class="row"><b class="fl">100 星 = 50 點</b><span class="b green">Green 比率</span></div><div class="btn pri">兌換</div></div>
+<div class="card off" style="flex-direction:column"><div class="row"><b class="fl">100 星 = 60 點</b><span class="b orange">Gold 限定</span></div><div class="btn dis">升級 Gold 後可兌換</div></div>
+<div class="card off" style="flex-direction:column"><div class="row"><b class="fl">500 星 = 250 點</b></div><div class="btn dis">還差 320 星</div></div>
+<div class="lbl"><b>怎麼賺星星？</b>投點的品項達標下單後，每 50 點得 1 星。使用贊助點數的部分不累積星星；儲值與購買禮物卡本身不計星。</div>
+<div class="lbl"><b>星星明細</b></div>
+<div class="row"><div class="fl">達標「消毒鍋」<br><span class="lbl">10/07</span></div><b style="color:var(--green)">+16</b></div>
+<div class="row"><div class="fl">兌換 50 點<br><span class="lbl">09/20</span></div><b>-100</b></div>
+</div></div><div class="cap">/rewards（StarsMeter、TierBadge、RedeemOfferCard）</div></div>
+<div><div class="phone" style="min-height:860px">
+<div class="st"><span>9:41</span><span></span></div>
+<div class="ab">我的星星</div>
+<div class="bd"><div class="card"><div class="col"><b>180 ⭐</b></div></div></div>
+<div class="scrim"></div>
+<div class="sheet">
+<div class="grab"></div><b>確認兌換</b>
+<div>用 <b>100 星</b> 兌換 <b>50 點贊助點數</b></div>
+<div class="lbl">贊助點數將於 90 天後到期（2027/01/06），投點時會優先使用。贊助點數不可退現金。</div>
+<div style="background:var(--red-soft);border:1px solid var(--red);color:var(--red);border-radius:8px;padding:6px 8px;font-size:12px">示範：星星不足時顯示「星星不夠了」（INSUFFICIENT_STARS）</div>
+<div class="btn pri">確認兌換</div>
+<div class="btn ghost">取消</div>
+</div></div><div class="cap">兌換確認 sheet</div></div>
+</div>
+<div class="spec"><div class="tw"><table><tbody>
+<tr><th>元件</th><td>StarsMeter（星星數 + 升級進度條，含文字值）、TierBadge（green / gold）、RedeemOfferCard（可兌換 / 星星不足 / 等級不符三種狀態）、ExpiryNotice、StarLedgerList</td></tr>
+<tr><th>狀態</th><td>loading / empty（「還沒有星星。投點的品項達標後就會有。」）/ error / 兌換中 / 兌換成功 toast「已兌換 50 點贊助點數，記得在 90 天內使用」/ <code>INSUFFICIENT_STARS</code>（回滾並重抓）/ 離線：停用兌換。</td></tr>
+<tr><th>互動</th><td>星星來自 contribution captured（品項達標下單）：只計算由儲值與禮物卡點數支付的部分，<b>使用贊助點數的部分不累積星星</b>，每 50 點 1 星；星星入帳由背景作業處理，達標後可能延遲數分鐘才出現。訂單失敗退點時會扣回星星（最多扣到 0）。兌換選項由 <code>GET /rewards/offers</code> 回傳（含 <code>tier_required</code>），前端不寫死比率。Gold 條件為 12 個月內累積 ≥ 300 星。星星 12 個月到期（按賺取月份批次），「即將到期」提示需含日期與數量。星星與贊助點數為無償贈與，頁面底部固定顯示條款連結。</td></tr>
+<tr><th>API</th><td>GET <code>/rewards</code>（餘額、等級、即將到期、明細 cursor）；GET <code>/rewards/offers</code>；POST <code>/rewards/redemptions</code>（body: offer_id；<code>Idempotency-Key</code>）</td></tr>
+</tbody></table></div></div></div>
+
+<!-- 5.25 CORPORATE -->
+<h3 id="w-corp">5.25 營運後台：企業禮券 /admin/corporate <span class="ph p2">P2-C</span></h3>
+<div class="wf">
+<div class="phones">
+<div><div class="phone" style="min-height:780px">
+<div class="st"><span>9:41</span><span></span></div>
+<div class="ab">企業禮券 <span class="b gray">STAFF</span></div>
+<div class="bd">
+<div class="seg"><span class="on">批次</span><span>企業</span></div>
+<div class="btn pri">＋ 建立批次</div>
+<div class="card" style="flex-direction:column"><div class="row"><b class="fl">好好科技・統編 12345678</b><span class="b blue">已開發票</span></div><span class="lbl">50 張 × 1,000 點 = NT$50,000・等待匯款</span></div>
+<div class="card" style="flex-direction:column"><div class="row"><b class="fl">好好科技（生日禮）</b><span class="b teal">已發放</span></div><span class="lbl">20 張 × 500 點・已兌換 12 / 20</span></div>
+<div class="card" style="flex-direction:column"><div class="row"><b class="fl">美美貿易</b><span class="b gray">草稿</span></div><span class="lbl">10 張 × 300 點</span></div>
+<div class="card off" style="flex-direction:column"><div class="row"><b class="fl">舊批次</b><span class="b gray">已作廢</span></div></div>
+</div></div><div class="cap">批次列表（狀態徽章）</div></div>
+<div><div class="phone" style="min-height:780px">
+<div class="st"><span>9:41</span><span></span></div>
+<div class="ab">‹ 批次 #B-017</div>
+<div class="bd"><div class="card"><div class="col"><b>好好科技</b></div></div></div>
+<div class="scrim"></div>
+<div class="sheet">
+<div class="grab"></div><b>批次 B-017：好好科技</b>
+<div class="row"><span class="b gray">草稿</span>→<span class="b blue">已開發票</span>→<span class="b green">已入帳</span>→<span class="b teal">已發放</span></div>
+<div class="lbl">50 張 × 1,000 點 = NT$50,000・三聯式發票（統編 12345678）</div>
+<div class="inp">發票號碼 AB-12345678</div>
+<div class="btn">標記已開發票</div>
+<div class="btn">確認已入帳</div>
+<div class="btn pri">發放：產生兌換碼</div>
+<div class="btn ghost">匯出兌換連結 CSV（僅能一次）</div>
+<div style="background:var(--warn-soft);border:1px solid var(--warn);color:var(--warn);border-radius:8px;padding:6px 8px;font-size:12px">CSV 匯出後即無法再取得（CODES_ALREADY_EXPORTED）；若遺失請用「重新產生」。請妥善保存，或改用系統寄送給員工 Email。</div>
+<div class="btn ghost">重新產生（作廢未兌換卡）</div>
+<div class="lbl" style="color:var(--warn)">二次確認：「確定要重新產生嗎？所有尚未兌換的卡會立即作廢、舊連結失效，並產生同數量的新卡。已兌換的不受影響。重新產生後可再匯出一次 CSV。」</div>
+<div class="btn ghost">整批作廢並退款（未兌換）</div>
+</div></div><div class="cap">批次詳情與狀態流程、匯出、重新產生</div></div>
+<div><div class="phone" style="min-height:780px">
+<div class="st"><span>9:41</span><span></span></div>
+<div class="ab">‹ 建立批次</div>
+<div class="bd"><div class="card"><div class="col"><b>批次列表</b></div></div></div>
+<div class="scrim"></div>
+<div class="sheet">
+<div class="grab"></div><b>建立批次</b>
+<div><div class="lbl"><b>企業</b></div><div class="inp">好好科技（12345678）▾</div></div>
+<div class="btn ghost">＋ 新增企業（名稱 統編 聯絡人 Email 帳單地址）</div>
+<div class="row"><div class="fl"><div class="lbl"><b>面額</b></div><div class="inp">1,000</div></div><div class="fl"><div class="lbl"><b>張數</b></div><div class="inp">50</div></div></div>
+<div class="row"><b class="fl">總額</b><b>NT$50,000</b></div>
+<div class="lbl">付款方式：銀行轉帳。營運確認入帳後才會產生兌換碼。</div>
+<div class="btn pri">建立草稿</div>
+</div></div><div class="cap">建立批次 sheet</div></div>
+</div>
+<div class="spec"><div class="tw"><table><tbody>
+<tr><th>元件</th><td>CorporateAccountList、BatchTable / BatchCard、BatchCreateSheet、BatchStatusStepper、CsvExportButton（一次性，點擊前二次確認）、StatusBadge（batch status）</td></tr>
+<tr><th>狀態</th><td>loading / empty（「還沒有企業批次」）/ error / 非 staff：<code>STAFF_ONLY</code> 403 / 匯出：exporting / done / <code>CODES_ALREADY_EXPORTED</code>（409，顯示「已匯出過，若遺失請使用重新產生」並突顯該按鈕）。離線：停用寫入。</td></tr>
+<tr><th>互動</th><td>狀態單向前進 draft → invoiced → paid → issued，void 為終點；已 issued 的批次只能作廢未兌換的卡。總額 = 面額 × 張數，以伺服器為準。「發放」依標記為 issued 時產生 quantity 張卡；兌換連結可 CSV 一次性下載，或由系統依企業提供的 Email 清單寄送（二選一，流程待決）。企業禮券兌換後規則同一般禮物卡（不可退現金、不設期限、只能投入心願品項）。初期由營運代建，企業自助入口為未來項目。</td></tr>
+<tr><th>API</th><td>POST / GET <code>/admin/corporate-accounts</code>；POST <code>/admin/gift-card-batches</code>；PATCH <code>/admin/gift-card-batches/{id}</code>（標記 invoiced / paid / issued / void）；POST <code>/admin/gift-card-batches/{id}/reissue</code>（STAFF_ONLY：作廢該批次所有未兌換卡、產生同數量新卡、匯出狀態重置，可再匯出一次）；GET <code>/admin/gift-card-batches/{id}/codes</code>（CSV，僅能取一次）。皆需 is_staff。</td></tr>
+</tbody></table></div></div></div>
+
+
+<!-- 5.26 REPORT -->
+<h3 id="w-report">5.26 檢舉與下架 <span class="ph p0">P0</span></h3>
+<div class="wf">
+<div class="phones">
+<div><div class="phone" style="min-height:640px">
+<div class="st"><span>9:41</span><span>LINE</span></div>
+<div class="ab">WishSync</div>
+<div class="bd"><div class="card"><div class="im">圖</div><div class="col"><b>寶寶奶瓶 240ml</b></div></div></div>
+<div class="scrim"></div>
+<div class="sheet">
+<div class="grab"></div><b>檢舉此清單</b>
+<div class="lbl"><b>檢舉原因</b></div>
+<div class="inp" style="color:var(--fg);border-color:var(--accent)">◉ 疑似詐騙</div>
+<div class="inp">○ 不當內容</div>
+<div class="inp">○ 侵害著作權</div>
+<div class="inp">○ 洩漏個人資料</div>
+<div class="inp">○ 其他</div>
+<div><div class="lbl">補充說明（選填）</div><div class="inp ta">請描述你看到的問題</div></div>
+<div class="inp" style="justify-content:center">Turnstile 驗證 ☑</div>
+<div class="btn pri">送出檢舉</div>
+<div class="lbl" style="text-align:center">不需登入。我們會由人工審核，不會告知建立者是誰檢舉。</div>
+</div></div><div class="cap">檢舉 sheet（入口：公開頁頁尾「檢舉此清單」）</div></div>
+<div><div class="phone" style="min-height:640px">
+<div class="st"><span>9:41</span><span>LINE</span></div>
+<div class="ab">WishSync</div>
+<div class="bd" style="align-items:center;text-align:center;justify-content:center">
+<div style="width:64px;height:64px;border-radius:50%;border:2px solid var(--muted);display:grid;place-items:center;font-size:28px;color:var(--muted)">!</div>
+<b style="font-size:18px">此清單已被下架</b>
+<span class="lbl">這份清單因違反服務條款已被移除，目前無法瀏覽或認領。</span>
+<div class="btn" style="width:100%">回首頁</div>
+<div class="lbl">如果你是建立者，請登入後在「我的清單」查看原因。</div>
+</div></div><div class="cap">410 WISHLIST_REMOVED 頁</div></div>
+<div><div class="phone" style="min-height:640px">
+<div class="st"><span>9:41</span><span></span></div>
+<div class="ab">我的清單<span class="sp"></span><div class="ic">⚙ 設定</div></div>
+<div class="bd">
+<div class="card" style="flex-direction:column;border-color:var(--red)"><div class="row"><b class="fl">小愛的待產清單</b><span class="b red">已下架</span></div>
+<div style="background:var(--red-soft);border:1px solid var(--red);color:var(--red);border-radius:8px;padding:8px;font-size:12px">這份清單已於 10/08 被下架。原因：疑似詐騙（moderation_reason）。公開頁目前無法瀏覽。若有誤判請聯絡客服申訴。</div>
+<div class="row"><div class="btn fl ghost">聯絡客服</div><div class="btn fl ghost" aria-disabled="true">分享（已停用）</div></div></div>
+<div class="card"><div class="col"><b>阿明的生日清單</b><div class="row"><span class="b teal">進行中</span><span class="lbl">完成度 40%</span></div></div></div>
+<div class="btn pri" style="margin-top:auto">＋ 新增清單</div>
+</div></div><div class="cap">/dashboard：下架原因提示</div></div>
+</div>
+<div class="spec"><div class="tw"><table><tbody>
+<tr><th>元件</th><td>ReportLink、ReportSheet（RadioCardGroup、TextField、TurnstileWidget）、RemovedPage（410）、ModerationBanner（dashboard）</td></tr>
+<tr><th>狀態</th><td>檢舉 sheet：idle / submitting / success（toast「已收到檢舉，我們會盡快處理」）/ error-validation / <code>RATE_LIMITED</code>（每 IP 限流）/ Turnstile 失敗 / 離線停用。410 頁：SSR 回 410 狀態碼（<code>WISHLIST_REMOVED</code>），meta 為通用文案且 <code>noindex</code>，不洩漏清單標題。dashboard：moderation_status=hidden 的清單卡片紅框 + 文字徽章「已下架」+ 原因，分享與 QR 停用；恢復後（ok）自動消失。</td></tr>
+<tr><th>互動</th><td>理由選項對應 <code>reason</code>：scam 疑似詐騙、inappropriate 不當內容、copyright 侵害著作權、personal_info 洩漏個人資料、other 其他。可針對整份清單檢舉（品項層級檢舉入口為 ItemCard 的 ⋮ 選單，item_id 選填）。免登入；若訪客已有 guest token 則一併帶上，供營運去重。送出後不顯示處理進度。已下架清單的 SSE 連線收到 410 即停止重連。</td></tr>
+<tr><th>API</th><td>POST <code>/public/wishlists/{slug}/reports</code>（免登入、Turnstile、每 IP 限流；body: reason, detail, item_id?）；GET <code>/public/wishlists/{slug}</code>（hidden 時回 410）；GET <code>/wishlists</code>（含 moderation_status、moderation_reason）</td></tr>
+</tbody></table></div></div></div>
+
+<!-- 5.27 ADMIN MVP -->
+<h3 id="w-adminmvp">5.27 營運後台 /admin（MVP） <span class="ph p0">P0</span></h3>
+<div class="wf">
+<div class="phones">
+<div><div class="phone" style="min-height:760px">
+<div class="st"><span>9:41</span><span></span></div>
+<div class="ab">營運後台 <span class="b gray">STAFF</span></div>
+<div class="bd">
+<div class="chips"><span class="chip on">清單</span><span class="chip">檢舉 3</span><span class="chip">使用者</span><span class="chip">旗標</span></div>
+<div class="inp">搜尋 slug 或建立者 Email　🔍</div>
+<div class="card" style="flex-direction:column"><div class="row"><b class="fl">小愛的待產清單</b><span class="b teal">進行中</span></div><span class="lbl">aB3dE7gH9k・x***@mail.com・被檢舉 2 次</span><div class="btn ghost">查看詳情</div></div>
+<div class="card" style="flex-direction:column"><div class="row"><b class="fl">快速賺錢清單</b><span class="b red">已下架</span></div><span class="lbl">Zk29fQ1aBc・y***@mail.com</span></div>
+<div class="lbl"><b>檢舉佇列</b>（待處理）</div>
+<div class="card" style="flex-direction:column"><div class="row"><b class="fl">疑似詐騙</b><span class="b orange">待處理</span></div><span class="lbl">清單：快速賺錢清單・10/08 09:12</span><div class="row"><div class="btn fl pri">下架</div><div class="btn fl ghost">駁回</div></div></div>
+</div></div><div class="cap">清單搜尋與檢舉佇列</div></div>
+<div><div class="phone" style="min-height:760px">
+<div class="st"><span>9:41</span><span></span></div>
+<div class="ab">‹ 清單詳情 <span class="b gray">STAFF</span></div>
+<div class="bd">
+<div class="card" style="flex-direction:column"><b>快速賺錢清單</b><span class="lbl">建立者 y***@mail.com・品項 5・認領 0</span><span class="b red" style="width:fit-content">已下架（hidden）</span></div>
+<div><div class="lbl"><b>下架 / 恢復原因</b>（會顯示給建立者）</div><div class="inp ta">疑似詐騙</div></div>
+<div class="btn">恢復上架</div>
+<div class="btn pri" style="background:var(--red);border-color:var(--red)">下架此清單</div>
+<div class="lbl">所有營運動作都會寫入稽核紀錄（audit_logs，actor_type=staff）。</div>
+<div class="lbl"><b>系統旗標</b></div>
+<div class="card" style="align-items:center"><div class="col"><b>唯讀模式（read_only）</b><span class="lbl">開啟後非安全方法回 503</span></div><div class="sw off"></div></div>
+</div></div><div class="cap">清單詳情：下架 / 恢復、系統旗標</div></div>
+</div>
+<div class="spec"><div class="tw"><table><tbody>
+<tr><th>元件</th><td>AdminShell（導覽 + STAFF_ONLY 守衛，P2 的 /admin/orders、/admin/cash-refunds、/admin/corporate 掛同一殼）、AdminWishlistSearch、AdminWishlistDetail、ReportQueue、ReportCard、ModerationForm、UserLookup、SystemFlagSwitch、ConfirmDialog</td></tr>
+<tr><th>狀態</th><td>loading / empty（「目前沒有待處理的檢舉」）/ error / 非 staff：<code>STAFF_ONLY</code> 403 顯示「這個頁面僅限營運人員」並不顯示入口。旗標切換前二次確認（唯讀模式影響全站寫入）。離線：停用寫入。</td></tr>
+<tr><th>互動</th><td>桌面為主（表格），手機可用卡片。下架 / 恢復必填原因；下架後公開頁回 410，建立者 dashboard 顯示原因。檢舉處理：actioned（已處理，可連動下架）、dismissed（駁回）。使用者查詢僅顯示遮罩後 Email，點「顯示」才完整並寫稽核。系統旗標目前僅 read_only。<span class="ph p2">P2-A</span> 另有錢包解凍與欠款結案：PATCH <code>/admin/wallets/{id}</code>（status active | frozen, reason）、GET <code>/admin/wallet-debts?status=</code>、PATCH <code>/admin/wallet-debts/{id}</code>（settled | written_off, note）。</td></tr>
+<tr><th>API</th><td>GET <code>/admin/wishlists?q=</code>；GET <code>/admin/users?q=</code>；GET <code>/admin/reports?status=</code>；PATCH <code>/admin/reports/{id}</code>；PATCH <code>/admin/wishlists/{id}/moderation</code>（body: moderation_status, reason）；PUT <code>/admin/system-flags/{key}</code>。皆需 is_staff，錯誤 <code>STAFF_ONLY</code></td></tr>
+</tbody></table></div></div></div>
+
+<!-- 5.28 SETTINGS -->
+<h3 id="w-settings">5.28 帳號設定 /me/settings <span class="ph p0">P0</span></h3>
+<div class="wf">
+<div class="phones">
+<div><div class="phone" style="min-height:700px">
+<div class="st"><span>9:41</span><span></span></div>
+<div class="ab">‹ 帳號設定</div>
+<div class="bd">
+<div class="lbl"><b>通知</b></div>
+<div class="card" style="align-items:center"><div class="col"><b>有人認領時寄 Email</b><span class="lbl">第一筆即時通知，之後每日彙整一封。驚喜模式下只寫「有 N 件新認領」。</span></div><div class="sw"></div></div>
+<div class="lbl"><b>我的資料</b></div>
+<div class="btn">匯出我的資料（JSON）</div>
+<div class="lbl">包含個人資料、清單與認領紀錄。</div>
+<div class="lbl"><b>刪除帳號</b></div>
+<div class="btn" style="border-color:var(--red);color:var(--red)">刪除我的帳號</div>
+<div class="lbl">我們會移除你的 Email 與名稱，你的清單會封存並從公開移除。此動作無法復原。</div>
+<div class="lbl" style="margin-top:auto">服務條款・隱私權政策</div>
+</div></div><div class="cap">/me/settings</div></div>
+<div><div class="phone" style="min-height:700px">
+<div class="st"><span>9:41</span><span></span></div>
+<div class="ab">‹ 帳號設定</div>
+<div class="bd"><div class="card"><div class="col"><b>刪除我的帳號</b></div></div></div>
+<div class="scrim"></div>
+<div class="sheet">
+<div class="grab"></div><b>確定要刪除帳號嗎？</b>
+<div class="lbl">你的 Email、名稱與登入方式會被移除，你的 2 份清單會封存並從公開移除，朋友無法再開啟。</div>
+<div style="background:var(--warn-soft);border:1px solid var(--warn);color:var(--warn);border-radius:8px;padding:8px;font-size:12px"><span class="ph p2">P2</span> 你的錢包還有 3,200 點，或有進行中的認捐。請先處理：儲值點數可申請退款；禮物卡與贊助點數不可退現金，需明確確認放棄才能刪除（ACCOUNT_HAS_BALANCE）。</div>
+<div class="inp">請輸入「刪除」以確認</div>
+<div class="btn" style="background:var(--red);border-color:var(--red);color:var(--bg)">永久刪除</div>
+<div class="btn ghost">取消</div>
+</div></div><div class="cap">刪除二次確認（P2 有餘額時的阻擋說明）</div></div>
+</div>
+<div class="spec"><div class="tw"><table><tbody>
+<tr><th>元件</th><td>SettingsSection、SwitchRow（notification_prefs.email_claims）、ExportButton、DeleteAccountSheet（輸入確認字樣）、BlockerNotice（P2：餘額 / 未完成認捐 / 未結案訂單）</td></tr>
+<tr><th>狀態</th><td>loading / error / 匯出中（按鈕 spinner，完成後瀏覽器下載 JSON）/ 刪除中 / 刪除成功（登出並導向首頁，toast「帳號已刪除」）/ <span class="ph p2">P2</span> <code>ACCOUNT_HAS_BALANCE</code>（409，顯示阻擋說明，並列出可退現金金額與需確認放棄的點數；金融紀錄依商業會計法保存並假名化，年限待會計師確認）。離線：停用。</td></tr>
+<tr><th>互動</th><td>通知開關對應 <code>notification_prefs.email_claims</code>，即時儲存（樂觀更新，失敗回滾）；從信件退訂的使用者進入此頁時開關已為關閉。刪除需輸入確認字樣後才啟用按鈕。訪客（免登入）的對應操作在 /me/claims：「刪除我的暱稱與聯絡方式」，claims 保留為「已刪除的訪客」。</td></tr>
+<tr><th>API</th><td>GET <code>/me</code>；GET <code>/me/export</code>；DELETE <code>/me</code>；DELETE <code>/guest/me</code>（訪客）。通知偏好以 PATCH <code>/me</code> 更新 <code>notification_prefs</code>（MVP 鍵 <code>{"email_claims": true}</code>）；信件內「一鍵退訂」連結為 GET <code>/unsubscribe?token=</code>（HMAC 簽章、免登入），退訂後此開關顯示為關</td></tr>
+</tbody></table></div></div></div>
+
+<h3 id="w-others">5.29 未繪製頁面的組裝說明</h3>
+<ul>
+<li><b>/terms、/privacy</b>：純內容頁（SSR 靜態），含個資蒐集告知、Cookie 與本機儲存說明（列出 <code>ws_session</code>、<code>ws_guest</code>、localStorage 的 <code>ws_guest_token</code> 等用途與保存期間，以及行為分析工具）。頁尾與認領 sheet 都連到此處；P2 另增點數 / 禮物卡使用條款與退款政策。</li>
+<li><b>/dashboard</b>：AppHeader + WishlistCard 列表（標題、類型徽章、完成度、狀態 draft/active/closed/archived）+ 右下浮動「＋ 新建」（44px+）。empty：「還沒有清單，建立第一份吧」。API：GET <code>/wishlists</code>、DELETE <code>/wishlists/{id}</code>（二次確認）。</li>
+<li><b>/org/{id}</b> <span class="ph p2">P2</span>：成員表（org_role 徽章 owner / coordinator / volunteer）、據點列表、新增據點（地址 + 地圖選點）。API：GET <code>/orgs/{id}</code>、POST <code>/orgs/{id}/members</code>、PATCH <code>/orgs/{id}/members/{user_id}</code>、POST <code>/orgs/{id}/sites</code>。</li>
+</ul>
+
+<h2 id="s6">6. 元件規格表</h2>
+<p>命名採 PascalCase，放在 <code>components/</code>（Nuxt 自動匯入）。資料型別 <code>Item</code>、<code>Wishlist</code>、<code>Claim</code>、<code>Contribution</code> 由 OpenAPI 產生（openapi-typescript）。</p>
+<div class="tw"><table>
+<thead><tr><th>元件</th><th>Props</th><th>Emits</th><th>狀態 / 備註</th></tr></thead>
+<tbody>
+<tr><td><code>WishlistCard</code></td><td><code>wishlist: Wishlist</code>, <code>variant: 'owner'|'public'</code></td><td><code>open</code>, <code>share</code></td><td>內含 ProgressBar；status 徽章；驚喜模式 owner 版不顯示認領者</td></tr>
+<tr><td><code>ItemCard</code></td><td><code>item: Item</code>, <code>mode: 'public'|'edit'|'dashboard'</code>, <code>myClaim?: Claim</code>, <code>offline?: boolean</code></td><td><code>claim(item)</code>, <code>contribute(item)</code>（P2）, <code>edit(item)</code>, <code>remove(item)</code></td><td>計算屬性 <code>isFull</code>（quantity: qty_claimed ≥ qty_needed；crowdfund: display_status !== 'open'，因 pledged_points ≤ target_points 為硬上限）；已滿灰掉 aria-disabled</td></tr>
+<tr><td><code>ProgressBar</code></td><td><code>value: number</code>, <code>max: number</code>, <code>label?: string</code>, <code>size: 'sm'|'md'</code>, <code>format: 'count'|'points'</code></td><td>—</td><td><code>role="progressbar"</code> + aria-valuenow/min/max + 可見文字；色條上限 100%（眾籌為硬上限，不會超額）；<code>format</code> 可為 count / points</td></tr>
+<tr><td><code>BottomSheet</code></td><td><code>open: boolean</code>, <code>title: string</code>, <code>dismissible?: boolean</code></td><td><code>update:open</code>, <code>closed</code></td><td>基底元件：焦點鎖定、Esc、背景捲動鎖定（iOS 注意 overscroll）、<code>role="dialog"</code></td></tr>
+<tr><td><code>ClaimSheet</code></td><td><code>item: Item</code>, <code>open</code>, <code>defaultName?: string</code></td><td><code>success(claim)</code>, <code>conflict(remaining)</code>, <code>close</code></td><td>狀態機 idle → submitting → success | error(validation|409|network|429)；持有 Idempotency-Key</td></tr>
+<tr><td><code>ContributeSheet</code> <span class="ph p2">P2</span></td><td><code>item: Item</code>, <code>open</code>, <code>balance: number</code></td><td><code>pledged(c)</code>, <code>needTopup(shortfall)</code>, <code>funded</code>, <code>close</code></td><td>狀態機 idle → submitting → success | error(insufficient|exceeded|funded|network)；持有 Idempotency-Key；remaining 不足自動帶入</td></tr>
+<tr><td><code>QtyStepper</code></td><td><code>modelValue: number</code>, <code>min=1</code>, <code>max: number</code>, <code>step=1</code>, <code>label: string</code></td><td><code>update:modelValue</code></td><td>±按鈕 44px；到邊界 aria-disabled；可長按連加；<code>role="spinbutton"</code></td></tr>
+<tr><td><code>StatusBadge</code></td><td><code>kind: 'claim'|'contribution'|'funding'|'order'|'topup'|'refund'|'gift_card'|'gift_order'|'batch'|'wishlist'|'site'|'urgency'</code>, <code>value: string</code></td><td>—</td><td>文字 + 顏色對照見第 10.3 節，單一來源 <code>utils/status.ts</code></td></tr>
+<tr><td><code>ShareSheet</code></td><td><code>wishlist: Wishlist</code>, <code>open</code></td><td><code>shared(channel)</code>, <code>close</code></td><td>含 CopyButton、QrCode、ExternalBrowserToggle</td></tr>
+<tr><td><code>SurpriseMask</code></td><td><code>active: boolean</code>, <code>unlockAt?: string</code>, <code>label?: string</code></td><td><code>unlocked</code></td><td>active 時渲染佔位條（不傳入真實資料，也不渲染隱藏內容於 DOM）；到時間 emit 並觸發重抓</td></tr>
+<tr><td><code>OfflineBanner</code></td><td>—</td><td>—</td><td>使用 <code>useOnline()</code>（VueUse）；<code>role="status"</code></td></tr>
+<tr><td><code>InstallHint</code></td><td><code>context: 'ios'|'android'|'line'|'standalone'</code></td><td><code>dismiss(permanent)</code></td><td>由 <code>usePwaContext()</code> composable 決定顯示什麼</td></tr>
+<tr><td><code>ImageUploader</code></td><td><code>modelValue: string|null</code>（object key）, <code>maxMB=5</code></td><td><code>update:modelValue</code>, <code>error</code></td><td>presign → PUT → 回填 key；進度、失敗重試；顯示 image_status（pending 佔位 / ready / rejected）</td></tr>
+<tr><td><code>FundingModeSwitch</code></td><td><code>modelValue: FundingMode</code>, <code>locked?: boolean</code>, <code>crowdfundEnabled: boolean</code></td><td><code>update:modelValue</code></td><td>MVP <code>crowdfundEnabled=false</code>，眾籌選項灰掉標 P2；已有認領 / 投點時 locked</td></tr>
+<tr><td><code>WalletBalance</code> <span class="ph p2">P2-A</span></td><td><code>balance: number</code>, <code>pending?: boolean</code>, <code>size: 'sm'|'lg'</code></td><td><code>topup</code></td><td>顯示「x 點」；入帳中小標；離線時標「可能不是最新」；完整分批見 LotBalanceBreakdown</td></tr>
+<tr><td><code>TopupSheet</code> <span class="ph p2">P2</span></td><td><code>open</code>, <code>suggestAmount?: number</code>, <code>returnTo?: string</code></td><td><code>done(points)</code>, <code>failed</code>, <code>close</code></td><td>idle → creating → redirecting → processing（輪詢）→ success | failed | timeout</td></tr>
+<tr><td><code>FundingStatusBadge</code> <span class="ph p2">P2</span></td><td><code>displayStatus: 'open'|'funded'|'ordered'|'shipped'|'delivered'|'expired'</code></td><td>—</td><td>直接吃 API 的 display_status，不在前端推導</td></tr>
+<tr><td><code>ReallocateSheet</code> <span class="ph p2">P2</span></td><td><code>contribution: Contribution</code>, <code>candidates: Item[]</code>, <code>deadline: string</code></td><td><code>released</code>, <code>reallocated(c)</code>, <code>close</code></td><td>預設退回；候選只列 open 且剩餘 ≥ 本筆點數</td></tr>
+<tr><td><code>CatalogPicker</code> <span class="ph p2">P2</span></td><td><code>modelValue: string|null</code>（catalog_product_id）</td><td><code>update:modelValue</code>, <code>select(product)</code></td><td>搜尋 debounce 300ms、cursor 分頁、缺貨不可選</td></tr>
+<tr><td><code>ShippingAddressForm</code> <span class="ph p2">P2</span></td><td><code>modelValue: AddressMasked|null</code></td><td><code>saved</code></td><td>欄位級加密資料，GET 只回遮罩摘要</td></tr>
+<tr><td><code>ReportSheet</code> <span class="ph p0">MVP</span></td><td><code>slug: string</code>, <code>itemId?: string</code>, <code>open</code></td><td><code>submitted</code>, <code>close</code></td><td>理由選項 + 補充 + Turnstile；<code>RATE_LIMITED</code> 處理</td></tr>
+<tr><td><code>RemovedPage</code> <span class="ph p0">MVP</span></td><td>—</td><td>—</td><td>410 通用頁，不顯示清單標題，noindex</td></tr>
+<tr><td><code>ModerationBanner</code> <span class="ph p0">MVP</span></td><td><code>status: 'ok'|'hidden'</code>, <code>reason?: string</code></td><td>—</td><td>dashboard 卡片下架提示，分享停用</td></tr>
+<tr><td><code>AdminShell</code> <span class="ph p0">MVP</span></td><td>—（slot）</td><td>—</td><td>STAFF_ONLY 路由守衛 + 導覽；P2 後台頁共用</td></tr>
+<tr><td><code>DeleteAccountSheet</code> <span class="ph p0">MVP</span></td><td><code>open</code>, <code>blockers?: Blockers</code></td><td><code>deleted</code>, <code>close</code></td><td>輸入確認字樣；P2 顯示 ACCOUNT_HAS_BALANCE 阻擋</td></tr>
+<tr><td><code>InvoiceOptionPicker</code> <span class="ph p2">P2-A</span></td><td><code>modelValue: {carrier_type, carrier_id?, donate_code?, buyer_tax_id?}</code></td><td><code>update:modelValue</code></td><td>會員載具預設 / 手機條碼 / 捐贈碼 / 統編；格式前端驗證</td></tr>
+<tr><td><code>VerifiedOrgBadge</code> <span class="ph p2">P2-D</span></td><td><code>status: 'pending'|'verified'|'rejected'</code></td><td>—</td><td>文字 + 圖示</td></tr>
+<tr><td><code>FrozenWalletBanner</code> <span class="ph p2">P2-A</span></td><td><code>frozen: boolean</code></td><td>—</td><td>凍結時停用所有錢包寫入動作</td></tr>
+<tr><td><code>LotBalanceBreakdown</code> <span class="ph p2">P2-B</span></td><td><code>refundable: number</code>, <code>gift: number</code>, <code>bonus: number</code>, <code>bonusExpiringSoon?: {points:number, expiresAt:string}</code></td><td>—</td><td>三列分批餘額；贊助點數即將到期顯示含日期的警示；數字全由 GET /wallet 提供，不自行加總</td></tr>
+<tr><td><code>AutoTopupSheet</code> <span class="ph p2">P2-A</span></td><td><code>open</code>, <code>config?: AutoTopup</code>, <code>presets: number[]</code></td><td><code>saved</code>, <code>disabled</code>, <code>close</code></td><td>threshold、amount、monthly_cap_amount；卡片為金流商 token，不顯示卡號；本月已達上限狀態</td></tr>
+<tr><td><code>GiftCardPicker</code> <span class="ph p2">P2-B</span></td><td><code>modelValue: {theme, faceValue, quantity, message, sender}</code></td><td><code>update:modelValue</code></td><td>主題、五檔面額、1 至 10 張；與 GiftCardPreview 同步</td></tr>
+<tr><td><code>GiftCardPreview</code> <span class="ph p2">P2-B</span></td><td><code>theme: string</code>, <code>faceValue: number</code>, <code>message?: string</code>, <code>sender: string</code></td><td>—</td><td>購買頁預覽、兌換頁卡面、OG 圖共用樣式</td></tr>
+<tr><td><code>StarsMeter</code> <span class="ph p2">P2-B</span></td><td><code>stars: number</code>, <code>tier: 'green'|'gold'</code>, <code>progress: {current:number, target:number}</code>, <code>expiring?: {stars:number, at:string}</code></td><td>—</td><td>含 progressbar 與文字值；gold 時顯示維持條件</td></tr>
+<tr><td><code>TierBadge</code> <span class="ph p2">P2-B</span></td><td><code>tier: 'green'|'gold'</code></td><td>—</td><td>文字 Green / Gold，不只靠顏色</td></tr>
+<tr><td><code>RedeemOfferCard</code> <span class="ph p2">P2-B</span></td><td><code>offer: RewardOffer</code>, <code>stars: number</code>, <code>tier: string</code></td><td><code>redeem(offer)</code></td><td>狀態：available / insufficient-stars（顯示還差 x 星）/ tier-locked；成功後重抓 /rewards 與 /wallet</td></tr>
+<tr><td><code>BatchStatusStepper</code> <span class="ph p2">P2-C</span></td><td><code>status: BatchStatus</code></td><td>—</td><td>draft → invoiced → paid → issued；void 終點</td></tr>
+<tr><td><code>OrderUpdateSheet</code> <span class="ph p2">P2</span></td><td><code>order: PurchaseOrder</code></td><td><code>saved</code>, <code>close</code></td><td>僅 is_staff；狀態只能前進；failed 需原因</td></tr>
+<tr><td><code>ReliefMap</code> <span class="ph p2">P2</span></td><td><code>sites: Site[]</code>, <code>selectedId?: string</code></td><td><code>boundsChange(bbox)</code>, <code>select(id)</code></td><td>僅 client 渲染（<code>&lt;ClientOnly&gt;</code>）；叢集化</td></tr>
+<tr><td><code>ReceiptSheet</code> <span class="ph p2">P2</span></td><td><code>item: Item</code>, <code>open</code></td><td><code>queued</code>, <code>saved</code></td><td>離線佇列狀態：saved | queued | failed</td></tr>
+</tbody></table></div>
+
+<h2 id="s7">7. 狀態管理與資料流</h2>
+<h3>7.1 分層</h3>
+<ul>
+<li><b>伺服器狀態</b>：Nuxt <code>useFetch</code> / <code>useAsyncData</code>（SSR 取 /public/wishlists/{slug}）；互動中的 mutation 使用 <code>$fetch</code> 封裝在 <code>composables/useApi.ts</code>（統一加 base URL <code>api.wishsync.tw/api/v1</code>、<code>credentials: 'include'</code>、<code>X-Guest-Token</code>、錯誤轉換）。</li>
+<li><b>客戶端狀態</b>：Pinia stores：<code>useAuthStore</code>（user, is_staff, 來自 GET /me）、<code>useWishlistStore</code>（目前公開清單 + items by id）、<code>useGuestStore</code>（guest_token, nickname, myClaims）、<code>useUiStore</code>（sheet 狀態、toast、離線）、<code>useSyncQueueStore</code>（P2 離線佇列）、<code>useWalletStore</code>（P2-A：balance 與分批餘額、autoTopup、ledger 游標，餘額以伺服器為準）、<code>useRewardStore</code>（P2-B：stars、tier、offers）。</li>
+<li><b>持久化</b>：localStorage 鍵：<code>ws_guest_token</code>、<code>ws_nickname</code>、<code>ws_hint_dismissed</code>、<code>ws_draft_wishlist</code>；以 try/catch 包覆，私密模式失敗時退回記憶體並警告。</li>
+</ul>
+
+<h3>7.2 guest_token 與請求</h3>
+<pre class="code">// composables/useApi.ts（示意）
+export const api = $fetch.create({
+  baseURL: useRuntimeConfig().public.apiBase, // https://api.wishsync.tw/api/v1
+  credentials: 'include',                      // ws_session / ws_guest cookie
+  onRequest({ options }) {
+    const t = useGuestStore().token            // localStorage 為準，cookie 為輔
+    if (t) options.headers = { ...options.headers, 'X-Guest-Token': t }
+  },
+  onResponseError({ response }) {
+    // application/problem+json -> ApiError(code, status, detail)
+  }
+})
+// 首次認領成功：response.guest_token -> useGuestStore().setToken()</pre>
+
+<h3>7.3 SSE 訂閱</h3>
+<pre class="mermaid">
+sequenceDiagram
+  participant B as "瀏覽器 /s/slug"
+  participant S as "Pinia wishlist store"
+  participant A as "API"
+  B->>A: "GET /public/wishlists/slug SSR"
+  A-->>B: "wishlist + items"
+  B->>A: "EventSource /public/wishlists/slug/events"
+  A-->>S: "item.updated: id, qty_claimed, pledged_points, display_status"
+  S->>B: "就地更新 ItemCard"
+  A-->>S: "wishlist.updated"
+  S->>A: "重抓整份 GET /public/wishlists/slug"
+  Note over B,A: "斷線: EventSource 自動重連, 重連成功後補抓一次 GET 以防漏事件"
+</pre>
+<ul>
+<li>只在 <code>onMounted</code>（client）建立 EventSource；<code>onBeforeUnmount</code> 與 <code>visibilitychange</code>（背景超過 60 秒）關閉，回前景重連並補抓。</li>
+<li>LINE in-app browser 若 SSE 不穩，退回輪詢（每 15 秒 <code>useFetch</code> refresh）；連續 3 次 SSE 錯誤即切換。</li>
+<li>收到事件使用「以 <code>updated_at</code> / version 比較，較新者覆蓋」避免舊事件蓋過樂觀狀態。</li>
+</ul>
+
+<h3>7.4 樂觀更新與 409 回滾</h3>
+<pre class="code">async function submitClaim(item, form, key) {
+  const snapshot = { ...item }
+  item.qty_claimed += form.qty                 // 1. 樂觀更新
+  try {
+    const res = await api(`/items/${item.id}/claims`, {
+      method: 'POST', body: form, headers: { 'Idempotency-Key': key } })
+    guest.setToken(res.guest_token); return res.claim   // 2. 成功
+  } catch (e) {
+    Object.assign(item, snapshot)              // 3. 回滾
+    if (e.code === 'ITEM_FULLY_CLAIMED') {
+      await refreshItem(item.id)               // 重抓剩餘量
+      throw new ConflictError(item.qty_needed - item.qty_claimed)
+    }
+    throw e                                     // network / 429 -> UI 重試
+  }
+}</pre>
+<ul>
+<li>網路錯誤重試<b>沿用同一個 Idempotency-Key</b>：若第一次其實已成功，伺服器回放原回應，不會重複扣量。</li>
+<li>同一個 key 但 body 不同 → <code>IDEMPOTENCY_CONFLICT</code>：前端產生新 key 並提示使用者確認內容。</li>
+<li>429 <code>RATE_LIMITED</code>：讀取 <code>Retry-After</code> 倒數。</li>
+</ul>
+
+<h3>7.5 錯誤處理對照</h3>
+<div class="tw"><table>
+<thead><tr><th>code</th><th>HTTP</th><th>前端行為</th></tr></thead>
+<tbody>
+<tr><td><code>ITEM_FULLY_CLAIMED</code></td><td>409</td><td>回滾、重抓、sheet 內顯示剩餘量或關閉</td></tr>
+<tr><td><code>VALIDATION_FAILED</code></td><td>422</td><td>依 <code>errors[].field</code>（若有）標在欄位，否則 InlineAlert</td></tr>
+<tr><td><code>UNAUTHORIZED</code></td><td>401</td><td>建立者頁面導向 /login?redirect=；公開頁忽略</td></tr>
+<tr><td><code>FORBIDDEN</code></td><td>403</td><td>顯示「沒有權限」頁/toast</td></tr>
+<tr><td><code>NOT_FOUND</code></td><td>404</td><td>/s/{slug} 顯示 404 頁（SSR 回 404 狀態碼）</td></tr>
+<tr><td><code>RATE_LIMITED</code></td><td>429</td><td>倒數後可重試</td></tr>
+<tr><td><code>CLAIM_ALREADY_EXISTS</code></td><td>409</td><td>提示「你已經認領過這個品項」，切換為「修改我的認領」（PATCH /claims/{claim_id}）</td></tr>
+<tr><td><code>CROWDFUND_TARGET_EXCEEDED</code> <span class="ph p2">P2</span></td><td>409</td><td>硬上限。讀取 <code>remaining_points</code>，自動帶入並提示「只剩 x 點就達標了」</td></tr>
+<tr><td><code>INSUFFICIENT_POINTS</code> <span class="ph p2">P2</span></td><td>409</td><td>顯示還差 x 點，主按鈕改為儲值，儲值後回到原 sheet</td></tr>
+<tr><td><code>ITEM_FUNDED</code> <span class="ph p2">P2</span></td><td>409</td><td>回滾、關閉 sheet、卡片改「已達標」；點數未扣</td></tr>
+<tr><td><code>CONTRIBUTION_LOCKED</code> <span class="ph p2">P2</span></td><td>409</td><td>已用於購買，或未達標選擇期已過：「這筆點數已用於購買 / 已自動退回，無法再操作」，隱藏撤回按鈕</td></tr>
+<tr><td><code>FUNDING_EXPIRED</code> <span class="ph p2">P2</span></td><td>409</td><td>對已截止品項投點：關閉 sheet、卡片改「未達標」、點數未扣</td></tr>
+<tr><td><code>REALLOCATION_NOT_ALLOWED</code> <span class="ph p2">P2</span></td><td>409</td><td>目標品項不在同清單 / 非 open / 剩餘不足：刷新候選並請使用者改選</td></tr>
+<tr><td><code>SHIPPING_ADDRESS_REQUIRED</code> <span class="ph p2">P2</span></td><td>409</td><td>導向收件地址設定頁</td></tr>
+<tr><td><code>CATALOG_PRODUCT_UNAVAILABLE</code> <span class="ph p2">P2</span></td><td>409</td><td>商品下架或缺貨：刷新 CatalogPicker 並提示改選或改用人工代購</td></tr>
+<tr><td><code>PAYMENT_FAILED</code> <span class="ph p2">P2</span></td><td>402</td><td>「付款沒有成功，沒有扣款」，可重試或換付款方式</td></tr>
+<tr><td><code>GIFT_CARD_INVALID</code> <span class="ph p2">P2-B</span></td><td>404</td><td>一律顯示「無效的禮物卡連結」，不區分不存在或格式錯誤；頁面 SSR 回 404</td></tr>
+<tr><td><code>GIFT_CARD_ALREADY_CLAIMED</code> <span class="ph p2">P2-B</span></td><td>409</td><td>顯示「這張禮物卡已經兌換過了」，不顯示面額與祝福語</td></tr>
+<tr><td><code>GIFT_CARD_NOT_REFUNDABLE</code> <span class="ph p2">P2-B</span></td><td>409</td><td>購買者退款時卡已兌換：刷新列表並說明「已兌換的禮物卡無法退款」</td></tr>
+<tr><td><code>NOT_CASH_REFUNDABLE</code> <span class="ph p2">P2-A</span></td><td>409</td><td>退現金超過可退的儲值點數：顯示可退上限，禮物卡與贊助點數不可退</td></tr>
+<tr><td><code>INSUFFICIENT_STARS</code> <span class="ph p2">P2-B</span></td><td>409</td><td>回滾、重抓星星餘額，提示「星星不夠了」</td></tr>
+<tr><td><code>AUTO_TOPUP_LIMIT_REACHED</code> <span class="ph p2">P2-A</span></td><td>409</td><td>只出現在自動儲值設定與通知：顯示「本月已達上限，暫停自動儲值」，不阻擋投點</td></tr>
+<tr><td><code>CODES_ALREADY_EXPORTED</code> <span class="ph p2">P2-C</span></td><td>409</td><td>營運後台：顯示「兌換碼已匯出過，無法再取得」</td></tr>
+<tr><td><code>WISHLIST_REMOVED</code></td><td>410</td><td>公開頁顯示「此清單已被下架」（5.26），SSR 回 410；SSE 停止重連</td></tr>
+<tr><td><code>ACCOUNT_HAS_BALANCE</code> <span class="ph p2">P2-A</span></td><td>409</td><td>刪除帳號被阻擋：顯示餘額、未完成認捐與處理方式（5.28）</td></tr>
+<tr><td><code>GIFT_CARD_NOT_YET_CLAIMABLE</code> <span class="ph p2">P2-B</span></td><td>409</td><td>讀取 <code>claimable_at</code>，兌換按鈕停用並顯示「預計 X 時間起可兌換」</td></tr>
+<tr><td><code>TOPUP_LIMIT_EXCEEDED</code> <span class="ph p2">P2-A</span></td><td>409</td><td>讀取 <code>limit_amount</code>、<code>remaining_amount</code>，顯示今日剩餘額度並把金額上限壓到剩餘額度</td></tr>
+<tr><td><code>WALLET_FROZEN</code> <span class="ph p2">P2-A</span></td><td>403</td><td>顯示錢包凍結說明並停用儲值 / 投點 / 兌換 / 退款，提供聯絡客服（5.15）</td></tr>
+<tr><td><code>ORG_NOT_VERIFIED</code> <span class="ph p2">P2-D</span></td><td>403</td><td>建立 public 據點被拒：說明未驗證組織的據點只能以連結分享，並引導完成驗證</td></tr>
+<tr><td><code>STAFF_ONLY</code> <span class="ph p0">MVP</span></td><td>403</td><td>顯示「僅限營運人員」，不顯示後台入口</td></tr>
+<tr><td><code>WISHLIST_NOT_PUBLISHABLE</code></td><td>409</td><td>發佈失敗，列出缺少條件（例如無品項；P2 眾籌品項缺收件地址時另回 <code>SHIPPING_ADDRESS_REQUIRED</code>）</td></tr>
+<tr><td><code>SITE_NOT_ACTIVE</code> <span class="ph p2">P2</span></td><td>409</td><td>據點暫停或關閉，停用認捐</td></tr>
+<tr><td><code>READ_ONLY_MODE</code></td><td>503</td><td>全站橫幅「系統維護中，可瀏覽但暫不能認領」，寫入按鈕停用（P2 同時停用投點與儲值）；依 <code>Retry-After</code> 自動重試讀取</td></tr>
+<tr><td><code>IDEMPOTENCY_CONFLICT</code></td><td>409/422</td><td>換新 key 並請使用者重新確認</td></tr>
+<tr><td><code>WISHLIST_CLOSED</code></td><td>409</td><td>頁面轉唯讀並提示已結束</td></tr>
+</tbody></table></div>
+
+<h3>7.6 錢包與投點資料流 <span class="ph p2">P2</span></h3>
+<pre class="code">// 投點：樂觀更新品項進度與錢包餘額，四種 409 各有回滾路徑
+async function contribute(item, points, form, key) {
+  const snap = { item: { ...item }, balance: wallet.balance }
+  item.pledged_points += points; wallet.balance -= points   // 樂觀更新
+  try {
+    return await api(`/items/${item.id}/contributions`, {
+      method: 'POST', body: { points, ...form }, headers: { 'Idempotency-Key': key } })
+  } catch (e) {
+    Object.assign(item, snap.item); wallet.balance = snap.balance   // 回滾
+    if (e.code === 'CROWDFUND_TARGET_EXCEEDED') return retryWith(e.remaining_points)
+    if (e.code === 'INSUFFICIENT_POINTS') return openTopup(points - wallet.balance)
+    if (e.code === 'ITEM_FUNDED') return refreshItem(item.id)   // 點數未被扣
+    throw e
+  }
+}
+// 儲值：入帳以 webhook 為準，前端只輪詢 GET /wallet
+async function waitTopup(before) {
+  for (let i = 0; i &lt; 30; i++) { await sleep(2000); if ((await api('/wallet')).balance > before) return true }
+  return false   // timeout：提示稍後自動入帳
+}</pre>
+<ul>
+<li>禮物卡兌換碼只放在 URL 與 sessionStorage（登入跳轉期間暫存，兌換完成即清除），不寫入 localStorage；購買完成頁與錢包的分享連結只存在記憶體，每次由 API 取得。</li>
+<li>錢包餘額、ledger 不寫入 localStorage；登出時清空 <code>useWalletStore</code> 與 SW 的 /wallet 快取。</li>
+<li>投點與儲值皆帶 <code>Idempotency-Key</code>；重試沿用同一個 key。</li>
+<li>SSE 的 <code>item.updated</code> 也可能帶來他人投點造成的 pledged_points 變化，以 updated_at 較新者為準，避免蓋過尚在飛行中的樂觀狀態。</li>
+</ul>
+
+<h2 id="s8">8. PWA 規格</h2>
+<p><span class="ph p0">P0</span> 基本 PWA：可加入主畫面、靜態資源快取。使用 <code>@vite-pwa/nuxt</code>。</p>
+<h3>8.1 manifest</h3>
+<pre class="code">{
+  "name": "WishSync 心願同步",
+  "short_name": "WishSync",
+  "start_url": "/me/claims?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#0b7a75",
+  "background_color": "#ffffff",
+  "lang": "zh-Hant-TW",
+  "icons": [
+    { "src": "/icons/192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}</pre>
+<p class="small">start_url 設為 /me/claims，因為加入主畫面者多半是送禮者，要回來管理認領；建立者可由內頁切換。待決：是否依角色動態 start_url（manifest 為靜態，無法動態）。</p>
+
+<h3>8.2 Service Worker 快取策略</h3>
+<div class="tw"><table>
+<thead><tr><th>資源</th><th>策略</th><th>說明</th></tr></thead>
+<tbody>
+<tr><td>建置產物（JS / CSS / 字體 / icon）</td><td>Precache（<code>generateSW</code>，含 revision）</td><td>離線可開啟 App shell</td></tr>
+<tr><td>/s/{slug} 的 HTML</td><td>NetworkFirst，timeout 3 秒，fallback 快取</td><td>永遠以最新完成度為先；弱網 / 離線回快取並顯示 OfflineBanner</td></tr>
+<tr><td>GET /api/v1/public/wishlists/{slug}</td><td>StaleWhileRevalidate，快取 1 小時，上限 20 筆</td><td>離線可看上次內容</td></tr>
+<tr><td>GET /api/v1/public/wishlists/{slug}/events（SSE）</td><td>NetworkOnly（不快取、不攔截）</td><td>串流不可被 SW 緩衝</td></tr>
+<tr><td>GET /guest/me、/me</td><td>NetworkFirst（3 秒），不跨使用者共用</td><td>含個人資料；登出時清除快取</td></tr>
+<tr><td>POST / PATCH / DELETE</td><td>NetworkOnly；P2 的 receipts 例外走 Background Sync 佇列</td><td>認領等寫入不可離線假成功</td></tr>
+<tr><td>/wallet、/api/v1/wallet、/api/v1/admin/*、topups、webhooks <span class="ph p2">P2</span></td><td>NetworkOnly，不快取、不進 Background Sync</td><td>金額與個資不得離線假成功；登出時清除相關快取</td></tr>
+<tr><td>/g/*、/gift、/rewards、GET /public/gift-cards/*、/gift-cards/*、/rewards/* <span class="ph p2">P2-B</span></td><td>NetworkOnly，不快取（HTML 與 API 皆 <code>no-store</code>）</td><td>兌換碼不得留在 SW 快取或歷史快取；/g/* 頁面 Referrer-Policy no-referrer</td></tr>
+<tr><td>圖片（CDN / R2）</td><td>CacheFirst，30 天，上限 100 筆</td><td>—</td></tr>
+<tr><td>OG 圖 /og/{slug}.png</td><td>不由 SW 處理（爬蟲用）</td><td>—</td></tr>
+<tr><td>地圖圖磚 <span class="ph p2">P2</span></td><td>StaleWhileRevalidate，上限 200 筆</td><td>—</td></tr>
+</tbody></table></div>
+<ul>
+<li>更新策略：<code>registerType: 'prompt'</code>，有新版時顯示「有新版本，重新整理」toast，避免認領中途被強制 reload。</li>
+<li><code>navigateFallback</code> 不可吞掉 /s/*（需 SSR HTML），僅對 SPA 路由使用 app shell。</li>
+</ul>
+
+<h3>8.3 LINE in-app browser 與安裝引導</h3>
+<div class="tw"><table>
+<thead><tr><th>環境</th><th>偵測</th><th>行為</th></tr></thead>
+<tbody>
+<tr><td>LINE in-app browser</td><td><code>navigator.userAgent</code> 含 <code>Line/</code></td><td>不顯示安裝；顯示「用預設瀏覽器開啟」引導（5.8 右圖）。建立者分享連結可選加 <code>?openExternalBrowser=1</code>，讓 LINE 直接以外部瀏覽器開啟（建議僅在 ShareSheet 開關開啟時附加）</td></tr>
+<tr><td>iOS Safari</td><td>iOS 且非 standalone，非 in-app</td><td>顯示「分享 → 加入主畫面」三步驟圖示（無 beforeinstallprompt）</td></tr>
+<tr><td>Android Chrome</td><td>捕捉 <code>beforeinstallprompt</code></td><td>以自訂按鈕呼叫 <code>prompt()</code></td></tr>
+<tr><td>已安裝</td><td><code>matchMedia('(display-mode: standalone)')</code> 或 <code>navigator.standalone</code></td><td>不顯示提示</td></tr>
+</tbody></table></div>
+<div class="note w"><b>重要風險：</b>LINE 內建瀏覽器與預設瀏覽器的 localStorage / cookie 互不相通。在 LINE 內認領後改用 Safari 開啟，將看不到 /me/claims。對策：成功頁引導外開、/me/claims 空狀態說明、以及（P1 待決）提供「用認領時的暱稱 + 聯絡方式找回」或一次性回復連結。</div>
+
+<h2 id="s9">9. OG / 分享預覽規格</h2>
+<p>/s/{slug} 與 <span class="ph p2">P2-B</span> /g/{code} <b>必須 SSR</b>（部署於 Cloudflare Pages，由 Pages Functions 執行 SSR，見第 14 節），使 LINE、Facebook、iMessage 爬蟲（不執行 JS）取得完整 meta。<b>驗證紀錄（D48，如實）：</b>2026-10-08 以 Nuxt 4.0.0 + Wrangler 4.148.0 在本機（workerd 執行環境）實測，<code>cloudflare_pages</code> preset 經 <code>wrangler pages dev</code>，以不執行 JS 的爬蟲 UA 請求 /s/{slug}，SSR HTML 已含 <code>&lt;title&gt;</code>、og:title、og:description，server route 執行於 Cloudflare Workers runtime；另測 <code>cloudflare_module</code> 經 <code>wrangler dev</code> 亦通過。<b>尚未在正式 Cloudflare 帳號部署，也尚未用真實 LINE / FB 爬蟲測試，仍屬 Spike S1。</b></p>
+<div class="tw"><table>
+<thead><tr><th>meta</th><th>內容規則</th><th>範例</th></tr></thead>
+<tbody>
+<tr><td><code>og:title</code></td><td>「幫{建立者}挑禮物｜{清單名稱}」，≤ 40 字</td><td>幫小愛挑禮物｜小愛的待產清單</td></tr>
+<tr><td><code>og:description</code></td><td>含完成度與剩餘：「已完成 40%，還有 6 項等你認領。不用註冊，點開就能選。」，≤ 90 字。驚喜模式也只用完成度，不含認領者</td><td>已完成 40%，還有 6 項等你認領。不用註冊，點開就能選。</td></tr>
+<tr><td><code>og:image</code></td><td>1200×630 PNG，動態產生：<code>https://app.wishsync.tw/og/{slug}.png</code>（見下）</td><td>—</td></tr>
+<tr><td><code>og:type</code> / <code>og:url</code> / <code>og:locale</code></td><td>website / canonical（不含 openExternalBrowser 等追蹤參數）/ zh_TW</td><td>—</td></tr>
+<tr><td><code>twitter:card</code></td><td>summary_large_image</td><td>—</td></tr>
+<tr><td><code>robots</code></td><td>visibility=link 時 <code>noindex, nofollow</code>（知道連結才可看，不給搜尋引擎）；relief public 據點頁可 index</td><td>—</td></tr>
+</tbody></table></div>
+<h3>動態 OG 圖建議</h3>
+<ul>
+<li>以 Pages Functions（Workers runtime）上的 <code>satori</code> + <code>resvg-wasm</code>（或 <code>workers-og</code>）產生：左側封面圖（第一個品項圖或類型插圖）、右側清單名稱、完成度進度條與百分比、WishSync 標誌。</li>
+<li>快取：產生後存 R2 / Cache API，key = <code>{slug}-{完成度百分比}</code>；完成度改變時 URL 帶 <code>?v=40</code> 版本參數使 LINE/FB 重新抓取。TTL 短（5 分鐘 CDN）。</li>
+<li>後備：產生失敗回靜態預設圖，不可讓 OG 圖錯誤造成 meta 缺失。</li>
+<li>LINE 預覽快取很久：清單剛改名後舊預覽可能殘留，文件與客服 FAQ 需說明（可用 LINE 的重新抓取工具或 FB Sharing Debugger）。</li>
+<li>OG 資料取自 <code>GET /public/wishlists/{slug}</code>，SSR 失敗（5xx）時 meta 退回通用文案，頁面仍正常。</li>
+</ul>
+
+<h3>9.1 /g/{code} 禮物卡預覽 <span class="ph p2">P2-B</span></h3>
+<div class="tw"><table>
+<thead><tr><th>meta</th><th>內容規則</th><th>範例</th></tr></thead>
+<tbody>
+<tr><td><code>og:title</code></td><td>「{寄送者暱稱} 送你一張心願禮物卡」</td><td>小美 送你一張心願禮物卡</td></tr>
+<tr><td><code>og:description</code></td><td>「面額 {n} 點。兌換後可用來支持朋友的心願清單。」若有祝福語，附前 30 字；已兌換或無效時改通用文案「WishSync 心願禮物卡」，不洩漏是否存在</td><td>面額 500 點。兌換後可用來支持朋友的心願清單。</td></tr>
+<tr><td><code>og:image</code></td><td>1200×630，依卡面主題與面額產生卡面（<code>GiftCardPreview</code> 同款樣式）：<code>/og/g/{theme}-{faceValue}.png</code>。<b>圖片網址不含兌換碼</b>，可共用快取</td><td>—</td></tr>
+<tr><td><code>robots</code></td><td><code>noindex, nofollow, noarchive</code></td><td>—</td></tr>
+<tr><td>其他</td><td>og:url 與 canonical 含碼（分享連結本身即憑證），但回應標頭 <code>Referrer-Policy: no-referrer</code>、<code>Cache-Control: no-store</code>；錯誤碼一律 404 通用頁</td><td>—</td></tr>
+</tbody></table></div>
+<ul>
+<li>OG 圖只用主題與面額產生，不放兌換碼與收卡者資訊；祝福語若需放入，需截斷並由伺服器先過濾。</li>
+<li>LINE 預覽快取很久：卡片兌換後預覽仍可能顯示「送你一張禮物卡」，點開後頁面會顯示已兌換，屬可接受行為。</li>
+</ul>
+
+<h2 id="s10">10. 文案與微互動</h2>
+<h3>10.1 文案範例（繁體中文，台灣用語）</h3>
+<div class="tw"><table>
+<thead><tr><th>情境</th><th>文案</th></tr></thead>
+<tbody>
+<tr><td>認領成功 toast</td><td>認領成功！謝謝你，阿明。</td></tr>
+<tr><td>認領成功頁說明</td><td>已存在此裝置，可在「我的認領」查看、標記已購買或取消。</td></tr>
+<tr><td>取消認領確認</td><td>確定要取消嗎？取消後這 2 個會重新開放給其他人認領。</td></tr>
+<tr><td>409 ITEM_FULLY_CLAIMED</td><td>剛剛有人搶先一步，這個品項已經被認領完了。看看其他品項吧！</td></tr>
+<tr><td>409 部分剩餘</td><td>抱歉，只剩 1 個了，要改成認領 1 個嗎？</td></tr>
+<tr><td>網路錯誤</td><td>網路好像不太穩，你填的內容還在，再試一次就好。</td></tr>
+<tr><td>409 CLAIM_ALREADY_EXISTS</td><td>你已經認領過這個品項了，要改數量請按「修改我的認領」。</td></tr>
+<tr><td>503 READ_ONLY_MODE</td><td>系統維護中，可瀏覽但暫不能認領。</td></tr>
+<tr><td>點數說明（固定）</td><td>點數只會用於購買此品項，受捐者無法提領。</td></tr>
+<tr><td>投點成功 toast</td><td>已投入 500 點，還差 7,500 點就達標了。</td></tr>
+<tr><td>達標</td><td>太棒了，你幫忙湊齊了！我們會盡快下單，寄給小愛。</td></tr>
+<tr><td>點數不足</td><td>點數不足，還差 300 點。儲值後會回到這裡繼續。</td></tr>
+<tr><td>409 CROWDFUND_TARGET_EXCEEDED</td><td>只剩 300 點就達標了，已幫你帶入 300 點。</td></tr>
+<tr><td>409 ITEM_FUNDED</td><td>剛剛已經有人湊齊了，這個品項已達標。你的點數沒有被扣除。</td></tr>
+<tr><td>409 CONTRIBUTION_LOCKED</td><td>這筆點數已經用於購買，或已自動退回，無法再撤回。</td></tr>
+<tr><td>409 FUNDING_EXPIRED</td><td>這個品項的募集已經截止了，你的點數沒有被扣除。</td></tr>
+<tr><td>撤回確認</td><td>確定撤回嗎？500 點會立刻回到你的錢包。</td></tr>
+<tr><td>402 PAYMENT_FAILED</td><td>付款沒有成功，沒有扣款。換一種付款方式試試？</td></tr>
+<tr><td>儲值成功</td><td>儲值成功，已入帳 1,000 點。</td></tr>
+<tr><td>達標通知</td><td>「嬰兒推車」已達標！我們已用大家的點數幫小愛下單。</td></tr>
+<tr><td>出貨通知</td><td>「嬰兒推車」已出貨，很快就會送到小愛手上。</td></tr>
+<tr><td>未達標通知</td><td>「學步車」沒有在期限內湊齊。你投入的 500 點可以退回錢包，或轉投其他品項，7 天內請選擇，沒選擇會自動退回。</td></tr>
+<tr><td>購買失敗通知</td><td>很抱歉，這個商品暫時買不到，你投入的點數已全數退回錢包。</td></tr>
+<tr><td>409 SHIPPING_ADDRESS_REQUIRED</td><td>含眾籌品項的清單，要先填收件地址才能發佈。</td></tr>
+<tr><td>驚喜模式（眾籌）</td><td>驚喜模式中，你只會看到已下單、運送中的數量。包裹送達時，就是揭曉的時刻。</td></tr>
+<tr><td>403 STAFF_ONLY</td><td>這個頁面僅限營運人員。</td></tr>
+<tr><td>禮物卡說明（固定）</td><td>點數只能用於心願品項，無法兌現，也不能轉送給別人。</td></tr>
+<tr><td>購買完成</td><td>已付款 NT$1,000，共 2 張。現在就能傳給朋友，之後也可以在錢包的「已購禮物卡」重新分享。</td></tr>
+<tr><td>兌換成功</td><td>兌換成功，500 點已存入你的錢包。</td></tr>
+<tr><td>404 GIFT_CARD_INVALID</td><td>無效的禮物卡連結，請向送禮的人確認。</td></tr>
+<tr><td>409 GIFT_CARD_ALREADY_CLAIMED</td><td>這張禮物卡已經兌換過了。</td></tr>
+<tr><td>409 GIFT_CARD_NOT_REFUNDABLE</td><td>這張禮物卡已被兌換，無法退款。</td></tr>
+<tr><td>退款確認（禮物卡）</td><td>確定要退款嗎？這張卡的連結會立即失效，款項將原路退回。</td></tr>
+<tr><td>409 NOT_CASH_REFUNDABLE</td><td>只有儲值的點數可以退回現金，目前可退 2,000 點。</td></tr>
+<tr><td>贊助點數到期</td><td>200 點贊助點數將於 11/15 到期，投點時會優先使用。</td></tr>
+<tr><td>自動儲值完成</td><td>餘額偏低，已為你自動儲值 NT$1,000。</td></tr>
+<tr><td>AUTO_TOPUP_LIMIT_REACHED</td><td>本月自動儲值已達上限 NT$10,000，已暫停。你仍可手動儲值。</td></tr>
+<tr><td>星星兌換成功</td><td>已兌換 50 點贊助點數，記得在 90 天內使用。</td></tr>
+<tr><td>409 INSUFFICIENT_STARS</td><td>星星不夠了，再投點支持朋友的心願就會累積。</td></tr>
+<tr><td>升級通知</td><td>恭喜升級 Gold！之後 100 星可兌換 60 點。</td></tr>
+<tr><td>409 CODES_ALREADY_EXPORTED</td><td>這個批次的兌換碼已經匯出過，無法再取得。</td></tr>
+<tr><td>檢舉送出</td><td>已收到檢舉，我們會盡快處理。謝謝你幫忙維護社群。</td></tr>
+<tr><td>410 WISHLIST_REMOVED</td><td>此清單已被下架。這份清單因違反服務條款已被移除，目前無法瀏覽或認領。</td></tr>
+<tr><td>dashboard 下架提示</td><td>這份清單已於 10/08 被下架。原因：疑似詐騙。若有誤判，請聯絡客服申訴。</td></tr>
+<tr><td>圖片上傳提示</td><td>上傳後會移除照片裡的位置等隱藏資訊。請勿上傳含個人資料的照片。</td></tr>
+<tr><td>個資蒐集告知（認領 sheet）</td><td>你填的暱稱與聯絡方式只會給清單建立者看。我們如何使用你的資料，請看「個資蒐集告知」。</td></tr>
+<tr><td>留 Email（認領）</td><td>留 Email 可收到確認信與「管理我的認領」連結，換手機也找得回來。</td></tr>
+<tr><td>認領確認信（Email）</td><td>你已認領「寶寶奶瓶 240ml × 2」。點這裡管理我的認領：{連結}（連結只能使用一次，30 天內有效）。不想再收到通知？<u>一鍵退訂</u></td></tr>
+<tr><td>退訂成功</td><td>已為你取消這類 Email 通知。之後想重新開啟，可以到帳號設定。</td></tr>
+<tr><td>管理連結失效</td><td>這個管理連結已失效（只能使用一次，且 30 天內有效）。請回到朋友分享的清單連結，或聯絡客服。</td></tr>
+<tr><td>建立者認領通知（信件頁尾）</td><td>不想收到認領通知？<u>一鍵退訂</u>，或到帳號設定調整。</td></tr>
+<tr><td>建立者認領通知（驚喜模式）</td><td>你的清單有 2 件新認領。驚喜模式中，活動日前不會顯示內容。</td></tr>
+<tr><td>刪除帳號確認</td><td>你的 Email 與名稱會被移除，清單會封存並從公開移除。此動作無法復原。</td></tr>
+<tr><td>帳號已刪除</td><td>帳號已刪除。謝謝你曾經使用 WishSync。</td></tr>
+<tr><td>409 ACCOUNT_HAS_BALANCE</td><td>你的錢包還有點數，或有進行中的認捐。請先處理後再刪除帳號。</td></tr>
+<tr><td>409 GIFT_CARD_NOT_YET_CLAIMABLE</td><td>這張禮物卡尚未開放兌換，預計 10/09 14:00 起可兌換。</td></tr>
+<tr><td>409 TOPUP_LIMIT_EXCEEDED</td><td>新帳號每日儲值與購買禮物卡合計上限 NT$3,000，今天還能再用 NT$1,200。</td></tr>
+<tr><td>圖片處理中</td><td>圖片處理中，完成後會自動顯示。</td></tr>
+<tr><td>圖片未通過</td><td>這張圖片無法使用，請換一張。</td></tr>
+<tr><td>403 WALLET_FROZEN</td><td>你的錢包目前已凍結，暫時無法使用。請聯絡客服了解原因。</td></tr>
+<tr><td>403 ORG_NOT_VERIFIED</td><td>組織尚未通過驗證，據點只能以連結分享，不會顯示在地圖上。</td></tr>
+<tr><td>已驗證組織</td><td>已驗證組織：此組織已通過身分審核。</td></tr>
+<tr><td>3D 驗證提示</td><td>信用卡付款需要經過銀行的 3D 驗證，請依畫面指示完成。</td></tr>
+<tr><td>429</td><td>操作太頻繁了，請 30 秒後再試。</td></tr>
+<tr><td>清單已結束</td><td>這份清單已經結束了，目前無法再認領。</td></tr>
+<tr><td>清單不存在</td><td>找不到這份清單。連結可能打錯了，或建立者已關閉分享。</td></tr>
+<tr><td>離線</td><td>目前離線，顯示的是上次載入的內容。</td></tr>
+<tr><td>空狀態：建立者無品項</td><td>還沒有任何品項。先新增第一個想要的東西吧。</td></tr>
+<tr><td>空狀態：儀表板無認領</td><td>還沒有人認領。把連結傳給朋友，這裡會即時更新。</td></tr>
+<tr><td>空狀態：我的認領</td><td>你還沒有認領任何東西。收到朋友的清單連結後，就能在這裡管理。</td></tr>
+<tr><td>驚喜模式說明</td><td>活動日前，你只看得到完成度，不會知道誰送了什麼，保留拆禮物的驚喜。</td></tr>
+<tr><td>救災（不收個資）</td><td>我們只記錄據點的需求，不會蒐集受災民眾的個人資料。</td></tr>
+</tbody></table></div>
+
+<h3>10.2 微互動</h3>
+<ul>
+<li>進度條：數值變動時寬度過渡 300ms ease-out；<code>prefers-reduced-motion</code> 時直接切換。</li>
+<li>認領成功：勾號描線動畫 400ms + 觸覺回饋 <code>navigator.vibrate(20)</code>（有支援時）。</li>
+<li>SSE 他人認領：該卡片背景淡綠閃一次 600ms，並 <code>aria-live="polite"</code> 朗讀「寶寶奶瓶 已認領 7 / 10」。</li>
+<li>複製連結：按鈕文字短暫變「已複製 ✓」，同時 <code>role="status"</code> 播報。</li>
+<li>Bottom sheet：下滑超過 30% 關閉；背景 scrim 點擊關閉（送出中不可關）。</li>
+<li>Stepper：長按 500ms 後每 100ms 連加；到邊界時輕微震動動畫並朗讀「已達上限」。</li>
+</ul>
+
+<h3>10.3 StatusBadge 對照</h3>
+<div class="tw"><table>
+<thead><tr><th>類別</th><th>值</th><th>中文標籤</th><th>顏色</th><th>預覽</th></tr></thead>
+<tbody>
+<tr><td rowspan="5">claim_status</td><td><code>reserved</code></td><td>已認領</td><td>青綠 teal</td><td><span class="b teal">已認領</span></td></tr>
+<tr><td><code>purchased</code></td><td>已購買</td><td>藍 blue</td><td><span class="b blue">已購買</span></td></tr>
+<tr><td><code>delivered</code></td><td>已送達</td><td>綠 green</td><td><span class="b green">已送達</span></td></tr>
+<tr><td><code>cancelled</code></td><td>已取消</td><td>灰 gray</td><td><span class="b gray">已取消</span></td></tr>
+<tr><td><code>expired</code></td><td>已逾期</td><td>橘 orange</td><td><span class="b orange">已逾期</span></td></tr>
+<tr><td rowspan="4">contribution_status <span class="ph p2">P2</span></td><td><code>pledged</code></td><td>已投入</td><td>青綠 teal</td><td><span class="b teal">已投入</span></td></tr>
+<tr><td><code>captured</code></td><td>已用於購買</td><td>綠 green</td><td><span class="b green">已用於購買</span></td></tr>
+<tr><td><code>released</code></td><td>已退回錢包</td><td>灰 gray</td><td><span class="b gray">已退回錢包</span></td></tr>
+<tr><td><code>reallocated</code></td><td>已轉投</td><td>藍 blue</td><td><span class="b blue">已轉投</span></td></tr>
+<tr><td rowspan="6">display_status（眾籌品項）<span class="ph p2">P2</span></td><td><code>open</code></td><td>募集中</td><td>青綠 teal</td><td><span class="b teal">募集中</span></td></tr>
+<tr><td><code>funded</code></td><td>已達標</td><td>綠 green</td><td><span class="b green">已達標</span></td></tr>
+<tr><td><code>ordered</code></td><td>已下單</td><td>藍 blue</td><td><span class="b blue">已下單</span></td></tr>
+<tr><td><code>shipped</code></td><td>運送中</td><td>藍 blue</td><td><span class="b blue">運送中</span></td></tr>
+<tr><td><code>delivered</code></td><td>已送達</td><td>綠 green</td><td><span class="b green">已送達</span></td></tr>
+<tr><td><code>expired</code></td><td>未達標</td><td>橘 orange</td><td><span class="b orange">未達標</span></td></tr>
+<tr><td rowspan="6">order status（purchase_orders）<span class="ph p2">P2</span></td><td><code>pending</code></td><td>待下單</td><td>灰 gray</td><td><span class="b gray">待下單</span></td></tr>
+<tr><td><code>placed</code></td><td>已下單</td><td>藍 blue</td><td><span class="b blue">已下單</span></td></tr>
+<tr><td><code>shipped</code></td><td>運送中</td><td>藍 blue</td><td><span class="b blue">運送中</span></td></tr>
+<tr><td><code>delivered</code></td><td>已送達</td><td>綠 green</td><td><span class="b green">已送達</span></td></tr>
+<tr><td><code>failed</code></td><td>購買失敗</td><td>紅 red</td><td><span class="b red">購買失敗</span></td></tr>
+<tr><td><code>cancelled</code></td><td>已取消</td><td>灰 gray</td><td><span class="b gray">已取消</span></td></tr>
+<tr><td rowspan="6">topups.status <span class="ph p2">P2</span></td><td><code>pending</code></td><td>處理中</td><td>灰 gray</td><td><span class="b gray">處理中</span></td></tr>
+<tr><td><code>paid</code></td><td>儲值成功</td><td>綠 green</td><td><span class="b green">儲值成功</span></td></tr>
+<tr><td><code>failed</code></td><td>付款失敗</td><td>紅 red</td><td><span class="b red">付款失敗</span></td></tr>
+<tr><td><code>refunded</code></td><td>已退款</td><td>橘 orange</td><td><span class="b orange">已退款</span></td></tr>
+<tr><td><code>disputed</code></td><td>爭議中</td><td>橘 orange</td><td><span class="b orange">爭議中</span></td></tr>
+<tr><td><code>charged_back</code></td><td>已拒付</td><td>紅 red</td><td><span class="b red">已拒付</span></td></tr>
+<tr><td rowspan="4">cash_refund_requests.status <span class="ph p2">P2</span></td><td><code>requested</code></td><td>已申請</td><td>灰 gray</td><td><span class="b gray">已申請</span></td></tr>
+<tr><td><code>processing</code></td><td>處理中</td><td>藍 blue</td><td><span class="b blue">處理中</span></td></tr>
+<tr><td><code>completed</code></td><td>已退款</td><td>綠 green</td><td><span class="b green">已退款</span></td></tr>
+<tr><td><code>rejected</code></td><td>已駁回</td><td>紅 red</td><td><span class="b red">已駁回</span></td></tr>
+<tr><td rowspan="4">gift_cards.status <span class="ph p2">P2-B</span></td><td><code>active</code></td><td>未兌換</td><td>青綠 teal</td><td><span class="b teal">未兌換</span></td></tr>
+<tr><td><code>claimed</code></td><td>已兌換</td><td>綠 green</td><td><span class="b green">已兌換</span></td></tr>
+<tr><td><code>refunded</code></td><td>已退款</td><td>橘 orange</td><td><span class="b orange">已退款</span></td></tr>
+<tr><td><code>void</code></td><td>已作廢</td><td>灰 gray</td><td><span class="b gray">已作廢</span></td></tr>
+<tr><td rowspan="4">gift_card_orders.status <span class="ph p2">P2-B</span></td><td><code>pending</code></td><td>付款處理中</td><td>灰 gray</td><td><span class="b gray">付款處理中</span></td></tr>
+<tr><td><code>paid</code></td><td>已付款</td><td>綠 green</td><td><span class="b green">已付款</span></td></tr>
+<tr><td><code>failed</code></td><td>付款失敗</td><td>紅 red</td><td><span class="b red">付款失敗</span></td></tr>
+<tr><td><code>refunded</code></td><td>已退款</td><td>橘 orange</td><td><span class="b orange">已退款</span></td></tr>
+<tr><td rowspan="5">gift_card_batches.status <span class="ph p2">P2-C</span></td><td><code>draft</code></td><td>草稿</td><td>灰 gray</td><td><span class="b gray">草稿</span></td></tr>
+<tr><td><code>invoiced</code></td><td>已開發票</td><td>藍 blue</td><td><span class="b blue">已開發票</span></td></tr>
+<tr><td><code>paid</code></td><td>已入帳</td><td>綠 green</td><td><span class="b green">已入帳</span></td></tr>
+<tr><td><code>issued</code></td><td>已發放</td><td>青綠 teal</td><td><span class="b teal">已發放</span></td></tr>
+<tr><td><code>void</code></td><td>已作廢</td><td>灰 gray</td><td><span class="b gray">已作廢</span></td></tr>
+<tr><td rowspan="2">reward tier <span class="ph p2">P2-B</span></td><td><code>green</code></td><td>Green</td><td>綠 green</td><td><span class="b green">Green</span></td></tr>
+<tr><td><code>gold</code></td><td>Gold</td><td>橘（金）orange</td><td><span class="b orange">Gold</span></td></tr>
+<tr><td rowspan="2">moderation_status</td><td><code>ok</code></td><td>正常</td><td>綠 green</td><td><span class="b green">正常</span></td></tr>
+<tr><td><code>hidden</code></td><td>已下架</td><td>紅 red</td><td><span class="b red">已下架</span></td></tr>
+<tr><td rowspan="3">content_reports.status</td><td><code>open</code></td><td>待處理</td><td>橘 orange</td><td><span class="b orange">待處理</span></td></tr>
+<tr><td><code>actioned</code></td><td>已處理</td><td>綠 green</td><td><span class="b green">已處理</span></td></tr>
+<tr><td><code>dismissed</code></td><td>已駁回</td><td>灰 gray</td><td><span class="b gray">已駁回</span></td></tr>
+<tr><td rowspan="2">point_wallets.status <span class="ph p2">P2-A</span></td><td><code>active</code></td><td>正常</td><td>綠 green</td><td><span class="b green">正常</span></td></tr>
+<tr><td><code>frozen</code></td><td>已凍結</td><td>紅 red</td><td><span class="b red">已凍結</span></td></tr>
+<tr><td rowspan="3">organizations.verification_status <span class="ph p2">P2-D</span></td><td><code>pending</code></td><td>審核中</td><td>灰 gray</td><td><span class="b gray">審核中</span></td></tr>
+<tr><td><code>verified</code></td><td>已驗證組織</td><td>綠 green</td><td><span class="b green">✓ 已驗證組織</span></td></tr>
+<tr><td><code>rejected</code></td><td>未通過</td><td>紅 red</td><td><span class="b red">未通過</span></td></tr>
+<tr><td rowspan="4">wishlist_status</td><td><code>draft</code></td><td>草稿</td><td>灰</td><td><span class="b gray">草稿</span></td></tr>
+<tr><td><code>active</code></td><td>進行中</td><td>青綠</td><td><span class="b teal">進行中</span></td></tr>
+<tr><td><code>closed</code></td><td>已結束</td><td>橘</td><td><span class="b orange">已結束</span></td></tr>
+<tr><td><code>archived</code></td><td>已封存</td><td>灰</td><td><span class="b gray">已封存</span></td></tr>
+<tr><td rowspan="4">relief_urgency <span class="ph p2">P2</span></td><td><code>critical</code></td><td>緊急</td><td>紅 red</td><td><span class="b red">緊急</span></td></tr>
+<tr><td><code>high</code></td><td>高</td><td>橘 orange</td><td><span class="b orange">高</span></td></tr>
+<tr><td><code>medium</code></td><td>中</td><td>藍 blue</td><td><span class="b blue">中</span></td></tr>
+<tr><td><code>low</code></td><td>低</td><td>灰 gray</td><td><span class="b gray">低</span></td></tr>
+<tr><td rowspan="3">site_status <span class="ph p2">P2</span></td><td><code>active</code></td><td>接收中</td><td>綠</td><td><span class="b green">接收中</span></td></tr>
+<tr><td><code>paused</code></td><td>暫停</td><td>橘</td><td><span class="b orange">暫停</span></td></tr>
+<tr><td><code>closed</code></td><td>已關閉</td><td>灰</td><td><span class="b gray">已關閉</span></td></tr>
+</tbody></table></div>
+<p class="small">item_priority 標籤：high 高、medium 中、low 低（橘 / 灰 / 灰）。色彩皆搭配文字，對比度需通過 AA；暗色模式沿用同一組 token。注意 relief 地圖標記的色盲替代：critical 用實心三角、high 圓形、medium 方形、low 空心圓。</p>
+
+<h2 id="s11">11. 待決問題</h2>
+<ol>
+<li><b>完成度定義</b>：由伺服器回傳 <code>completion_pct</code>，前端不自行計算；<b>已決</b>：<code>completion_pct = items_done / items_total</code>（quantity 品項認滿、crowdfund 品項 funding_status 達標即算完成），另有 <code>claimed_pct</code>、<code>funded_pct</code>，定義見《Master User Flow》F7。</li>
+<li><b>Background Sync 支援</b>：iOS Safari 與 LINE in-app browser 不支援，P2 離線佇列需前景重送後備；是否接受「iOS 需開著頁面才同步」？</li>
+<li><b>SSE 在 LINE in-app browser 與 Cloudflare 的穩定性</b>：SSE 由 api.wishsync.tw 提供（Cloud Run 逾時上限、Cloudflare 代理緩衝），需實測；輪詢退路已寫入 7.3。</li>
+<li><b>首次認領 3 次點擊</b>：若要求暱稱必填，首次訪客是「點我要送 → 輸入暱稱（輸入不算點擊但需鍵盤）→ 確認」。是否允許暱稱預設為「匿名朋友」以真正做到 2 次點擊？</li>
+<li><b>OG 圖產生位置</b>：Cloudflare Pages Functions（satori）或後端 Rust（resvg）？影響字型（Noto Sans TC 檔案大，約數 MB）與冷啟動。</li>
+<li><b>地圖供應商</b>：MapLibre + 哪個圖磚來源（OSM 公共圖磚不適合商用流量；MapTiler、自架 PMTiles on R2）？</li>
+<li><b>manifest start_url</b>：靜態 manifest 只能選一個，目前以訪客的 /me/claims 為優先；建立者安裝後會落在此頁，是否可接受（可在頁面內依登入狀態導向 /dashboard）？</li>
+<li><b>上線前阻斷項（法規，D30）</b>：預收儲值款與售出的禮物卡屬「商品（服務）禮券」，履約保證範圍為「儲值點數 + 未兌換禮物卡 + 已兌換未使用的禮物卡點數」（贊助點數除外），細節由律師確認；不得記載使用期限（贊助點數與星星為無償贈與，可設期限，但須在條款載明）；點數單一用途、不得用戶間轉讓（禮物卡是「購買禮券贈送」，不是餘額互轉），以避免落入電子支付機構業務；發票開立時點（儲值時或兌換時）需會計師確認，企業禮券開立三聯式發票。前端據此：儲值、禮物卡頁固定顯示用途與不可轉讓說明，不顯示任何使用期限（贊助點數到期日除外）。</li>
+<li><b>禮物卡兌換後不可退現金</b>：需律師確認是否符合禮券定型化契約規範；如不符，退款對象改為原購買者，則「兌換後點數只能投入心願品項」的文案與 5.23 說明要一併調整。</li>
+<li><b>企業禮券發放方式</b>：系統寄送 Email 清單與 CSV 並行的流程細節待定。企業自助入口與兌換率報表列為未來。</li>
+<li><b>自動儲值</b>：卡片綁定流程（金流商 token、3D 驗證）與失敗通知；每月上限預設 NT$10,000 是否允許使用者調高。</li>
+<li><b>星星活動條款</b>：星星 12 個月到期、贊助點數 90 天到期與 Gold 比率（100 星 = 60 點）需寫入使用條款；成本由行銷預算吸收，比率調整是否影響已持有星星。</li>
+<li><b>relief 未來可用點數購買目錄物資直送據點</b>（D21）：本版 relief 仍只用數量型認領 + 實收，不接點數。</li>
+<li><b>目標點數公式（已決）</b>：<code>target_points</code> 公式（已決）：catalog = <code>price_amount + shipping_fee_amount</code>（不收服務費、不加緩衝，平台收入來自商家分潤）；concierge = 商品價 + 運費 + ceil(商品價 × <code>concierge_fee_rate</code>) + ceil(商品價 × <code>concierge_buffer_rate</code>)，例：10,000 + 200 + 800 + 1,000 = 12,000 點。</li>
+<li><b>行為分析的同意機制</b>：PostHog 使用 cookie / localStorage，是否需要 cookie 同意橫幅，還是只在隱私權政策與 /terms 揭露？需法務確認。</li>
+<li><b>帳號刪除後金融紀錄保存年限</b>：依商業會計法保存並假名化，年限待會計師確認。</li>
+<li><b>Go / No-Go 數字</b>：已發佈清單 ≥ 300、分享頁 → 認領轉換率 ≥ 25%、≥ 40% 清單至少有 1 筆認領，均為假設，待確認（D32）。</li>
+<li><b>退訂與恢復連結的前端路由</b>：<code>GET /unsubscribe?token=</code> 由後端直接回結果頁，還是導到前端頁面顯示「已退訂」？管理連結失效後是否提供「重新寄送」端點（目前只引導回原連結或客服）？</li>
+</ol>
+<h3>已決事項（依審查裁決）</h3>
+<ul>
+<li>D47：新增 <code>GIFT_CARD_NOT_YET_CLAIMABLE</code>（附 claimable_at）與 <code>TOPUP_LIMIT_EXCEEDED</code>（附 limit_amount、remaining_amount；新帳號每日 NT$3,000 涵蓋手動儲值、自動儲值、禮物卡購買，不含企業禮券）；管理連結改為一次性恢復權杖（<code>#r=</code> → POST <code>/guest/recover</code>）；一鍵退訂 <code>/unsubscribe?token=</code>；通知偏好 <code>notification_prefs.email_claims</code>；<code>image_status</code> 佔位；發票用巢狀 <code>invoice</code> 物件；錢包解凍與欠款結案 API。</li>
+<li>D15 / D39：換裝置找回認領改為 MVP 最小版——認領時選填 Email，寄確認信與「管理我的認領」連結；P1 再做完整版。</li>
+<li>D33 至 D46（v0.4）：低保真聲明與高保真另案；檢舉與 410 下架；MVP /admin 營運後台；Email 通知（MVP）；帳號刪除與資料匯出；圖片去 EXIF；信用卡 3DS 與錢包凍結；電子發票選項；救災組織驗證徽章；部署平台：D44 改 Workers 已由 D48 撤銷，定案 Cloudflare Pages（Workers 為備案）；Spike S1 至 S3。</li>
+<li>D22：公開 API 與 SSE 直接回傳 <code>display_status</code>，徽章不再前端推導；未達標選「退回錢包」呼叫 DELETE <code>/contributions/{id}</code>（選擇期 7 天內），投點到已截止品項回 <code>FUNDING_EXPIRED</code>。</li>
+<li>D22：儲值 body 為 <code>{amount, method}</code>，快選與上下限由 <code>GET /config/public</code> 提供；營運後台以 <code>amount</code> 回報實際花費；代購 SLA 3 個工作天；「我的認捐」使用 <code>GET /wallet/contributions</code>。</li>
+<li>v0.3：效仿星巴克，新增分批點數（儲值可退 / 禮物卡 / 贊助點數）、自動儲值、電子禮物卡、回饋星星與企業禮券；子階段 P2-A 至 P2-D（D23 至 D30）。核心原則不變：點數不可提領給受捐者，也不可由收卡者變現。</li>
+<li>D31：禮物卡連結由伺服器加密保存，購買者可隨時在 GET <code>/gift-cards/orders/{id}</code> 重看與重新分享（兌換、退款、作廢後清除）；面額、張數上限、卡面主題來自 <code>GET /config/public</code>；祝福語以訂單為單位；企業 CSV 遺失可用 reissue 重新產生；使用贊助點數的部分不給星星。</li>
+<li>D22：出貨 / 送達通知只發捐贈者；驚喜期間建立者只看彙總（已下單 N / 運送中 M）。眾籌投點維持「點擊才導向登入」。</li>
+<li>驚喜模式：鎖定期間建立者端只回整體彙總與眾籌訂單狀態；公開頁仍顯示 x/y，建立者本人看到「驚喜模式中」遮罩（D4、D18）。</li>
+<li>v0.2：眾籌改為點數錢包 + 達標自動購買，移到 P2；點數不會到受捐者手上，眾籌一律硬上限，用 <code>pledged_points</code> / <code>target_points</code>；已移除 payout_methods、我已付款、確認收款、reference_code、allow_overfund（D16 至 D21）。</li>
+<li>delivered：認領者本人、owner、org owner/coordinator 皆可標記（D5）。</li>
+<li>同一訪客同品項只能一筆有效認領，重複 POST 回 409 <code>CLAIM_ALREADY_EXISTS</code>（D6）。</li>
+<li>relief 據點路由 <code>/relief/sites/{slug}</code>；認捐沿用 claims（reserved 已認捐、purchased 運送中、delivered 已實收）（D11、D12）。</li>
+<li>發佈 = PATCH <code>/wishlists/{id}</code> status=active，不符條件回 409 <code>WISHLIST_NOT_PUBLISHABLE</code>（D13）。</li>
+</ul>
+
+<h2 id="s12">12. 行為分析事件</h2>
+<p>工具為 PostHog Cloud（或自架）。<b>前端事件</b>負責互動漏斗，<b>伺服器事件</b>（標 server）為轉換計算的準則，避免廣告阻擋與 LINE in-app browser 掉事件。不送 PII：user / guest 一律使用不可逆雜湊 ID；不記錄暱稱、聯絡方式、Email、留言、收件地址；清單以雜湊後的 wishlist_id 識別，不送原始 slug（slug 是知道即可看的連結憑證）。</p>
+<div class="tw"><table>
+<thead><tr><th>事件</th><th>端</th><th>觸發位置</th><th>屬性（不含 PII）</th><th>階段</th></tr></thead>
+<tbody>
+<tr><td><code>list_created</code></td><td>server</td><td>/w/new 建立成功（POST /wishlists）</td><td>wishlist_type, surprise_mode, has_event_date</td><td>P0</td></tr>
+<tr><td><code>list_published</code></td><td>server</td><td>5.4 發佈（PATCH status=active）</td><td>wishlist_type, item_count</td><td>P0</td></tr>
+<tr><td><code>share_clicked</code></td><td>client</td><td>5.5 ShareSheet 各按鈕</td><td>channel: line | fb | copy | qr, external_browser_flag</td><td>P0</td></tr>
+<tr><td><code>public_viewed</code></td><td>client + server</td><td>/s/{slug} 載入（SSR 時 server 計一次）</td><td>referrer_type（line | fb | sms | direct | other）, is_in_app_browser, is_creator_viewing</td><td>P0</td></tr>
+<tr><td><code>claim_sheet_opened</code></td><td>client</td><td>5.7 點「我要送」</td><td>funding_mode, has_existing_claim</td><td>P0</td></tr>
+<tr><td><code>claim_succeeded</code></td><td>server</td><td>POST /items/{id}/claims 201</td><td>qty, is_new_guest, has_email, has_contact（布林）</td><td>P0</td></tr>
+<tr><td><code>claim_failed</code></td><td>client</td><td>認領 sheet 錯誤</td><td>code（ITEM_FULLY_CLAIMED, VALIDATION_FAILED, RATE_LIMITED, network…）</td><td>P0</td></tr>
+<tr><td><code>claim_status_changed</code></td><td>server</td><td>PATCH / DELETE claims</td><td>from, to（reserved, purchased, delivered, cancelled）</td><td>P0</td></tr>
+<tr><td><code>pwa_install_prompted</code> / <code>pwa_installed</code></td><td>client</td><td>5.8 InstallHint 顯示 / appinstalled 事件</td><td>platform: ios | android, context</td><td>P0</td></tr>
+<tr><td><code>open_external_browser_clicked</code></td><td>client</td><td>LINE 內「用預設瀏覽器開啟」引導</td><td>source: success_page | hint_banner</td><td>P0</td></tr>
+<tr><td><code>report_submitted</code></td><td>server</td><td>5.26 送出檢舉</td><td>reason</td><td>P0</td></tr>
+<tr><td><code>topup_paid</code></td><td>server</td><td>webhook 入帳</td><td>amount_bucket, method, is_auto_topup</td><td>P2-A</td></tr>
+<tr><td><code>contribution_created</code></td><td>server</td><td>POST contributions 201</td><td>points_bucket, is_anonymous</td><td>P2-A</td></tr>
+<tr><td><code>item_funded</code></td><td>server</td><td>pledged_points 達 target_points</td><td>fulfillment_type, contributor_count</td><td>P2-A</td></tr>
+<tr><td><code>gift_card_claimed</code></td><td>server</td><td>POST /gift-cards/claim 成功</td><td>face_value_points, is_corporate</td><td>P2-B</td></tr>
+</tbody></table></div>
+<h3>12.1 KPI 對照（供 PRD KPI 章節引用）</h3>
+<div class="tw"><table>
+<thead><tr><th>指標</th><th>計算</th><th>對應 Go / No-Go（D32，數字待確認）</th></tr></thead>
+<tbody>
+<tr><td>已發佈清單數</td><td>count(list_published)</td><td>≥ 300</td></tr>
+<tr><td>分享頁 → 認領轉換率</td><td>claim_succeeded 的不重複來訪 / public_viewed 的不重複來訪（server 事件為準）</td><td>≥ 25%</td></tr>
+<tr><td>有認領的清單比例</td><td>至少 1 筆 claim_succeeded 的已發佈清單 / 已發佈清單</td><td>≥ 40%</td></tr>
+<tr><td>LINE 內開啟比例與外開率</td><td>public_viewed.is_in_app_browser；open_external_browser_clicked / 在 LINE 內的成功頁</td><td>—</td></tr>
+<tr><td>PWA 安裝率</td><td>pwa_installed / pwa_install_prompted</td><td>—</td></tr>
+</tbody></table></div>
+<ul>
+<li>前端以單一 <code>track(event, props)</code> composable 送出，集中白名單過濾屬性（不在白名單的欄位丟棄），避免誤送 PII；離線時丟棄不排隊。</li>
+<li>Playwright 測試須斷言事件名稱與屬性白名單（見第 13 節）。</li>
+</ul>
+
+<h2 id="s13">13. 前端測試策略</h2>
+<div class="tw"><table>
+<thead><tr><th>層級</th><th>工具</th><th>範圍</th></tr></thead>
+<tbody>
+<tr><td>單元 / 元件</td><td>Vitest + @vue/test-utils</td><td>QtyStepper 邊界、StatusBadge 對照表（所有枚舉都有標籤）、ItemCard isFull、ProgressBar aria、錯誤碼對照、<code>useApi</code>（problem+json 解析、<code>X-Guest-Token</code>、Idempotency-Key 重送沿用）、<code>track()</code> 屬性白名單</td></tr>
+<tr><td>E2E</td><td>Playwright（對 staging 或 PR preview URL）</td><td>下表情境；專案設定含手機 viewport（375×812、Pixel 級 Android）、LINE in-app User-Agent、離線</td></tr>
+<tr><td>契約</td><td>OpenAPI 3.1 → openapi-typescript</td><td>CI 重新產生型別並比對產物未變，防前後端漂移；前端不手寫 API 型別</td></tr>
+<tr><td>無障礙</td><td>axe-core（Playwright 內）+ 手動</td><td>sheet 焦點鎖定、44px 觸控目標檢查、對比度</td></tr>
+<tr><td>負載（後端為主）</td><td>k6</td><td>公開頁經 CDN、認領 API，對照 PRD 非功能目標</td></tr>
+</tbody></table></div>
+<h3>13.1 Playwright 必測情境</h3>
+<div class="tw"><table>
+<thead><tr><th>情境</th><th>設定</th><th>斷言</th></tr></thead>
+<tbody>
+<tr><td>3 次點擊內完成認領</td><td>手機 viewport + LINE UA，免登入</td><td>點「我要送」→ 填暱稱 → 確認 → 成功頁；點擊數 ≤ 3；顯示 InstallHint 的 LINE 版（外開引導），不出現加入主畫面提示</td></tr>
+<tr><td>409 回滾</td><td>route mock 回 <code>ITEM_FULLY_CLAIMED</code>（problem+json）</td><td>樂觀更新被回滾、重抓剩餘量、sheet 顯示「只剩 n 個」；剩 0 時卡片灰掉</td></tr>
+<tr><td>重複認領</td><td>mock 回 <code>CLAIM_ALREADY_EXISTS</code></td><td>切換為「修改我的認領」</td></tr>
+<tr><td>網路錯誤重試</td><td>第一次 abort，第二次成功</td><td>輸入保留；兩次請求的 Idempotency-Key 相同；只扣一次</td></tr>
+<tr><td>離線</td><td><code>context.setOffline(true)</code></td><td>OfflineBanner、按鈕停用、顯示快取內容；恢復連線後自動可用</td></tr>
+<tr><td>SSE 與退路</td><td>mock EventSource 事件，再模擬連續錯誤</td><td>item.updated 就地更新；3 次失敗後改輪詢</td></tr>
+<tr><td>410 下架</td><td>mock 410 <code>WISHLIST_REMOVED</code></td><td>顯示下架頁、無 OG 標題洩漏、SSE 不重連</td></tr>
+<tr><td>檢舉</td><td>mock Turnstile</td><td>送出成功 toast；429 顯示倒數</td></tr>
+<tr><td>驚喜模式</td><td>API 回 null 欄位 / 建立者本人</td><td>渲染 SurpriseMask，DOM 內沒有隱藏的真實數字</td></tr>
+<tr><td>guest_token 存活</td><td>清除 cookie 只保留 localStorage</td><td>仍可在 /me/claims 看到認領（靠 <code>X-Guest-Token</code>）</td></tr>
+<tr><td>刪除帳號</td><td>已登入</td><td>需輸入確認字樣；P2 有餘額時顯示 <code>ACCOUNT_HAS_BALANCE</code> 阻擋</td></tr>
+<tr><td>事件白名單</td><td>攔截 PostHog 請求</td><td>事件名與屬性皆在 12 節白名單內，不含暱稱與聯絡方式</td></tr>
+<tr><td><span class="ph p2">P2-A</span> 投點流程</td><td>mock <code>INSUFFICIENT_POINTS</code>、<code>CROWDFUND_TARGET_EXCEEDED</code>、<code>ITEM_FUNDED</code>、<code>WALLET_FROZEN</code></td><td>儲值後回到原 sheet 並保留輸入；自動帶入 remaining_points；回滾餘額；凍結時停用</td></tr>
+</tbody></table></div>
+<div class="note w">Playwright 無法模擬 LINE 爬蟲與 LINE 內建瀏覽器的真實行為；OG 預覽與 cookie / localStorage 存活率以 Spike S1、S2 的真機測試為準（14.3）。LINE UA 測試只驗證前端偵測與分支邏輯。</div>
+<p><b>每個 PR 必跑</b>：lint、typecheck、Vitest、OpenAPI 型別一致性檢查；E2E 對 PR preview URL 執行。</p>
+
+<h2 id="s14">14. 部署與環境</h2>
+<h3>14.1 平台</h3>
+<ul>
+<li>定案（D48，撤銷 D44）：<b>Cloudflare Pages</b>，Nuxt nitro preset <code>cloudflare_pages</code>，SSR 由 Pages Functions 執行。使用者基於成本選擇 Pages：靜態資源免費且不限量；Functions 以 Workers 請求計費，免費方案與 Workers 共用每日 100,000 次。Workers + Static Assets（preset <code>cloudflare_module</code>）費用結構相同、無成本優勢，列為<b>備案</b>（未來需要 Pages 不支援的功能時遷移，Nuxt 只需換 preset）。Nitro 官方文件現推薦 Workers，記錄為已知取捨，不影響本專案。</li>
+<li>建置與部署：建置產出 <code>dist/</code>（<code>_worker.js</code>、<code>_routes.json</code>、<code>_headers</code>）；本機預覽 <code>npx wrangler pages dev dist</code>；部署 <code>npx wrangler pages deploy dist</code> 或 Pages Git 整合；wrangler 設定 <code>pages_build_output_dir: "./dist"</code>、<code>compatibility_flags: ["nodejs_compat"]</code>。</li>
+<li>/s/{slug} 與 /g/{code} 為 SSR（OG meta）；建立者後台頁可 <code>ssr: false</code>。</li>
+<li>每個 PR 產生 Pages preview URL，Playwright 對其執行；機密以 Cloudflare secrets 管理，不進 repo。</li>
+</ul>
+<h3>14.2 環境</h3>
+<div class="tw"><table>
+<thead><tr><th>環境</th><th>前端</th><th>後端 / 依賴</th></tr></thead>
+<tbody>
+<tr><td>local</td><td><code>nuxt dev</code> 或 <code>npx wrangler pages dev dist</code></td><td>docker compose：PostGIS 16、MinIO（模擬 R2）、Mailpit（收信，驗證 Email 通知與管理連結）</td></tr>
+<tr><td>staging</td><td>Cloudflare Pages（preview / staging 分支部署）</td><td>獨立 DB、R2 bucket、金流沙箱</td></tr>
+<tr><td>production</td><td>Cloudflare Pages（app.wishsync.tw，production 分支）</td><td>正式資源；備份與監控見後端文件</td></tr>
+</tbody></table></div>
+<p>前端錯誤以 Sentry 回報（含 release 與 source map），不附帶 PII。</p>
+<h3>14.3 技術 Spike（MVP 開工前，1 週）</h3>
+<div class="tw"><table>
+<thead><tr><th>Spike</th><th>內容</th><th>通過標準</th><th>失敗備案</th></tr></thead>
+<tbody>
+<tr><td>S1 Nuxt SSR on Cloudflare + OG</td><td>LINE / FB / iMessage 貼 /s/{slug} 連結的預覽</td><td>三者皆顯示正確標題、描述、圖片；SSR 回應含完整 OG meta</td><td>調整 meta 輸出與快取；必要時以 Worker 對爬蟲 UA 回預渲染 HTML</td></tr>
+<tr><td>S2 LINE in-app browser</td><td>cookie、localStorage、<code>ws_guest</code> 存活率；<code>openExternalBrowser=1</code> 行為</td><td>以 <code>X-Guest-Token</code> 為主的流程在重開 LINE 後仍可找回認領（通過率門檻由 PRD 設定）</td><td>強化 X-Guest-Token 與 Email 管理連結（認領 sheet 的 Email 欄位）</td></tr>
+<tr><td>S3 SSE 穩定度</td><td>SSE 經 Cloudflare → Cloud Run 的連線穩定度</td><td>連線可持續並自動重連，事件延遲在目標內</td><td>改為輪詢（7.3 已設計退路）</td></tr>
+</tbody></table></div>
+
+</main>
+</div>
+<script type="module">import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs'; mermaid.initialize({startOnLoad:true, theme: matchMedia('(prefers-color-scheme: dark)').matches?'dark':'default'});</script>
+</body>
+</html>
