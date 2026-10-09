@@ -124,27 +124,36 @@ async fn export_and_unsubscribe(pool: PgPool) {
     call(&pool, "GET", "/me/export", &ck(&t), None).await;
     assert_eq!(call(&pool, "GET", "/me/export", &ck(&t), None).await.0, StatusCode::TOO_MANY_REQUESTS);
 
-    // 退訂：建立者
+    // 退訂：建立者。GET 只轉址、不變更狀態；POST 才退訂
     sqlx::query("INSERT INTO notifications (user_id, channel, kind) VALUES ($1,'email','claim.digest')").bind(u).execute(&pool).await.unwrap();
     let tok = wishsync_api::account::unsub_token('u', u);
+    let before: i64 = sqlx::query_scalar("SELECT count(*) FROM notifications WHERE user_id=$1 AND status='pending'").bind(u).fetch_one(&pool).await.unwrap();
+    let (s, h, _) = call(&pool, "GET", &format!("/unsubscribe?token={tok}"), &[], None).await;
+    assert_eq!(s, StatusCode::FOUND);
+    assert!(h["location"].to_str().unwrap().ends_with(&format!("/unsubscribe?token={tok}")));
+    let pend: i64 = sqlx::query_scalar("SELECT count(*) FROM notifications WHERE user_id=$1 AND status='pending'").bind(u).fetch_one(&pool).await.unwrap();
+    assert_eq!(pend, before, "GET 不得變更狀態");
     for _ in 0..2 {
-        let (s, h, _) = call(&pool, "GET", &format!("/unsubscribe?token={tok}"), &[], None).await;
-        assert_eq!(s, StatusCode::FOUND);
-        assert!(h["location"].to_str().unwrap().ends_with("/unsubscribed?ok=1"));
+        assert_eq!(call(&pool, "POST", "/unsubscribe", &[], Some(json!({ "token": tok }))).await.0, StatusCode::NO_CONTENT);
     }
     let off: bool = sqlx::query_scalar("SELECT (notification_prefs->>'email_claims')::boolean = false FROM users WHERE id=$1").bind(u).fetch_one(&pool).await.unwrap();
     let pend: i64 = sqlx::query_scalar("SELECT count(*) FROM notifications WHERE user_id=$1 AND status='pending'").bind(u).fetch_one(&pool).await.unwrap();
     assert!(off && pend == 0);
     // 訪客：清 email
     let g: Uuid = sqlx::query_scalar("INSERT INTO guests (guest_token_hash, display_name, email) VALUES ($1,'g','g@example.com') RETURNING id").bind(hash_token("g")).fetch_one(&pool).await.unwrap();
-    call(&pool, "GET", &format!("/unsubscribe?token={}", wishsync_api::account::unsub_token('g', g)), &[], None).await;
+    let gtok = wishsync_api::account::unsub_token('g', g);
+    call(&pool, "GET", &format!("/unsubscribe?token={gtok}"), &[], None).await;
+    assert!(sqlx::query_scalar::<_, Option<String>>("SELECT email FROM guests WHERE id=$1").bind(g).fetch_one(&pool).await.unwrap().is_some());
+    assert_eq!(call(&pool, "POST", "/unsubscribe", &[], Some(json!({ "token": gtok }))).await.0, StatusCode::NO_CONTENT);
     let em: Option<String> = sqlx::query_scalar("SELECT email FROM guests WHERE id=$1").bind(g).fetch_one(&pool).await.unwrap();
     assert!(em.is_none());
-    // 無效 / 竄改 → ok=0
+    // 無效 / 竄改 → POST 422 INVALID_TOKEN；GET 仍只轉址
     for bad in [format!("{tok}x"), "garbage".into(), String::new()] {
-        let (s, h, _) = call(&pool, "GET", &format!("/unsubscribe?token={bad}"), &[], None).await;
-        assert!(s == StatusCode::FOUND && h["location"].to_str().unwrap().ends_with("ok=0"));
+        let (s, _, v) = call(&pool, "POST", "/unsubscribe", &[], Some(json!({ "token": bad }))).await;
+        assert!(s == StatusCode::UNPROCESSABLE_ENTITY && v["code"] == "INVALID_TOKEN");
+        assert_eq!(call(&pool, "GET", &format!("/unsubscribe?token={bad}"), &[], None).await.0, StatusCode::FOUND);
     }
+    assert_eq!(call(&pool, "POST", "/unsubscribe", &[], Some(json!({}))).await.0, StatusCode::UNPROCESSABLE_ENTITY);
 }
 
 #[sqlx::test(migrations = "../../db/migrations")]

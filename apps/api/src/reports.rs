@@ -50,7 +50,9 @@ async fn create(State(st): State<AppState>, Path(slug): Path<String>, mut parts:
     if !["scam", "inappropriate", "copyright", "personal_info", "other"].contains(&b.reason.as_str()) {
         return Err(AppError::invalid("/reason", "INVALID", "reason 不合法"));
     }
-    if b.detail.as_deref().is_some_and(|d| d.chars().count() > 1000) { return Err(AppError::invalid("/detail", "TOO_LONG", "最多 1000 字")); }
+    if !crate::validate::slug_ok(&slug) { return Err(AppError::NotFound); }
+    let detail = match b.detail.as_deref() { Some(d) => Some(crate::validate::text(d, "/detail", true)?).filter(|d| !d.is_empty()), None => None };
+    if detail.as_deref().is_some_and(|d| d.chars().count() > 1000) { return Err(AppError::invalid("/detail", "TOO_LONG", "最多 1000 字")); }
     let w: Option<(Uuid, String)> = sqlx::query_as(
         "SELECT id, moderation_status::text FROM wishlists
          WHERE slug = $1 AND deleted_at IS NULL AND visibility <> 'private' AND status IN ('active', 'closed')")
@@ -85,7 +87,7 @@ async fn create(State(st): State<AppState>, Path(slug): Path<String>, mut parts:
     let id: Uuid = sqlx::query_scalar(
         "INSERT INTO content_reports (wishlist_id, item_id, reason, detail, reporter_user_id, reporter_guest_id)
          VALUES ($1, $2, $3::report_reason, $4, $5, $6) RETURNING id")
-        .bind(wid).bind(b.item_id).bind(&b.reason).bind(&b.detail).bind(user).bind(guest).fetch_one(&st.pool).await?;
+        .bind(wid).bind(b.item_id).bind(&b.reason).bind(&detail).bind(user).bind(guest).fetch_one(&st.pool).await?;
     Ok((StatusCode::CREATED, Json(json!({ "id": id, "status": "open" }))).into_response())
 }
 

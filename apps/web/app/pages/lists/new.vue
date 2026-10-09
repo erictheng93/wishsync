@@ -29,7 +29,7 @@ async function submit() {
           <label><input v-model="f.type" type="radio" value="registry"><span>禮物登記</span></label>
         </div>
       </div>
-      <label class="c-field"><span>清單名稱（{{ f.title.length }} / 40）</span><input v-model="f.title" maxlength="40" required placeholder="例如：小愛的待產清單"></label>
+      <label class="c-field"><span>清單名稱（{{ f.title.length }} / 100）</span><input v-model="f.title" maxlength="100" required placeholder="例如：小愛的待產清單"></label>
       <label class="c-field"><span>說明（選填）</span><textarea v-model="f.description" rows="2" maxlength="300" /></label>
       <CreatorImageUploader v-model="cover" purpose="cover" @busy="upBusy = $event" />
       <label class="c-field"><span>活動日（選填）</span><input v-model="f.event_date" type="date" :min="today"></label>

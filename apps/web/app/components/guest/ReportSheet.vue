@@ -46,9 +46,9 @@ async function submit() {
 }
 </script>
 <template>
-  <div class="g-mask" @click.self="emit('close')">
-    <form class="g-sheet" role="dialog" aria-modal="true" @submit.prevent="submit">
-      <div class="g-title">檢舉此清單</div>
+  <GuestDialog labelledby="report-title" :dirty="!!detail" @close="emit('close')">
+    <form class="g-sheet" @submit.prevent="submit">
+      <div id="report-title" class="g-title">檢舉此清單</div>
       <fieldset class="g-fieldset"><legend class="g-mute">檢舉原因</legend>
         <label v-for="[v, t] in reasons" :key="v" class="g-radio">
           <input v-model="reason" type="radio" :value="v"> {{ t }}</label>
@@ -61,5 +61,5 @@ async function submit() {
       <p class="g-mute">不需登入。我們會由人工審核，不會告知建立者是誰檢舉。</p>
       <button type="button" class="g-link" @click="emit('close')">取消</button>
     </form>
-  </div>
+  </GuestDialog>
 </template>

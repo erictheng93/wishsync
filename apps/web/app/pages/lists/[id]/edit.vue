@@ -115,7 +115,7 @@ const closed = computed(() => w.value && ['closed', 'archived'].includes(w.value
       <details class="c-card">
         <summary>清單設定</summary>
         <form class="c-mt12" @submit.prevent="saveMeta">
-          <label class="c-field"><span>清單名稱</span><input v-model="meta.title" maxlength="40" required></label>
+          <label class="c-field"><span>清單名稱</span><input v-model="meta.title" maxlength="100" required></label>
           <label class="c-field"><span>說明</span><textarea v-model="meta.description" rows="2" /></label>
           <label class="c-field"><span>活動日</span><input v-model="meta.event_date" type="date"></label>
           <label class="c-switch"><input v-model="meta.show_claimer_names" type="checkbox"><span>顯示認領者暱稱給其他訪客</span></label>
@@ -135,7 +135,7 @@ const closed = computed(() => w.value && ['closed', 'archived'].includes(w.value
       </div></div>
     </template>
 
-    <CreatorItemSheet :open="sheet" :wishlist-id="id" :item="editing" @close="sheet = false" @saved="saved" />
+    <CreatorItemSheet :open="sheet" :wishlist-id="id" :item="editing" @close="sheet = false" @saved="saved" @reload="saved" />
     <CreatorConfirm :open="!!del" title="刪除品項" :text="`確定刪除「${del?.title}」？`" :ok="del?.force ? '連同認領一併刪除' : '刪除'" danger :busy="delBusy" :error="delErr" @close="del = null" @ok="remove(!!del?.force)" />
     <CreatorSheet :open="showShare" title="分享你的清單" @close="showShare = false">
       <p v-if="w?.status === 'draft'" class="c-err">尚未發佈，朋友打開會看到不存在。</p>

@@ -2,7 +2,7 @@
 .c-page{max-width:480px;margin:0 auto;padding:0 20px 112px}
 .c-admin{max-width:880px}
 .c-head{display:flex;align-items:center;gap:4px;min-height:52px;position:sticky;top:0;z-index:20;margin:0 -20px 16px;padding:0 20px;background:var(--glass);border-bottom:3px solid var(--red)}
-.c-head h1{flex:1;font-size:18px;line-height:1.2;margin:0;letter-spacing:.1em;color:var(--red);text-transform:uppercase;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.c-head h1{flex:1;min-width:0;overflow-wrap:anywhere;font-size:18px;line-height:1.2;margin:0;letter-spacing:.1em;color:var(--red-text);text-transform:uppercase;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden}
 .c-card{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--red);padding:16px;margin:0 0 12px}
 .c-card.bad{border-left-color:var(--bad);background:var(--bad-bg)}
 .c-card>h2:first-child,.c-h2{font-size:18px;margin:0 0 12px}
@@ -14,7 +14,7 @@
 .c-small{font-size:12px}
 .c-err{color:var(--bad);font-size:14px;margin:4px 0}
 .c-ok{color:var(--ok);font-size:14px}
-.c-btn,a.c-btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;padding:0 14px;border:1px solid var(--red);background:var(--card);color:var(--red);font:inherit;font-size:14px;font-weight:700;letter-spacing:.12em;text-decoration:none;cursor:pointer;box-sizing:border-box;white-space:nowrap;transition:background var(--t) var(--ease),opacity var(--t) var(--ease)}
+.c-btn,a.c-btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;padding:0 14px;border:1px solid var(--red);background:var(--card);color:var(--red-text);font:inherit;font-size:14px;font-weight:700;letter-spacing:.12em;text-decoration:none;cursor:pointer;box-sizing:border-box;white-space:nowrap;transition:background var(--t) var(--ease),opacity var(--t) var(--ease)}
 .c-row.wrap>.c-btn.c-grow{flex:1 1 auto}
 .c-btn.primary,a.c-btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg);padding:0 22px;letter-spacing:.14em}
 .c-btn.primary:active{background:var(--accent-press);border-color:var(--accent-press)}
@@ -31,7 +31,7 @@
 .c-seg label{flex:1}
 .c-seg label{position:relative}
 .c-seg input{position:absolute;opacity:0;width:1px;min-height:0;height:1px;padding:0}
-.c-seg span{display:flex;align-items:center;justify-content:center;min-height:44px;font-size:14px;letter-spacing:.1em;color:var(--red);background:var(--card);cursor:pointer;transition:background var(--t) var(--ease)}
+.c-seg span{display:flex;align-items:center;justify-content:center;min-height:44px;font-size:14px;letter-spacing:.1em;color:var(--red-text);background:var(--card);cursor:pointer;transition:background var(--t) var(--ease)}
 .c-seg input:checked+span{background:var(--accent);color:var(--accent-fg);font-weight:700}
 .c-seg input:focus-visible+span{outline:2px solid var(--red);outline-offset:2px}
 .c-switch{display:flex;align-items:center;gap:12px;min-height:44px;margin:0 0 8px}
@@ -42,7 +42,7 @@
 .c-thumb{width:56px;height:56px;background:var(--bg-alt);object-fit:cover;flex:none;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--mute);text-align:center;overflow:hidden}
 .c-bar{height:8px;background:var(--bg-alt);overflow:hidden}
 .c-bar>i{display:block;height:100%;background:var(--stripe)}
-.c-big{font-size:44px;font-weight:800;line-height:1.05;color:var(--red)}
+.c-big{font-size:44px;font-weight:800;line-height:1.05;color:var(--red-text)}
 .c-mask{text-align:center;padding:20px;border:1px dashed var(--line);color:var(--mute);margin:0 0 12px}
 .c-fab{position:fixed;right:max(20px,calc(50% - 220px));bottom:calc(20px + env(safe-area-inset-bottom))}
 .c-bottom{position:fixed;left:0;right:0;bottom:0;padding:12px 20px calc(12px + env(safe-area-inset-bottom));background:var(--glass);border-top:1px solid var(--line);z-index:4}
@@ -66,9 +66,16 @@ dialog.c-sheet:focus-visible{outline:0}
 .c-lbl{display:block;font-size:13px;letter-spacing:.08em;color:var(--mute);margin-bottom:6px}
 .c-pw{display:flex;gap:4px;align-items:stretch}.c-pw input{flex:1;min-width:0}
 .c-links{display:flex;justify-content:space-between;gap:12px;margin:0 0 16px;font-size:14px}
-.c-links a{color:var(--red);min-height:44px;display:inline-flex;align-items:center}
+.c-links a{color:var(--red-text);min-height:44px;display:inline-flex;align-items:center}
 .c-ok{color:var(--fg);border:1px solid var(--red);padding:10px 14px;margin:0 0 16px;font-size:14px}
 .c-file{position:relative;overflow:hidden}
 .c-file input{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer}
 .c-file:focus-within{outline:2px solid var(--red);outline-offset:2px}
 .c-file[aria-disabled=true]{opacity:.4}
+/* F-04：長且無空白字串（網址、英數）不得撐破版面；flex 子元素需 min-width:0 才能收縮 */
+.c-card,.c-card *,.c-page h1,.c-page h2{overflow-wrap:anywhere}
+.c-card>.c-row>*,.c-row>div{min-width:0}
+/* F-14：觸控目標 >= 44px */
+.c-card summary{display:flex;align-items:center;min-height:44px;cursor:pointer}
+.c-list a,.c-card a:not(.c-btn){display:inline-flex;align-items:center;min-height:44px}
+.c-switch,.c-switch span{cursor:pointer}

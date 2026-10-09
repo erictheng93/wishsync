@@ -21,9 +21,9 @@ const full = computed(() => props.item.is_fully_claimed)
       </template>
       <div class="g-actions">
         <span v-if="masked" class="g-mute">建立者不可認領自己的清單</span>
-        <button v-else-if="mine && !closed" class="g-btn ghost sm" :disabled="!online" @click="$emit('claim')">修改我的認領</button>
+        <button v-else-if="mine && !closed" class="g-btn ghost sm js-claim" :disabled="!online" @click="$emit('claim')">修改我的認領</button>
         <span v-else-if="full" class="g-mute">已被認領完</span>
-        <button v-else-if="!closed" class="g-btn sm" :disabled="!online" @click="$emit('claim')">我要送</button>
+        <button v-else-if="!closed" class="g-btn sm js-claim" :disabled="!online" @click="$emit('claim')">我要送</button>
         <a v-if="item.product_url && !masked" :href="item.product_url" target="_blank" rel="noopener nofollow" class="g-link">商品連結</a>
       </div>
     </div>

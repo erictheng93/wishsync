@@ -92,7 +92,8 @@ fn text(m: &Map<String, Value>, k: &str, min: usize, max: usize) -> R<Option<Opt
         None => Ok(None),
         Some(Value::Null) => Ok(Some(None)),
         Some(Value::String(s)) => {
-            let s = s.trim();
+            let s = crate::validate::text(s, &format!("/{k}"), k == "description")?;
+            let s = s.as_str();
             if s.is_empty() && min == 0 { return Ok(Some(None)); }
             let n = s.chars().count();
             if n < min.max(1) || n > max { return Err(AppError::invalid(&format!("/{k}"), "RANGE", &format!("{k} 長度須為 {} 到 {max} 字", min.max(1)))); }
@@ -125,7 +126,10 @@ fn date(m: &Map<String, Value>, k: &str) -> R<Option<Option<NaiveDate>>> {
     match m.get(k) {
         None => Ok(None),
         Some(Value::Null) => Ok(Some(None)),
-        Some(Value::String(s)) => s.parse().map(|d| Some(Some(d))).map_err(|_| AppError::invalid(&format!("/{k}"), "FORMAT", "日期格式須為 YYYY-MM-DD")),
+        Some(Value::String(s)) => {
+            let d = s.parse().map_err(|_| AppError::invalid(&format!("/{k}"), "FORMAT", "日期格式須為 YYYY-MM-DD"))?;
+            Ok(Some(Some(crate::validate::event_date(d, &format!("/{k}"))?)))
+        }
         _ => Err(AppError::invalid(&format!("/{k}"), "TYPE", "日期格式須為 YYYY-MM-DD")),
     }
 }
@@ -403,16 +407,35 @@ async fn item_update(u: CurrentUser, State(st): State<AppState>, Path(id): Path<
 struct ForceQ { force: Option<bool> }
 
 async fn item_delete(u: CurrentUser, State(st): State<AppState>, Path(id): Path<Uuid>, Query(q): Query<ForceQ>) -> R<StatusCode> {
-    let (_, _, locked) = owned_item(&st.pool, id, u.id).await?;
+    let (item, _, locked) = owned_item(&st.pool, id, u.id).await?;
+    let wid = item.wishlist_id;
     // 驚喜鎖定：一律禁止刪除，回應與有無認領無關
     if locked { return Err(surprise_locked_err()); }
     let mut tx = st.pool.begin().await?;
     let active: i64 = sqlx::query_scalar("SELECT count(*) FROM claims WHERE item_id=$1 AND status IN ('reserved','purchased')").bind(id).fetch_one(&mut *tx).await?;
     if active > 0 {
         if !q.force.unwrap_or(false) { return Err(AppError::problem(409, "ITEM_HAS_CLAIMS", "品項已有進行中的認領，需帶 force=true 才能刪除。")); }
-        sqlx::query("UPDATE claims SET status='cancelled', cancelled_at=now() WHERE item_id=$1 AND status IN ('reserved','purchased')").bind(id).execute(&mut *tx).await?;
+        // F-09：被取消的認領逐筆寫 audit、通知有 email 的認領者（中性內容）
+        let cancelled: Vec<(Uuid, i32, Option<Uuid>, Option<Uuid>)> = sqlx::query_as(
+            "UPDATE claims SET status='cancelled', cancelled_at=now() WHERE item_id=$1 AND status IN ('reserved','purchased')
+             RETURNING id, qty, guest_id, user_id").bind(id).fetch_all(&mut *tx).await?;
+        for (cid, qty, _, _) in &cancelled {
+            sqlx::query("INSERT INTO audit_logs (actor_type, actor_id, action, entity, entity_id, diff) VALUES ('user'::actor_type, $1, 'claim.cancel_by_item_delete', 'claims', $2, $3)")
+                .bind(u.id).bind(cid).bind(json!({ "qty": qty, "item_id": id })).execute(&mut *tx).await?;
+        }
+        let guests: Vec<Uuid> = cancelled.iter().filter_map(|c| c.2).collect();
+        let users: Vec<Uuid> = cancelled.iter().filter_map(|c| c.3).collect();
+        sqlx::query("INSERT INTO notifications (guest_id, channel, kind, payload)
+                     SELECT id, 'email', 'claim.item_removed', jsonb_build_object('wishlist_id', $2::uuid) FROM guests
+                      WHERE id = ANY($1) AND email IS NOT NULL AND deleted_at IS NULL")
+            .bind(&guests).bind(wid).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO notifications (user_id, channel, kind, payload)
+                     SELECT id, 'email', 'claim.item_removed', jsonb_build_object('wishlist_id', $2::uuid) FROM users
+                      WHERE id = ANY($1) AND email IS NOT NULL AND deleted_at IS NULL")
+            .bind(&users).bind(wid).execute(&mut *tx).await?;
     }
-    sqlx::query("UPDATE wishlist_items SET deleted_at=now() WHERE id=$1").bind(id).execute(&mut *tx).await?;
+    sqlx::query("UPDATE wishlist_items SET deleted_at=now(), qty_claimed=0 WHERE id=$1").bind(id).execute(&mut *tx).await?;
+    crate::dashboard::notify(&mut *tx, wid).await?;
     tx.commit().await?;
     Ok(StatusCode::NO_CONTENT)
 }

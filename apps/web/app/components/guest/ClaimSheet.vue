@@ -17,6 +17,8 @@ const busy = ref(false)
 const msg = ref('')
 const errs = ref<Record<string, string>>({})
 const needName = !getGuestToken() && !props.loggedInName
+const name0 = name.value, note0 = note.value
+const dirty = computed(() => name.value !== name0 || note.value !== note0 || !!contact.value || !!email.value)
 
 async function submit() {
   errs.value = {}; msg.value = ''
@@ -28,14 +30,16 @@ async function submit() {
       r = await api(`/claims/${props.mine.id}`, { method: 'PATCH', body: { qty: qty.value, note: note.value || null } })
     } else {
       r = await api(`/items/${props.item.id}/claims`, {
-        method: 'POST', headers: { 'Idempotency-Key': key },
+        method: 'POST', headers: { 'Idempotency-Key': key }, retryAsNewGuest: true,
         body: { qty: qty.value, display_name: props.loggedInName ? undefined : name.value.trim() || undefined, contact: contact.value || undefined, email: email.value || undefined, note: note.value || undefined },
       })
     }
     let persisted = true
     if (r.guest_token) persisted = setGuestToken(r.guest_token)
+    // 防呆：新認領卻沒拿到 token、本機也沒有（且不是登入帳號）→ 之後管不到這份認領，成功頁要警告而非謊稱已存
+    const lost = !editing && !r.guest_token && !getGuestToken() && !props.loggedInName
     if (name.value.trim()) setPref('ws_nickname', name.value.trim())
-    emit('done', { ...r, persisted, email: email.value, name: name.value.trim() })
+    emit('done', { ...r, persisted, lost, email: email.value, name: name.value.trim() })
   } catch (e: any) {
     const c = e.code
     if (c === 'ITEM_FULLY_CLAIMED') {
@@ -49,19 +53,19 @@ async function submit() {
       emit('switchEdit')
     } else if (c === 'VALIDATION_FAILED') {
       for (const x of e.data.errors ?? []) errs.value[x.pointer.slice(1)] = x.detail
-      msg.value = e.detail
+      if (!Object.keys(errs.value).length) msg.value = e.detail // 欄位下已有錯誤就不在橫幅重複
     } else if (c === 'IDEMPOTENCY_CONFLICT') msg.value = '請求重複，請關閉後重新操作'
-    else msg.value = e.status === 503 ? '系統維護中，暫時無法認領' : e.detail
+    else msg.value = e.detail
   } finally { busy.value = false }
 }
 </script>
 
 <template>
-  <div class="g-mask" @click.self="emit('close')">
-    <form class="g-sheet" role="dialog" aria-modal="true" @submit.prevent="submit">
+  <GuestDialog labelledby="claim-title" :dirty="dirty" @close="emit('close')">
+    <form class="g-sheet" @submit.prevent="submit">
       <div class="g-item">
         <img v-if="item.image_url" class="g-thumb" :src="item.image_url" alt="">
-        <div class="g-body"><div class="g-title">{{ editing ? '修改認領' : '認領' }}「{{ item.title }}」</div>
+        <div class="g-body"><div id="claim-title" class="g-title">{{ editing ? '修改認領' : '認領' }}「{{ item.title }}」</div>
           <div class="g-mute">還缺 {{ item.qty_remaining }} 個，你要送幾個？</div></div>
       </div>
       <div class="g-step">
@@ -74,7 +78,7 @@ async function submit() {
         <p v-if="loggedInName" class="g-mute">以 {{ loggedInName }} 的身分認領</p>
         <template v-else>
           <label for="cn">你的暱稱（必填）</label>
-          <input id="cn" v-model="name" maxlength="40" :readonly="busy" :required="needName" placeholder="例如：阿明" autocomplete="nickname">
+          <input id="cn" v-model="name" maxlength="30" :readonly="busy" :required="needName" placeholder="例如：阿明" autocomplete="nickname">
           <div v-if="errs.name || errs.display_name" class="g-field-err">{{ errs.name || errs.display_name }}</div>
         </template>
         <label for="cc">聯絡方式（選填，只有建立者看得到）</label>
@@ -89,5 +93,5 @@ async function submit() {
       <button class="g-btn" :disabled="busy || !online">{{ !online ? '離線中，暫時無法認領' : busy ? '送出中…' : editing ? '儲存修改' : '確認認領' }}</button>
       <button type="button" class="g-link" @click="emit('close')">取消</button>
     </form>
-  </div>
+  </GuestDialog>
 </template>

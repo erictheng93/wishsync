@@ -36,13 +36,19 @@ pub fn cookie(token: &str) -> HeaderValue {
 }
 
 async fn guest_id(parts: &Parts, st: &AppState) -> Result<Option<Uuid>, AppError> {
-    let tok = parts.headers.get("x-guest-token").and_then(|v| v.to_str().ok()).map(str::to_owned)
-        .or_else(|| cookie_value(parts, "ws_guest").map(str::to_owned));
-    let Some(tok) = tok else { return Ok(None) };
+    let hdr = parts.headers.get("x-guest-token").and_then(|v| v.to_str().ok()).map(str::to_owned);
+    let from_cookie = hdr.is_none();
+    let Some(tok) = hdr.or_else(|| cookie_value(parts, "ws_guest").map(str::to_owned)) else { return Ok(None) };
     let row: Option<(Uuid,)> = sqlx::query_as("SELECT id FROM guests WHERE guest_token_hash = $1 AND deleted_at IS NULL")
         .bind(hash_token(&tok)).fetch_optional(&st.pool).await?;
-    // 帶了但無效 → 401（避免靜默建立新訪客而丟失既有認領）
-    row.map(|(id,)| Some(id)).ok_or(AppError::Unauthorized)
+    match row {
+        Some((id,)) => Ok(Some(id)),
+        // 明確用 header 帶了失效 token → 401（避免靜默建立新訪客而丟失既有認領）。
+        // 只有 cookie 帶的失效 token（HttpOnly，前端清不掉；訪客刪除資料或用恢復連結換發後會殘留）→ 視為匿名，
+        // 新訪客的 Set-Cookie 會覆蓋它；否則使用者會被一個清不掉的舊 cookie 永遠擋在認領外。
+        None if from_cookie => Ok(None),
+        None => Err(AppError::Unauthorized),
+    }
 }
 
 /// 有效 ws_session → User；否則有 guest token → Guest；皆無 → None
@@ -111,13 +117,17 @@ async fn update_me(State(st): State<AppState>, GuestAuth(gid): GuestAuth, body: 
     let v: Value = serde_json::from_slice(&body).map_err(|_| AppError::invalid("/", "INVALID", "請求內容格式錯誤"))?;
     let name = match v.get("display_name") {
         None | Some(Value::Null) => None,
-        Some(Value::String(s)) if (1..=30).contains(&s.trim().chars().count()) => Some(s.trim().to_owned()),
+        Some(Value::String(s)) => {
+            let t = crate::validate::text(s, "/display_name", false)?;
+            if !(1..=30).contains(&t.chars().count()) { return Err(AppError::invalid("/display_name", "RANGE", "暱稱需為 1–30 字")); }
+            Some(t)
+        }
         _ => return Err(AppError::invalid("/display_name", "RANGE", "暱稱需為 1–30 字")),
     };
     let (set_contact, contact) = match v.get("contact") {
         None => (false, None),
         Some(Value::Null) => (true, None),
-        Some(Value::String(s)) if s.chars().count() <= 100 => (true, Some(s.clone())),
+        Some(Value::String(s)) if s.chars().count() <= 100 => (true, Some(crate::validate::text(s, "/contact", false)?).filter(|s| !s.is_empty())),
         _ => return Err(AppError::invalid("/contact", "RANGE", "聯絡方式至多 100 字")),
     };
     let mut tx = st.pool.begin().await?;

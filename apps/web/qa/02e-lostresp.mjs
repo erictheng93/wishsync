@@ -1,0 +1,18 @@
+import { chromium, pwRequest, newCtx, registerUser, createList, sql, log, OUT } from './lib.mjs'
+const U = await registerUser({ tag: 'lr' })
+const T = await createList(U, { title: '回應遺失2', items: [{ title: '品A', qty: 5 }] })
+const browser = await chromium.launch()
+const ctx = await newCtx(browser); const page = await ctx.newPage()
+page.on('response', async r => { if (/claims|guest\/me/.test(r.url()) && r.request().method() !== 'OPTIONS') console.log('RESP', r.request().method(), r.url().replace(/.*v1/, ''), r.status(), r.headers()['idempotency-replayed'] ?? '', r.headers()['set-cookie'] ? 'SETCOOKIE' : '', (await r.text().catch(() => '')).slice(0, 150)) })
+await page.goto(`/s/${T.slug}`, { waitUntil: 'networkidle' })
+await page.locator('li.g-card').getByRole('button', { name: '我要送' }).click(); const d = page.getByRole('dialog')
+await d.getByLabel('你的暱稱（必填）').fill('遺失哥')
+let n = 0
+await page.route('**/items/*/claims', async r => { if (n++ === 0) { const req=r.request(); const ax = await pwRequest.newContext(); const x = await ax.post(req.url(), { data: req.postData(), headers: { ...req.headers(), cookie: '' } }); console.log('server processed first (isolated jar):', x.status(), Object.keys(x.headers()).includes('set-cookie')); await r.abort('failed') } else r.continue() })
+await d.getByRole('button', { name: '確認認領' }).click(); await page.waitForTimeout(1200)
+console.log('msg1', await d.locator('.g-banner.err').innerText().catch(() => '(none)'))
+await d.getByRole('button', { name: '確認認領' }).click(); await page.waitForTimeout(2000)
+console.log('done visible', await page.getByRole('heading', { name: '✓ 認領成功！' }).isVisible(), 'cookies', (await ctx.cookies()).map(c => c.name), 'ls', await page.evaluate(() => localStorage.getItem('ws_guest_token')))
+console.log(sql(`select g.display_name, g.deleted_at, count(c.*) from guests g left join claims c on c.guest_id=g.id where g.display_name='遺失哥' group by 1,2`))
+await page.screenshot({ path: OUT + '/shots/net__lostresp2.png' })
+await browser.close()

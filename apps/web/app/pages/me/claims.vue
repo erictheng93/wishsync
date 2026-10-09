@@ -62,7 +62,7 @@ const wipe = () => {
     <template v-else>
       <div class="g-card" v-if="guest">
         <template v-if="!editing"><b>{{ guest.display_name }}</b>{{ guest.is_user ? '（已登入）' : '（此裝置）' }}<button v-if="!guest.is_user" class="g-link" @click="editing = true">改暱稱</button></template>
-        <form v-else class="g-inline" @submit.prevent="saveNick"><input v-model="nick" maxlength="40" required aria-label="暱稱"><button class="g-btn sm">儲存</button></form>
+        <form v-else class="g-inline" @submit.prevent="saveNick"><input v-model="nick" maxlength="30" required aria-label="暱稱"><button class="g-btn sm">儲存</button></form>
       </div>
       <section v-for="g in groups" :key="g.w.slug">
         <h2 class="g-h2"><NuxtLink :to="`/s/${g.w.slug}`">{{ g.w.title }}</NuxtLink></h2>

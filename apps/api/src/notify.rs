@@ -126,6 +126,7 @@ pub fn render(kind: &str, title: &str, payload: &Value) -> (String, String) {
         "claim.digest" => (format!("【WishSync】《{title}》今日有 {n} 件新認領"), format!("你的清單《{title}》今日彙整：有 {n} 件新認領。\n登入查看：{base}/dashboard\n")),
         "claim.created" => (format!("【WishSync】《{title}》有 {n} 件新認領"), format!("你的清單《{title}》有 {n} 件新認領。\n登入查看：{base}/dashboard\n")),
         "claim.confirmation" => ("【WishSync】認領已確認".into(), format!("你的認領已記錄，謝謝你的心意。\n管理我的認領：{manage}\n")),
+        "claim.item_removed" => ("【WishSync】你認領的品項已被移除".into(), format!("清單《{title}》的建立者移除了你認領的品項，這筆認領已取消。\n查看其他品項：{manage}\n")),
         "event.reminder" => (format!("【WishSync】《{title}》活動日快到了"), format!("你的清單《{title}》的活動日即將到來。\n{base}/dashboard\n")),
         _ => ("【WishSync】通知".into(), format!("{base}\n")),
     };

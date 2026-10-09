@@ -9,7 +9,7 @@ use sha2::Sha256;
 use uuid::Uuid;
 
 pub fn routes() -> Router<AppState> {
-    Router::new().route("/me", delete(delete_me)).route("/me/export", get(export)).route("/unsubscribe", get(unsubscribe))
+    Router::new().route("/me", delete(delete_me)).route("/me/export", get(export)).route("/unsubscribe", get(unsubscribe_redirect).post(unsubscribe))
 }
 
 // ---------- 一鍵退訂（4.13）：token = base64url("u|g:<id>:<exp>") . hex(HMAC-SHA256) ----------
@@ -37,25 +37,32 @@ fn verify(token: &str) -> Option<(char, Uuid)> {
 #[derive(Deserialize)]
 struct UnsubQ { token: Option<String> }
 
-/// 簽章無效 / 過期一律 302 ?ok=0；冪等
-async fn unsubscribe(State(st): State<AppState>, Query(q): Query<UnsubQ>) -> Result<Response, AppError> {
-    let ok = match q.token.as_deref().and_then(verify) {
-        Some((k, id)) => {
-            let mut tx = st.pool.begin().await?;
-            if k == 'u' {
-                sqlx::query("UPDATE users SET notification_prefs = jsonb_set(COALESCE(notification_prefs, '{}'::jsonb), '{email_claims}', 'false'::jsonb) WHERE id = $1 AND deleted_at IS NULL").bind(id).execute(&mut *tx).await?;
-                sqlx::query("UPDATE notifications SET status = 'cancelled' WHERE user_id = $1 AND status = 'pending' AND kind IN ('claim.created', 'claim.digest')").bind(id).execute(&mut *tx).await?;
-            } else {
-                sqlx::query("UPDATE guests SET email = NULL WHERE id = $1").bind(id).execute(&mut *tx).await?;
-                sqlx::query("UPDATE notifications SET status = 'cancelled' WHERE guest_id = $1 AND status = 'pending'").bind(id).execute(&mut *tx).await?;
-            }
-            tx.commit().await?;
-            1
-        }
-        None => 0,
+/// GET 不變更狀態（信件掃描器預取無害）：只 302 到前端確認頁，由頁面 POST 才退訂。token 驗證留給 POST。
+async fn unsubscribe_redirect(Query(q): Query<UnsubQ>) -> Response {
+    // token 只含 base64url / '.' / hex；含其他字元者視為無效，不帶入 URL（避免注入）
+    let t = q.token.filter(|t| t.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '-' | '_'))).unwrap_or_default();
+    let loc = format!("{}/unsubscribe?token={t}", crate::config::get().app_url);
+    (StatusCode::FOUND, [(header::LOCATION, loc)]).into_response()
+}
+
+#[derive(Deserialize)]
+struct UnsubBody { token: Option<String> }
+
+/// POST {token}：HMAC 驗證（verify_slice 常數時間）；成功 204、冪等；無效 / 過期 422 INVALID_TOKEN
+async fn unsubscribe(State(st): State<AppState>, Json(b): Json<UnsubBody>) -> Result<StatusCode, AppError> {
+    let Some((k, id)) = b.token.as_deref().and_then(verify) else {
+        return Err(AppError::problem(422, "INVALID_TOKEN", "退訂連結無效或已過期"));
     };
-    let loc = format!("{}/unsubscribed?ok={ok}", crate::config::get().app_url);
-    Ok((StatusCode::FOUND, [(header::LOCATION, loc)]).into_response())
+    let mut tx = st.pool.begin().await?;
+    if k == 'u' {
+        sqlx::query("UPDATE users SET notification_prefs = jsonb_set(COALESCE(notification_prefs, '{}'::jsonb), '{email_claims}', 'false'::jsonb) WHERE id = $1 AND deleted_at IS NULL").bind(id).execute(&mut *tx).await?;
+        sqlx::query("UPDATE notifications SET status = 'cancelled' WHERE user_id = $1 AND status = 'pending' AND kind IN ('claim.created', 'claim.digest')").bind(id).execute(&mut *tx).await?;
+    } else {
+        sqlx::query("UPDATE guests SET email = NULL WHERE id = $1").bind(id).execute(&mut *tx).await?;
+        sqlx::query("UPDATE notifications SET status = 'cancelled' WHERE guest_id = $1 AND status = 'pending'").bind(id).execute(&mut *tx).await?;
+    }
+    tx.commit().await?;
+    Ok(StatusCode::NO_CONTENT)
 }
 
 // ---------- GET /me/export ----------
@@ -101,6 +108,19 @@ async fn delete_me(State(st): State<AppState>, u: CurrentUser, Json(b): Json<Val
     sqlx::query("DELETE FROM auth_identities WHERE user_id = $1").bind(id).execute(&mut *tx).await?;
     sqlx::query("UPDATE wishlists SET status = 'archived', visibility = 'private', closed_at = COALESCE(closed_at, now()) WHERE owner_id = $1 AND status <> 'archived'")
         .bind(id).execute(&mut *tx).await?;
+    // F-08：取消他人清單上的 reserved 認領並回補（purchased / delivered 已履行，保留）。鎖序同 claims::apply：先 item（依 id）後 claim。
+    sqlx::query("SELECT id FROM wishlist_items WHERE id IN (SELECT item_id FROM claims WHERE user_id = $1 AND status = 'reserved') ORDER BY id FOR UPDATE")
+        .bind(id).execute(&mut *tx).await?;
+    let wids: Vec<Uuid> = sqlx::query_scalar(
+        "WITH x AS (UPDATE claims SET status = 'cancelled', cancelled_at = now(), expires_at = NULL
+                     WHERE user_id = $1 AND status = 'reserved' RETURNING id, item_id, qty),
+         r AS (UPDATE wishlist_items i SET qty_claimed = i.qty_claimed - s.q
+                FROM (SELECT item_id, sum(qty)::int AS q FROM x GROUP BY item_id) s
+                WHERE i.id = s.item_id RETURNING i.wishlist_id),
+         a AS (INSERT INTO audit_logs (actor_type, actor_id, action, entity, entity_id, diff)
+                SELECT 'user'::actor_type, $1, 'claim.account_delete_cancel', 'claims', id, jsonb_build_object('qty', qty) FROM x)
+         SELECT DISTINCT wishlist_id FROM r").bind(id).fetch_all(&mut *tx).await?;
+    for w in wids { crate::dashboard::notify(&mut *tx, w).await?; }
     sqlx::query("UPDATE claims SET claimer_name = '已刪除的使用者' WHERE user_id = $1").bind(id).execute(&mut *tx).await?;
     sqlx::query("UPDATE notifications SET status = 'cancelled' WHERE user_id = $1 AND status = 'pending'").bind(id).execute(&mut *tx).await?;
     let (at,): (chrono::DateTime<chrono::Utc>,) = sqlx::query_as(

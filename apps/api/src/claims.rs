@@ -32,6 +32,11 @@ pub struct ClaimRow {
     pub purchased_at: Option<DateTime<Utc>>, pub delivered_at: Option<DateTime<Utc>>, pub cancelled_at: Option<DateTime<Utc>>,
 }
 
+/// trim + 字元驗證；空（含只有零寬字元）→ None
+fn clean(s: Option<&str>, ptr: &str, multi: bool) -> Result<Option<String>, AppError> {
+    match s { Some(s) => Ok(Some(crate::validate::text(s, ptr, multi)?).filter(|s| !s.is_empty())), None => Ok(None) }
+}
+
 fn parse<T: DeserializeOwned>(b: &[u8]) -> Result<T, AppError> {
     serde_json::from_slice(b).map_err(|_| AppError::invalid("/", "INVALID", "請求內容格式錯誤"))
 }
@@ -76,11 +81,18 @@ async fn create(State(st): State<AppState>, Path(item_id): Path<Uuid>, MaybeActo
     let key = idempotency::key(&headers)?;
     let req: CreateReq = parse(&body)?;
     if !(1..=99).contains(&req.qty) { return Err(AppError::invalid("/qty", "RANGE", "qty 必須介於 1 與 99")); }
+    let mut req = req;
+    req.note = clean(req.note.as_deref(), "/note", true)?;
+    req.contact = clean(req.contact.as_deref(), "/contact", false)?;
     if req.note.as_deref().is_some_and(|n| n.chars().count() > 200) { return Err(AppError::invalid("/note", "RANGE", "備註至多 200 字")); }
     if req.contact.as_deref().is_some_and(|n| n.chars().count() > 100) { return Err(AppError::invalid("/contact", "RANGE", "聯絡方式至多 100 字")); }
-    let email = req.email.as_deref().map(|e| e.trim().to_lowercase()).filter(|e| !e.is_empty());
-    if email.as_deref().is_some_and(|e| !e.contains('@') || e.len() > 200) { return Err(AppError::invalid("/email", "FORMAT", "Email 格式不正確")); }
-    let dn = req.display_name.as_deref().map(str::trim).filter(|s| !s.is_empty());
+    // F-11：非空 Email 必須是可寄送格式，否則 422（不再假裝已寄出管理連結）
+    let email = match req.email.as_deref().map(str::trim).filter(|e| !e.is_empty()) {
+        Some(e) => Some(crate::validate::email(e, "/email")?),
+        None => None,
+    };
+    let dn = clean(req.display_name.as_deref(), "/display_name", false)?;
+    let dn = dn.as_deref();
     if dn.is_some_and(|s| s.chars().count() > 30) { return Err(AppError::invalid("/display_name", "RANGE", "暱稱需為 1–30 字")); }
 
     let route = "POST /items/{id}/claims";
@@ -92,7 +104,17 @@ async fn create(State(st): State<AppState>, Path(item_id): Path<Uuid>, MaybeActo
     let hash = idempotency::request_hash(&format!("POST /items/{item_id}/claims"), &body);
 
     let mut tx = st.pool.begin().await?;
-    if let idempotency::Begin::Replay(s, b) = idempotency::begin(&mut tx, &scope, key, &hash).await? {
+    if let idempotency::Begin::Replay(s, mut b) = idempotency::begin(&mut tx, &scope, key, &hash).await? {
+        // F-01：首次認領建立了 guest 的那次（scope=anon），回應可能已遺失 → 對同一 guest 重新簽發新 token（舊 token 失效）。
+        // 明文只存在這次回應；idempotency_keys 只存 guest_id（非機密）。key 是客戶端產生的 UUID，只有送出者知道。
+        let gid = b.as_object_mut().and_then(|o| o.remove("_guest_id")).and_then(|v| v.as_str().and_then(|s| s.parse::<Uuid>().ok()));
+        if let Some(gid) = gid {
+            let (tok, h) = guest::new_token();
+            let n = sqlx::query("UPDATE guests SET guest_token_hash = $2, last_seen_at = now() WHERE id = $1 AND deleted_at IS NULL")
+                .bind(gid).bind(h).execute(&mut *tx).await?.rows_affected();
+            if n > 0 { b["guest_token"] = json!(tok); }
+            tx.commit().await?;
+        }
         return Ok(json_resp(s, &b, true));
     }
     // 限流放在重播判斷之後：重播只回放已存的回應、不產生新認領，不消耗額度（也讓網路重試不會被誤擋）。
@@ -173,9 +195,10 @@ async fn create(State(st): State<AppState>, Path(item_id): Path<Uuid>, MaybeActo
     audit(&mut tx, actor, "claim.create", claim.id, json!({ "qty": req.qty })).await?;
     let mut resp = json!({ "claim": claim, "item": item_json(item_id, needed, claimed) });
     if let Some(t) = new_token { resp["guest_token"] = json!(t); }
-    // 重播不得再給明文 token：存進 idempotency_keys 的版本移除 guest_token
+    // 不存明文 token；改存 guest_id，重播時據此對同一 guest 重簽新 token（見 create 開頭）
     let mut stored = resp.clone();
     if let Some(o) = stored.as_object_mut() { o.remove("guest_token"); }
+    if resp.get("guest_token").is_some() { stored["_guest_id"] = json!(guest_id); }
     idempotency::finish(&mut tx, &scope, key, 201, &stored).await?;
     let wid = wishlist_of(&mut tx, item_id).await?;
     // 訪客有留 Email → 確認信（恢復權杖於寄信時才產生，明文不落庫）。
@@ -229,6 +252,8 @@ async fn update(State(st): State<AppState>, Path(id): Path<Uuid>, MaybeActor(act
     let p: PatchReq = parse(&body)?;
     if p.qty.is_none() && p.note.is_none() && p.status.is_none() { return Err(AppError::invalid("/", "REQUIRED", "至少需提供 qty、note 或 status")); }
     if p.qty.is_some_and(|q| !(1..=99).contains(&q)) { return Err(AppError::invalid("/qty", "RANGE", "qty 必須介於 1 與 99")); }
+    let mut p = p;
+    if let Some(n) = p.note.as_deref() { p.note = Some(crate::validate::text(n, "/note", true)?); }
     if p.note.as_deref().is_some_and(|n| n.chars().count() > 200) { return Err(AppError::invalid("/note", "RANGE", "備註至多 200 字")); }
     if p.status.as_deref().is_some_and(|s| !["purchased", "delivered", "cancelled"].contains(&s)) {
         return Err(AppError::invalid("/status", "ENUM", "status 只能是 purchased / delivered / cancelled"));

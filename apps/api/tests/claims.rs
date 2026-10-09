@@ -136,8 +136,9 @@ async fn idempotency_key_replay_and_conflict(pool: PgPool) {
     let (s2, h2, b2) = call(&app, post_claim(it, key, None, body.clone())).await;
     assert_eq!(s2, StatusCode::CREATED);
     assert_eq!(h2["idempotency-replayed"], "true");
-    // 重播：同 claim，但不再回明文 guest_token（DB 只存雜湊，idempotency_keys 也不得存）、也不 Set-Cookie
-    assert!(b1["guest_token"].is_string() && b2.get("guest_token").is_none() && !h2.contains_key("set-cookie"));
+    // F-01：anon 首次認領的重播改為對同一 guest 重簽新 token（回應 + Set-Cookie）；舊 token 失效；idempotency_keys 仍不存明文
+    assert!(b1["guest_token"].is_string() && b2["guest_token"].is_string() && b1["guest_token"] != b2["guest_token"] && h2.contains_key("set-cookie"));
+    assert!(b2.get("_guest_id").is_none());
     assert_eq!(b1["claim"], b2["claim"]);
     let stored: i64 = sqlx::query_scalar("SELECT count(*) FROM idempotency_keys WHERE response_body::text LIKE '%guest_token%'").fetch_one(&pool).await.unwrap();
     assert_eq!(stored, 0);

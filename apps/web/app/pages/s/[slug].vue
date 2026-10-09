@@ -34,6 +34,7 @@ if (data.value) {
   })
 } else useSeoMeta({ title: gone.value ? '此清單已被下架' : failed.value ? '暫時無法載入' : '找不到這份清單', robots: 'noindex' })
 
+useHead({ noscript: [{ innerHTML: '<style>.js-claim{display:none!important}.g-nojs{display:block!important}</style>' }] })
 const items = ref<any[]>(data.value?.items ?? [])
 watch(data, v => { if (v) items.value = v.items })
 // 剩餘優先 → 已滿排最後（穩定排序）
@@ -100,6 +101,7 @@ function dismissHint() { setPref('ws_hint_dismissed', '1'); lineHint.value = fal
     <div v-else-if="failed && !data" class="g-center"><h1>系統暫時無法載入，請稍後再試</h1><button class="g-btn" @click="refresh()">重新載入</button></div>
     <div v-else-if="!data" class="g-center"><h1>找不到這份清單</h1><NuxtLink to="/">回首頁</NuxtLink></div>
     <template v-else>
+      <div class="g-banner g-nojs">需要 JavaScript 才能認領；你仍可查看清單內容</div>
       <div v-if="!online" class="g-banner">目前離線，顯示的是上次載入的內容，認領功能暫停。</div>
       <div v-if="lineHint" class="g-banner">想把認領保存起來？點右上角 ⋯ 選「用預設瀏覽器開啟」，之後比較不會找不到。 <button class="g-link" @click="dismissHint">知道了</button></div>
       <div v-if="closed" class="g-banner">這份清單已結束</div>
@@ -129,16 +131,17 @@ function dismissHint() { setPref('ws_hint_dismissed', '1'); lineHint.value = fal
       @close="sheetItem = null" @done="onDone" @stale="onStale" @switch-edit="onSwitchEdit" />
     <GuestReportSheet v-if="reporting" :slug="slug" @close="reporting = false" @sent="reporting = false; toast = '已收到檢舉，我們會盡快處理'" />
 
-    <div v-if="done" class="g-mask"><div class="g-sheet center" role="dialog" aria-modal="true">
-      <h1 class="ok">✓ 認領成功！</h1>
+    <GuestDialog v-if="done" labelledby="done-title" @close="done = null"><div class="g-sheet center">
+      <h1 id="done-title" class="ok">✓ 認領成功！</h1>
       <p>你認領了 {{ done.title }} × {{ done.claim.qty }}<template v-if="done.name || done.claim.claimer_name">，謝謝你，{{ done.claim.claimer_name }}</template></p>
-      <div v-if="!done.persisted" class="g-banner err">無法儲存於此裝置，請截圖保存。換瀏覽器後可能找不到這份認領。</div>
+      <div v-if="done.lost" class="g-banner err" role="alert">認領已送出，但這個瀏覽器沒有保存到身分，之後可能無法在這裡修改或取消。請先截圖保存；若有填 Email，可用確認信中的「管理我的認領」連結找回，也可以重新整理頁面確認。</div>
+      <div v-else-if="!done.persisted" class="g-banner err">無法儲存於此裝置，請截圖保存。換瀏覽器後可能找不到這份認領。</div>
       <div v-else class="g-banner ok">這份認領已存在此裝置，可在「我的認領」查看、標記已購買或取消。</div>
       <p v-if="done.email" class="g-mute">已寄出管理連結到 {{ maskedEmail(done.email) }}</p>
       <div v-if="isLineBrowser()" class="g-banner">LINE 內建瀏覽器關閉後，認領紀錄可能找不到。點右上角 ⋯ →「用預設瀏覽器開啟」。</div>
       <NuxtLink class="g-btn block" to="/me/claims">查看我的認領</NuxtLink>
       <button class="g-link" @click="done = null">回到清單繼續看</button>
-    </div></div>
+    </div></GuestDialog>
     <div v-if="toast" class="g-banner g-toast" role="status" @click="toast = ''">{{ toast }}</div>
   </main>
 </template>

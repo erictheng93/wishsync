@@ -37,7 +37,7 @@ struct It {
 }
 
 async fn wishlist(State(st): State<AppState>, Path(slug): Path<String>, req: HeaderMap) -> Result<Response, AppError> {
-    if slug.len() != 10 { return Err(AppError::NotFound); }
+    if !crate::validate::slug_ok(&slug) { return Err(AppError::NotFound); }
     let w: W = sqlx::query_as(
         "SELECT w.id, w.slug::text AS slug, w.type::text AS type, w.status::text AS status, w.visibility::text AS visibility,
                 w.moderation_status::text AS moderation, w.title, w.description, w.cover_image_key,

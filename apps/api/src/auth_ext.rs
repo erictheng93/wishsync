@@ -72,15 +72,18 @@ fn bad_credentials() -> AppError { AppError::problem(401, "INVALID_CREDENTIALS",
 #[derive(Deserialize)]
 struct LoginReq { email: String, password: String }
 
-// IP 見 config::client_ip（TRUSTED_PROXY）；失敗 5 次/email、30 次/IP（15 分鐘）。
+// IP 見 config::client_ip（TRUSTED_PROXY）。15 分鐘內失敗：同 (email, IP) 5 次即鎖（主要）；
+// 同 email 跨 IP 合計 20 次即鎖（防分散式暴力的上限）；同 IP 30 次即鎖。
+// 取捨：攻擊者單一 IP 只能鎖自己那組 (email, IP)，無法鎖死受害者在別的 IP 的登入；
+// 要鎖死他人需 20 次分散失敗（成本較高），且受害者重設密碼 / 成功登入即清除該 email 的紀錄。
 async fn login(State(st): State<AppState>, parts: axum::http::request::Parts, Json(r): Json<LoginReq>) -> Result<Response, AppError> {
     let email = r.email.trim().to_lowercase();
     let headers = parts.headers.clone();
     let ip = crate::config::client_ip(&parts, &crate::config::get());
-    let (by_email, by_ip): (i64, i64) = sqlx::query_as(
-        "SELECT count(*) FILTER (WHERE email=$1), count(*) FILTER (WHERE ip=$2) FROM login_failures
+    let (by_pair, by_email, by_ip): (i64, i64, i64) = sqlx::query_as(
+        "SELECT count(*) FILTER (WHERE email=$1 AND ip=$2), count(*) FILTER (WHERE email=$1), count(*) FILTER (WHERE ip=$2) FROM login_failures
          WHERE created_at > now() - interval '15 minutes' AND (email=$1 OR ip=$2)").bind(&email).bind(&ip).fetch_one(&st.pool).await?;
-    if by_email >= 5 || by_ip >= 30 { return Err(crate::auth::rate_limited(300)); }
+    if by_pair >= 5 || by_email >= 20 || by_ip >= 30 { return Err(crate::auth::rate_limited(300)); }
     let row: Option<(uuid::Uuid, Option<String>)> = sqlx::query_as(
         "SELECT i.user_id, i.password_hash FROM auth_identities i JOIN users u ON u.id=i.user_id
          WHERE i.provider='email' AND i.provider_uid=$1 AND u.deleted_at IS NULL").bind(&email).fetch_optional(&st.pool).await?;
