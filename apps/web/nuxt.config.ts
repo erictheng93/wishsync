@@ -10,5 +10,23 @@ export default defineNuxtConfig({
   },
   // 創建者頁面靠 cookie 驗證，只在 client 渲染；/s/** 維持 SSR（OG 預覽）
   routeRules: Object.fromEntries(['/dashboard/**', '/lists/**', '/settings', '/admin/**', '/login', '/register', '/forgot-password'].map(r => [r, { ssr: false }])),
-  app: { head: { htmlAttrs: { lang: 'zh-Hant-TW' } } },
+  // PWA：手寫 manifest + public/sw.js（不用 @vite-pwa/nuxt，避免模組預設快取策略碰到即時資料與 SSR 分享頁）
+  app: {
+    head: {
+      htmlAttrs: { lang: 'zh-Hant-TW' },
+      meta: [
+        { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' },
+        { name: 'theme-color', content: '#c8102e', media: '(prefers-color-scheme: light)' },
+        { name: 'theme-color', content: '#0e0e0e', media: '(prefers-color-scheme: dark)' },
+        { name: 'apple-mobile-web-app-capable', content: 'yes' },
+        { name: 'mobile-web-app-capable', content: 'yes' },
+        { name: 'apple-mobile-web-app-status-bar-style', content: 'default' },
+        { name: 'apple-mobile-web-app-title', content: 'WishSync' },
+      ],
+      link: [
+        { rel: 'manifest', href: '/manifest.webmanifest' },
+        { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' },
+      ],
+    },
+  },
 })

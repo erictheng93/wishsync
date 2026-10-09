@@ -106,9 +106,10 @@ async fn send_mail(to: String, code: String, subject: &'static str) {
 
 // ponytail: 只做每 email 限流（查 otp_challenges）；每 IP 20/小時需前置層（Cloudflare）或 in-memory/Redis，之後再加。
 /// 限流 + 寫入挑戰 + 寄信。login / register / reset 共用同一組限流（每 email 每小時 5 封、60 秒間隔）。
+/// 60 秒間隔只看「尚未使用」的驗證碼：剛驗證成功（例如註冊完）立刻重設密碼是正常操作，不應被擋；沒有信箱存取權的人無法消耗驗證碼，所以不影響防濫用。
 pub(crate) async fn issue_otp(pool: &PgPool, email: &str, purpose: &str, pw_hash: Option<&str>, name: Option<&str>) -> Result<(), AppError> {
     let (cnt, last_age): (i64, Option<i64>) = sqlx::query_as(
-        "SELECT count(*), min(extract(epoch FROM now() - created_at))::bigint FROM otp_challenges
+        "SELECT count(*), (min(extract(epoch FROM now() - created_at)) FILTER (WHERE consumed_at IS NULL))::bigint FROM otp_challenges
          WHERE email = $1 AND created_at > now() - interval '1 hour'").bind(email).fetch_one(pool).await?;
     if cnt >= 5 { return Err(rate_limited(600)); }
     if let Some(age) = last_age { if age < 60 { return Err(rate_limited(60 - age)); } }
@@ -214,7 +215,7 @@ pub struct LineCfg { pub auth_url: String, pub token_url: String, pub profile_ur
 impl LineCfg {
     pub fn from_env() -> Option<LineCfg> {
         Some(LineCfg {
-            client_id: std::env::var("LINE_CHANNEL_ID").ok()?, secret: std::env::var("LINE_CHANNEL_SECRET").ok()?,
+            client_id: crate::auth_ext::nonempty("LINE_CHANNEL_ID")?, secret: crate::auth_ext::nonempty("LINE_CHANNEL_SECRET")?,
             redirect_uri: env("LINE_REDIRECT_URI", "http://localhost:8080/api/v1/auth/oauth/line/callback"),
             auth_url: env("LINE_AUTH_URL", "https://access.line.me/oauth2/v2.1/authorize"),
             token_url: env("LINE_TOKEN_URL", "https://api.line.me/oauth2/v2.1/token"),

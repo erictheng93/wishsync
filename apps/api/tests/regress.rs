@@ -39,13 +39,28 @@ async fn read_only_lets_login_and_otp_through(pool: PgPool) {
 #[sqlx::test(migrations = "../../db/migrations")]
 async fn oauth_start_without_credentials_redirects(pool: PgPool) {
     // ponytail: 同一 binary 內其他測試不設這些 env；若日後有，改用 serial 鎖
-    for k in ["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "LINE_CHANNEL_ID", "LINE_CHANNEL_SECRET"] { std::env::remove_var(k); }
+    let keys = ["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "LINE_CHANNEL_ID", "LINE_CHANNEL_SECRET"];
     let app_url = std::env::var("APP_URL").unwrap_or("http://localhost:3000".into()).trim_end_matches('/').to_string();
-    for p in ["google", "line"] {
-        let (s, h, _) = call(&pool, "GET", &format!("/auth/oauth/{p}/start"), None).await;
-        assert_eq!(s, StatusCode::FOUND, "{p}");
-        assert_eq!(h["location"], format!("{app_url}/login?error=oauth_unavailable"), "{p}");
+    // 未設定與設成空字串（例如部署範本留空）都要視為未設定
+    for empty in [false, true] {
+        for k in keys { if empty { std::env::set_var(k, "") } else { std::env::remove_var(k) } }
+        for p in ["google", "line"] {
+            let (s, h, _) = call(&pool, "GET", &format!("/auth/oauth/{p}/start"), None).await;
+            assert_eq!(s, StatusCode::FOUND, "{p} empty={empty}");
+            assert_eq!(h["location"], format!("{app_url}/login?error=oauth_unavailable"), "{p} empty={empty}");
+        }
     }
+    for k in keys { std::env::remove_var(k); }
+}
+
+#[sqlx::test(migrations = "../../db/migrations")]
+async fn otp_cooldown_ignores_consumed_challenges(pool: PgPool) {
+    let req = || call(&pool, "POST", "/auth/otp/request", Some(json!({ "email": "cool@example.com" })));
+    // 剛驗證成功（已使用）的驗證碼不擋下一次請求
+    sqlx::query("INSERT INTO otp_challenges (email, code_hash, expires_at, consumed_at) VALUES ('cool@example.com', '\\x00', now() + interval '10 minutes', now())").execute(&pool).await.unwrap();
+    assert_eq!(req().await.0, StatusCode::ACCEPTED);
+    // 但剛寄出、尚未使用的驗證碼，60 秒內再要一次仍被擋
+    assert_eq!(req().await.0, StatusCode::TOO_MANY_REQUESTS);
 }
 
 /// 複製 examples/seed_demo.rs 的帳號寫入邏輯

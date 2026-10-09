@@ -29,3 +29,39 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+  e2e:
+    # Playwright 端對端測試（見 README「測試」）：真實的 API + Web + Postgres + Mailpit
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      db:
+        image: postgis/postgis:16-3.4
+        env: { POSTGRES_USER: wishsync, POSTGRES_PASSWORD: wishsync, POSTGRES_DB: wishsync }
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U wishsync" --health-interval 2s --health-retries 30
+      mailpit:
+        image: axllent/mailpit
+        ports: ["1025:1025", "8025:8025"]
+    defaults: { run: { working-directory: apps/web } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with: { workspaces: apps/api }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: apps/web/package-lock.json }
+      - run: npm ci
+      # e2e/support/psql.mjs 用 psql 重建 wishsync_e2e 資料庫
+      - run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - run: npx playwright install --with-deps chromium
+      # 啟動 API / Web 由 playwright.config.ts 的 webServer 負責（cargo build + 重置資料庫 + nuxt build）
+      - run: npm run e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: |
+            apps/web/playwright-report/
+            apps/web/test-results/
+          retention-days: 7

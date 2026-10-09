@@ -8,3 +8,5 @@ node_modules/
 dist/
 .impeccable/
 *.log
+playwright-report/
+test-results/

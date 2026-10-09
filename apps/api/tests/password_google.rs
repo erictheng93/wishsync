@@ -68,9 +68,10 @@ async fn password_register_login_reset(pool: PgPool) {
     assert_eq!((s1, s2), (StatusCode::UNAUTHORIZED, StatusCode::UNAUTHORIZED));
     assert_eq!(e1, e2); assert_eq!(e1["code"], "INVALID_CREDENTIALS");
     // 已有密碼者再註冊 → 驗證時 409
+    // 剛驗證成功（驗證碼已使用）不擋下一次請求；但新寄出、尚未使用的驗證碼 60 秒內不能再要
+    assert_eq!(call(&app, "POST", "/api/v1/auth/register", None, Some(reg("another-pass"))).await.0, 202);
     assert_eq!(call(&app, "POST", "/api/v1/auth/register", None, Some(reg("another-pass"))).await.0, 429);
     age_otps(&pool).await;
-    assert_eq!(call(&app, "POST", "/api/v1/auth/register", None, Some(reg("another-pass"))).await.0, 202);
     let code = recover_code(&pool, &email, "register").await;
     assert_eq!(call(&app, "POST", "/api/v1/auth/register/verify", None, Some(json!({ "email": email, "code": code }))).await.0, 409);
     // 重設：不存在的 email 也 202（且不產生挑戰）

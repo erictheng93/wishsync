@@ -137,10 +137,13 @@ async fn reset_confirm(State(st): State<AppState>, Json(r): Json<ResetConfirm>) 
 
 // ---------- Google OIDC ----------
 pub struct GoogleCfg { pub auth_url: String, token_url: String, jwks_url: String, issuers: Vec<String>, pub client_id: String, secret: String, pub redirect_uri: String }
+/// 環境變數存在且非空才算已設定（空字串視為未設定）
+pub(crate) fn nonempty(k: &str) -> Option<String> { std::env::var(k).ok().filter(|v| !v.trim().is_empty()) }
+
 impl GoogleCfg {
     pub fn from_env() -> Option<GoogleCfg> {
         Some(GoogleCfg {
-            client_id: std::env::var("GOOGLE_CLIENT_ID").ok()?, secret: std::env::var("GOOGLE_CLIENT_SECRET").ok()?,
+            client_id: nonempty("GOOGLE_CLIENT_ID")?, secret: nonempty("GOOGLE_CLIENT_SECRET")?,
             redirect_uri: env("GOOGLE_REDIRECT_URI", "http://localhost:8080/api/v1/auth/oauth/google/callback"),
             auth_url: env("GOOGLE_AUTH_URL", "https://accounts.google.com/o/oauth2/v2/auth"),
             token_url: env("GOOGLE_TOKEN_URL", "https://oauth2.googleapis.com/token"),

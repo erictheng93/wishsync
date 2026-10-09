@@ -7,8 +7,12 @@ const { public: { apiBase } } = useRuntimeConfig()
 const { api } = useGuest()
 
 // 不用 useFetch 的 error 拋出：404 / 410 在頁內顯示，並設正確 HTTP 狀態碼（410 需 noindex、不洩漏標題）
-const { data, error, refresh } = await useFetch<any>(`${apiBase}/api/v1/public/wishlists/${slug}`, { credentials: 'omit' })
+// cache: 'no-cache'：API 回的 Cache-Control 帶 stale-while-revalidate（給 CDN 用），瀏覽器會先吐舊資料；認領後的 refresh() 必須是新的（仍會用 ETag 回 304）
+const { data: fetched, error, refresh } = await useFetch<any>(`${apiBase}/api/v1/public/wishlists/${slug}`, { credentials: 'omit', cache: 'no-cache' })
 // 404 找不到 / 410 下架 / 其他（5xx、網路、逾時）= 暫時無法載入，回 503，避免爬蟲與快取把暫時性錯誤記成「不存在」
+// 暫時性錯誤（5xx / 網路）時保留上次成功的內容，不要讓 15 秒輪詢的一次失敗把整頁換成錯誤畫面；404 / 410 才清空
+const data = ref<any>(fetched.value)
+watch([fetched, error], ([v, e]) => { if (v) data.value = v; else if (e && [404, 410].includes(e.statusCode as number)) data.value = null })
 const gone = computed(() => error.value?.statusCode === 410)
 const notFound = computed(() => error.value?.statusCode === 404)
 const failed = computed(() => !!error.value && !gone.value && !notFound.value)

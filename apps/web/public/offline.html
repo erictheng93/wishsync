@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#c8102e">
+<title>目前離線 | WishSync</title>
+<style>
+:root{--bg:#fff;--fg:#1a1a1a;--mute:#666;--red:#c8102e;--red-dark:#a30d25;color-scheme:light dark}
+@media (prefers-color-scheme:dark){:root{--bg:#0e0e0e;--fg:#f2f2f2;--mute:#a8a8a8;--red:#e5334f;--red-dark:#b82840}}
+body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;background:var(--bg);color:var(--fg);font:400 16px/1.6 -apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC",sans-serif;letter-spacing:.02em}
+main{max-width:360px;width:100%}
+.top{color:var(--red);font-weight:700;letter-spacing:.14em;border-bottom:3px solid var(--red);padding-bottom:10px;margin-bottom:28px;font-size:12px}
+h1{margin:0 0 8px;font-size:26px;line-height:1.2}
+p{margin:0 0 28px;color:var(--mute)}
+button{border:0;background:var(--red);color:#fff;font:inherit;font-weight:600;font-size:14px;letter-spacing:.14em;padding:12px 24px;border-radius:0;cursor:pointer}
+button:active{background:var(--red-dark)}
+button:focus-visible{outline:2px solid var(--red);outline-offset:2px}
+</style>
+</head>
+<body>
+<main>
+<div class="top">WISHSYNC</div>
+<h1>目前離線</h1>
+<p>連線後會自動重試。你也可以隨時手動重新整理。</p>
+<button type="button" onclick="location.reload()">重新整理</button>
+</main>
+<script>addEventListener('online',()=>location.reload())</script>
+</body>
+</html>
