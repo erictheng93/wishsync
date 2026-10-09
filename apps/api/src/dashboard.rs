@@ -117,7 +117,11 @@ async fn events(State(st): State<AppState>, Path(slug): Path<String>) -> Result<
             if s.hidden { break; } // 下架：廣播後關閉連線
         }
     });
-    let stream = futures_util::stream::unfold(out, |mut rx| async move { rx.recv().await.map(|e| (e, rx)) });
+    // 連線一建立就先送一個 retry 事件：代理（Cloudflare Pages 同源代理等）會緩衝到第一個位元組才轉送，
+    // 沒有它，要等 15 秒的第一次心跳瀏覽器才收得到回應標頭。
+    let first = futures_util::stream::once(async { Ok::<_, std::convert::Infallible>(Event::default().retry(Duration::from_secs(5))) });
+    let rest = futures_util::stream::unfold(out, |mut rx| async move { rx.recv().await.map(|e| (e, rx)) });
+    let stream = futures_util::StreamExt::chain(first, rest);
     let mut res = Sse::new(stream).keep_alive(KeepAlive::new().interval(Duration::from_secs(15)).text("heartbeat")).into_response();
     let h = res.headers_mut();
     h.insert(header::CACHE_CONTROL, HeaderValue::from_static("no-cache, no-transform"));

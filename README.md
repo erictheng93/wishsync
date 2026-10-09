@@ -108,6 +108,16 @@ npx playwright show-report                                      # 開啟上次�
 - `wrangler.jsonc` 刻意不放 `vars`，避免執行期變數蓋掉建置設定。
 - 本機驗證：`npm run build` 後 `npx wrangler pages dev dist`（示範用 `npm run build:demo`）。
 
+
+### 臨時公開測試（本機後端 + 快速通道 + Pages 預覽分支）
+
+用來在手機或 LINE 上測試本機的後端。**這會把你電腦上的 API 經臨時網址公開**，請用獨立的資料庫與隨機機密，測完就關。
+
+1. 後端：用獨立資料庫、隨機的 `OTP_PEPPER` / `OAUTH_SECRET` / `UNSUB_SECRET`，`TRUSTED_PROXY=cloudflare`、`BIND=127.0.0.1:8090`、`APP_URL=https://qa.wishsync-web.pages.dev`。
+2. 通道：`cloudflared tunnel --url http://127.0.0.1:8090`，取得 `https://xxx.trycloudflare.com`。
+3. 前端：`NUXT_API_PROXY=https://xxx.trycloudflare.com npm run deploy:preview`（部署到 `qa` 預覽分支，不動正式網址；前端以同源代理連後端，cookie 才是第一方）。
+4. 限制：**快速通道不支援 SSE**，即時更新會自動退回每 15 秒輪詢；通道網址每次重開都會變，需要重新部署。要驗證 SSE 需使用有網域的具名通道。
+
 ## 開發順序
 
 0. 骨架與 CI → 1. 技術原型 S1–S3（真實 Pages 帳號、LINE 預覽 / 內建瀏覽器 cookie / SSE，見 `docs/03` 第 14 節）
