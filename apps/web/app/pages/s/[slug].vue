@@ -229,8 +229,3 @@ function dismissHint() { setPref('ws_hint_dismissed', '1'); lineHint.value = fal
     <div v-if="toast" class="g-banner g-toast" role="status" @click="toast = ''">{{ toast }}</div>
   </main>
 </template>
-
-<style scoped>
-.g-input{width:100%;box-sizing:border-box;font:inherit;font-size:16px;min-height:44px;padding:10px 14px;margin:8px 0;border:1px solid var(--line);background:var(--bg-alt);color:var(--fg)}
-.g-input:focus{outline:2px solid var(--red);outline-offset:0;border-color:var(--red)}
-</style>

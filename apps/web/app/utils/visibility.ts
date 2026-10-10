@@ -15,8 +15,8 @@ export const isRestricted = (v?: string) => !!v && !['public', 'link'].includes(
 
 const sk = (slug: string) => `ws_la_${slug}`
 export function getListAccess(slug: string): string | null {
-  if (typeof sessionStorage === 'undefined') return null
-  try { return sessionStorage.getItem(sk(slug)) } catch { return null }
+  // LINE 等停用儲存的環境：連讀取 sessionStorage 這個屬性都會丟例外，所以整段包在 try 內
+  try { return typeof sessionStorage === 'undefined' ? null : sessionStorage.getItem(sk(slug)) } catch { return null }
 }
 export function setListAccess(slug: string, token: string | null) {
   try { token ? sessionStorage.setItem(sk(slug), token) : sessionStorage.removeItem(sk(slug)) } catch { /* 無痕/停用儲存：本次頁面重載後需重輸入密碼 */ }

@@ -22,4 +22,11 @@ describe('visibility', () => {
     vi.stubGlobal('sessionStorage', { getItem: () => { throw new Error('x') }, setItem: () => { throw new Error('x') }, removeItem: () => { throw new Error('x') } })
     expect(() => setListAccess('a', 't')).not.toThrow(); expect(getListAccess('a')).toBeNull()
   })
+  it('連讀取 sessionStorage 屬性都丟例外（LINE 停用儲存）時不拋錯', () => {
+    vi.unstubAllGlobals()
+    const d = Object.getOwnPropertyDescriptor(globalThis, 'sessionStorage')
+    Object.defineProperty(globalThis, 'sessionStorage', { configurable: true, get() { throw new DOMException('denied', 'SecurityError') } })
+    try { expect(getListAccess('a')).toBeNull(); expect(() => setListAccess('a', 't')).not.toThrow() }
+    finally { d ? Object.defineProperty(globalThis, 'sessionStorage', d) : delete (globalThis as any).sessionStorage }
+  })
 })
