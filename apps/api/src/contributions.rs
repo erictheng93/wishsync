@@ -266,7 +266,7 @@ pub async fn tick_funding(pool: &PgPool) -> Result<(usize, usize), AppError> {
     let mut tx = pool.begin().await?;
     let due: Vec<(Uuid, Uuid)> = sqlx::query_as(
         "UPDATE wishlist_items SET funding_status = 'expired', expired_at = now()
-         WHERE id IN (SELECT id FROM wishlist_items WHERE funding_mode = 'crowdfund' AND funding_status = 'open' AND funding_deadline <= now()
+         WHERE id IN (SELECT id FROM wishlist_items WHERE funding_mode = 'crowdfund' AND funding_status = 'open' AND funding_deadline <= now() AND deleted_at IS NULL
                       ORDER BY id FOR UPDATE SKIP LOCKED)
            AND funding_status = 'open'
          RETURNING id, wishlist_id").fetch_all(&mut *tx).await?;

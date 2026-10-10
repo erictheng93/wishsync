@@ -29,6 +29,7 @@ node mocks/server.mjs                      # 訪客端契約 mock，:8080（slug
 
 - **兩種身分**：創建者用 cookie `ws_session`（`session::CurrentUser` extractor，DB 只存 SHA-256）；訪客用 `X-Guest-Token` header 優先、其次 `ws_guest` cookie（`guest.rs`，`Actor::Guest|User`）。
 - **認領（`claims.rs`）**：核心是超賣防護。鎖序固定 `wishlist_items`（條件式 UPDATE / FOR UPDATE）→ `claims`，改動時不可顛倒。寫入需 `Idempotency-Key`（UUID），`idempotency.rs` 的占位與業務寫入在同一交易，失敗 rollback 不留痕；重放回應帶 `Idempotency-Replayed`。逾期認領會釋放，另有 `ratelimit.rs`（DB 計數，背景清理）。
+- **點數眾籌（P2-A）**：`points.rs` 是唯一能改 `point_wallets.balance` 的地方（`post` 同交易寫 `point_ledger`，帳本只增不改）；`release` / `refund_partial` 內部先鎖錢包，所以要在動 `wishlist_items` 之前呼叫。鎖序 wishlists（FOR SHARE）→ point_wallets（依 id）→ wishlist_items → contributions。目前點數只靠後台人工發放，儲值規劃中（加 `topup` entry type 並呼叫 `post`）。收件資訊以 `sealed.rs` 加密，金鑰 `SHIPPING_ENC_KEY` 遺失就無法解密（見 README）。
 - 背景工作在 `main.rs` 啟動：`notify::spawn_worker`（寄信）、`ratelimit::spawn_cleanup`。錯誤統一為 RFC 9457 problem+json（`error.rs`，含 `code` 與 `errors[]`）。
 - 測試在 `apps/api/tests/*.rs`（依功能切片命名），皆用 `#[sqlx::test(migrations = "../../db/migrations")]`。
 - DB：PostgreSQL 16 + PostGIS，`db/migrations/000N_*.sql` 依序累加。
