@@ -16,6 +16,8 @@ pub mod claims;
 pub mod idempotency;
 pub mod ratelimit;
 pub mod session;
+pub mod points;
+pub mod sealed;
 
 use axum::{response::IntoResponse, Router};
 use sqlx::PgPool;
