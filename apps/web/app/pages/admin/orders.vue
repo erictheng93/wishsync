@@ -33,7 +33,7 @@ async function submit() {
   busy.value = true; aerr.value = ''
   try {
     const r = await api(`/admin/orders/${row.id}`, { method: 'PATCH', body: p.body })
-    msg.value = `「${row.item?.title}」已${label(ORDER_STATUS, r.status)}` + (r.refunded_points ? `，差額 ${fmtPts(r.refunded_points)} 點已退回捐贈者` : '')
+    msg.value = `「${row.item?.title}」狀態已更新為「${label(ORDER_STATUS, r.status)}」` + (r.refunded_points ? `，差額 ${fmtPts(r.refunded_points)} 點已退回捐贈者` : '')
     act.value = null; await load()
   } catch (e: any) {
     aerr.value = e.code === 'INVALID_STATE_TRANSITION' ? '狀態已被更新過，請重新整理後再操作' : errMsg(e)

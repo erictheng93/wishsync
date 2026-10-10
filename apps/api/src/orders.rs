@@ -54,8 +54,10 @@ async fn list_orders(State(st): State<AppState>, Staff(sid): Staff, Query(q): Qu
           WHERE ($1::text IS NULL OR po.status::text = $1) AND ($2::text IS NULL OR po.fulfillment_type::text = $2) AND ($3::uuid IS NULL OR po.id > $3)
           ORDER BY po.id LIMIT $4")
         .bind(&q.status).bind(&q.fulfillment_type).bind(q.cursor).bind(lim + 1).fetch_all(&st.pool).await?;
+    let more = rows.len() as i64 > lim;
     let mut out = Vec::with_capacity(rows.len());
-    for r in rows.into_iter().take(lim as usize + 1) {
+    // 只處理實際回傳的 lim 筆：多查的那一筆只用來判斷有沒有下一頁，不解密、不寫 audit
+    for r in rows.into_iter().take(lim as usize) {
         // 讀取收件明文 = 敏感操作，逐筆留 audit（明文本身不進 audit）
         audit(&st.pool, sid, "order.view_address", "purchase_orders", Some(r.id), json!({ "item_id": r.item_id })).await?;
         let addr = crate::sealed::open(&r.snapshot).and_then(|b| serde_json::from_slice::<Value>(&b).ok()).unwrap_or(Value::Null);
@@ -72,6 +74,7 @@ async fn list_orders(State(st): State<AppState>, Staff(sid): Staff, Query(q): Qu
             "created_at": r.created_at, "updated_at": r.updated_at,
         })));
     }
+    if more { out.push((Uuid::nil(), Value::Null)); } // 佔位：page() 據此給 next_cursor，並把它截掉
     Ok(page(out, lim))
 }
 

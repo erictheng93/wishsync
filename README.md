@@ -60,7 +60,7 @@ cd apps/web && npm run typecheck && npm test && npm run build   # CI 的 web job
 
 ### 端對端測試（Playwright）
 
-`apps/web/e2e/` 以真實的 API + Web + Postgres + Mailpit 跑瀏覽器流程（訪客認領、防超賣、創建者註冊 / 登入 / 發佈、即時更新、驚喜模式、檢舉下架、LINE 內建瀏覽器、版面煙霧測試等）。
+`apps/web/e2e/` 以真實的 API + Web + Postgres + Mailpit 跑瀏覽器流程（訪客認領、防超賣、點數眾籌（發點、贊助 / 撤回、達標、捐款者名單、採購與差額退回、轉投）、創建者註冊 / 登入 / 發佈、即時更新、驚喜模式、檢舉下架、LINE 內建瀏覽器、版面煙霧測試等）。
 
 前置條件：
 - `docker compose up -d db mailpit`（Postgres 在 5432、Mailpit 在 8025；OTP 信從 Mailpit HTTP API 讀取）。

@@ -738,3 +738,26 @@ async fn account_delete_blocked_by_points(pool: PgPool) {
     assert_eq!(balance(&pool, a).await, 300);
     assert_reconciled(&pool).await;
 }
+
+// 分頁多查的那一筆只用來判斷 next_cursor，不可被解密或寫入 order.view_address
+#[sqlx::test(migrations = "../../db/migrations")]
+async fn admin_orders_audit_only_returned_rows(pool: PgPool) {
+    let (_, t) = user(&pool, "媽媽", false).await;
+    let (sid, s) = user(&pool, "營運", true).await;
+    let (a, _) = user(&pool, "阿明", false).await;
+    let (wid, _) = mk_list(&pool, &t, json!({})).await;
+    put_addr(&pool, &t, wid).await;
+    for _ in 0..3 { let it = cf_item(&pool, &t, wid, 100).await; pledge(&pool, it, a, 100, false).await; }
+    let audits = || async { sqlx::query_scalar::<_, i64>("SELECT count(*) FROM audit_logs WHERE action = 'order.view_address' AND actor_id = $1").bind(sid).fetch_one(&pool).await.unwrap() };
+
+    let (st, _, p1) = call(&pool, "GET", "/admin/orders?limit=2", &ck(&s), None).await;
+    assert_eq!(st, StatusCode::OK, "{p1}");
+    assert_eq!(p1["data"].as_array().unwrap().len(), 2);
+    assert_eq!(p1["next_cursor"], p1["data"][1]["id"]);
+    assert_eq!(audits().await, 2, "只記實際回傳的筆數");
+
+    let (_, _, p2) = call(&pool, "GET", &format!("/admin/orders?limit=2&cursor={}", p1["next_cursor"].as_str().unwrap()), &ck(&s), None).await;
+    assert_eq!(p2["data"].as_array().unwrap().len(), 1);
+    assert!(p2["next_cursor"].is_null());
+    assert_eq!(audits().await, 3);
+}
