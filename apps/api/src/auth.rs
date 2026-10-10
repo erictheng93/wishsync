@@ -180,21 +180,28 @@ async fn logout(_u: CurrentUser, State(st): State<AppState>, headers: HeaderMap)
 }
 
 pub(crate) async fn user_json(pool: &PgPool, id: Uuid) -> Result<Value, AppError> {
-    let (dn, email, avatar, staff, prefs): (String, Option<String>, Option<String>, bool, Value) =
-        sqlx::query_as("SELECT display_name, email, avatar_key, is_staff, notification_prefs FROM users WHERE id=$1 AND deleted_at IS NULL")
+    let (dn, email, avatar, staff, prefs, handle, dcv): (String, Option<String>, Option<String>, bool, Value, Option<String>, String) =
+        sqlx::query_as("SELECT display_name, email, avatar_key, is_staff, notification_prefs, handle, default_claim_visibility::text FROM users WHERE id=$1 AND deleted_at IS NULL")
             .bind(id).fetch_optional(pool).await?.ok_or(AppError::Unauthorized)?;
     let idents: Vec<String> = sqlx::query_scalar("SELECT provider::text FROM auth_identities WHERE user_id=$1 ORDER BY created_at").bind(id).fetch_all(pool).await?;
     // avatar_key：LINE 頭像存完整 URL；其餘暫無公開網址規則
     let avatar_url = avatar.filter(|a| a.starts_with("http"));
     Ok(json!({ "id": id, "display_name": dn, "email": email, "avatar_url": avatar_url, "is_staff": staff,
-               "notification_prefs": prefs, "identities": idents.iter().map(|p| json!({"provider": p})).collect::<Vec<_>>(),
+               "notification_prefs": prefs, "handle": handle, "default_claim_visibility": dcv, "identities": idents.iter().map(|p| json!({"provider": p})).collect::<Vec<_>>(),
                "orgs": [] })) // orgs 為 P2-D，MVP 恆空
 }
 
 async fn me(u: CurrentUser, State(st): State<AppState>) -> Result<Json<Value>, AppError> { Ok(Json(user_json(&st.pool, u.id).await?)) }
 
+fn some_opt<'de, D: serde::Deserializer<'de>>(d: D) -> Result<Option<Option<String>>, D::Error> { Option::<String>::deserialize(d).map(Some) }
+
 #[derive(Deserialize)]
-struct PatchMe { display_name: Option<String>, notification_prefs: Option<Value> }
+struct PatchMe {
+    display_name: Option<String>, notification_prefs: Option<Value>,
+    /// 缺欄位 = 不改；null = 清除
+    #[serde(default, deserialize_with = "some_opt")] handle: Option<Option<String>>,
+    default_claim_visibility: Option<String>,
+}
 
 async fn patch_me(u: CurrentUser, State(st): State<AppState>, Json(p): Json<PatchMe>) -> Result<Json<Value>, AppError> {
     if let Some(n) = &p.display_name {
@@ -205,6 +212,20 @@ async fn patch_me(u: CurrentUser, State(st): State<AppState>, Json(p): Json<Patc
         let ok = prefs.as_object().is_some_and(|o| !o.is_empty() && o.iter().all(|(k, v)| k == "email_claims" && v.is_boolean()));
         if !ok { return Err(AppError::invalid("/notification_prefs", "FORMAT", "僅支援布林值的 email_claims")); }
         sqlx::query("UPDATE users SET notification_prefs = notification_prefs || $2 WHERE id=$1").bind(u.id).bind(prefs).execute(&st.pool).await?;
+    }
+    if let Some(h) = p.handle {
+        let h = h.map(|h| h.trim().to_lowercase());
+        if h.as_deref().is_some_and(|h| !(3..=30).contains(&h.len()) || !h.bytes().all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_')) {
+            return Err(AppError::invalid("/handle", "FORMAT", "帳號代號需為 3–30 碼小寫英數或底線"));
+        }
+        match sqlx::query("UPDATE users SET handle=$2 WHERE id=$1").bind(u.id).bind(h).execute(&st.pool).await {
+            Err(sqlx::Error::Database(e)) if e.constraint() == Some("users_handle_key") => return Err(AppError::problem(409, "HANDLE_TAKEN", "此帳號代號已被使用")),
+            r => { r?; }
+        }
+    }
+    if let Some(v) = &p.default_claim_visibility {
+        if !["public", "friends", "private"].contains(&v.as_str()) { return Err(AppError::invalid("/default_claim_visibility", "ENUM", "只能是 public / friends / private")); }
+        sqlx::query("UPDATE users SET default_claim_visibility=$2::text::share_level WHERE id=$1").bind(u.id).bind(v).execute(&st.pool).await?;
     }
     Ok(Json(user_json(&st.pool, u.id).await?))
 }

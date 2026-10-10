@@ -4,9 +4,12 @@ useHead({ title: '帳號設定' })
 const { api } = useApi()
 const { user, fetchMe, logout } = useAuth()
 const name = ref(''), msg = ref(''), err = ref('')
+const handle = ref(''), dcv = ref('friends'), hMsg = ref(''), hErr = ref(''), copied = ref(false)
+const profileUrl = computed(() => user.value?.handle ? `${location.origin}/u/${user.value.handle}` : '')
+const hBad = computed(() => !!handle.value && !isValidHandle(handle.value))
 const exporting = ref(false)
 const showDel = ref(false), word = ref(''), delBusy = ref(false), delErr = ref('')
-onMounted(async () => { await fetchMe(true); name.value = user.value?.display_name ?? '' })
+onMounted(async () => { await fetchMe(true); name.value = user.value?.display_name ?? ''; handle.value = user.value?.handle ?? ''; dcv.value = user.value?.default_claim_visibility ?? 'friends' })
 
 async function toggle(ev: Event) {
   const v = (ev.target as HTMLInputElement).checked, old = !v
@@ -19,6 +22,15 @@ async function saveName() {
   try { user.value = await api('/me', { method: 'PATCH', body: { display_name: name.value.trim() } }); msg.value = '已儲存' }
   catch (e) { err.value = errMsg(e) }
 }
+async function saveSocial() {
+  hMsg.value = hErr.value = ''
+  if (hBad.value) { hErr.value = '代號只能用小寫英文、數字、底線，3–30 字'; return }
+  try {
+    user.value = await api('/me', { method: 'PATCH', body: { handle: handle.value || null, default_claim_visibility: dcv.value } })
+    hMsg.value = '已儲存'
+  } catch (e: any) { hErr.value = apiErrMsg(e) }
+}
+async function copyUrl() { try { await navigator.clipboard.writeText(profileUrl.value); copied.value = true } catch { hErr.value = '無法複製，請手動選取網址' } }
 async function exportData() {
   exporting.value = true; err.value = ''
   try {
@@ -51,6 +63,20 @@ async function remove() {
           <label class="c-field"><span>顯示名稱</span><input v-model="name" maxlength="40" required></label>
           <p v-if="msg" class="c-ok" role="status">{{ msg }}</p>
           <button class="c-btn">儲存</button>
+        </form>
+      </section>
+      <section class="c-card">
+        <h2 class="c-h2">個人頁與捐助</h2>
+        <form @submit.prevent="saveSocial">
+          <label class="c-field"><span>帳號代號（個人頁網址，可留空）</span><input v-model="handle" maxlength="30" autocapitalize="none" autocomplete="off" placeholder="例如：amy_wang"></label>
+          <p v-if="hBad" class="c-err" role="alert">小寫英文、數字、底線，3–30 字</p>
+          <p v-if="profileUrl" class="c-mute">你的個人頁：<NuxtLink :to="`/u/${user.handle}`">{{ profileUrl }}</NuxtLink> <button type="button" class="c-btn" @click="copyUrl">{{ copied ? '已複製' : '複製' }}</button></p>
+          <label class="c-field"><span>捐助紀錄預設誰看得到</span>
+            <select v-model="dcv"><option value="public">公開</option><option value="friends">僅好友</option><option value="private">私人</option></select>
+          </label>
+          <p v-if="hErr" class="c-err" role="alert">{{ hErr }}</p>
+          <p v-if="hMsg" class="c-ok" role="status">{{ hMsg }}</p>
+          <button class="c-btn" :disabled="hBad">儲存</button>
         </form>
       </section>
       <section class="c-card">

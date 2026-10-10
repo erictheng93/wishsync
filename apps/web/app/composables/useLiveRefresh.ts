@@ -9,6 +9,7 @@ export interface LiveOpts {
   onEvent: (type: string, data: any) => void
   onMode: (m: LiveMode) => void
   eventTypes?: string[]
+  withCredentials?: boolean // 好友限定清單的 SSE 需帶 cookie
   pollMs?: number, failLimit?: number, connectTimeoutMs?: number
 }
 
@@ -30,7 +31,7 @@ export function createLiveRefresh(o: LiveOpts) {
   function start() {
     if (typeof document !== 'undefined') document.addEventListener('visibilitychange', onVisible)
     if (typeof EventSource === 'undefined') return startPoll()
-    es = new EventSource(o.url)
+    es = new EventSource(o.url, { withCredentials: o.withCredentials })
     connectTimer = setTimeout(() => { if (mode !== 'live') startPoll() }, connectTimeoutMs)
     es.onopen = () => { fails = 0; clearTimeout(connectTimer); stopPoll(); set('live') }
     es.onerror = () => {

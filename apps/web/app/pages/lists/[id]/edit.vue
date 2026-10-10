@@ -13,7 +13,8 @@ const pubBusy = ref(false), pubErrs = ref<string[]>([])
 const external = ref(false), copied = ref(false), showShare = ref(false)
 const addrOpen = ref(false), addrEl = ref<HTMLElement>()
 function openAddress() { sheet.value = false; addrOpen.value = true; nextTick(() => addrEl.value?.scrollIntoView({ block: 'center' })) }
-const meta = reactive<any>({ title: '', description: '', event_date: '', show_claimer_names: false })
+const meta = reactive<any>({ title: '', description: '', event_date: '', show_claimer_names: false, visibility: 'link', password: '' })
+const allowed = ref<string[]>([])
 let poll: any
 
 async function load(quiet = false) {
@@ -21,7 +22,8 @@ async function load(quiet = false) {
   try {
     const r = await api(`/wishlists/${id}`)
     w.value = r.wishlist; items.value = r.items
-    Object.assign(meta, { title: r.wishlist.title, description: r.wishlist.description ?? '', event_date: r.wishlist.event_date ?? '', show_claimer_names: r.wishlist.show_claimer_names })
+    Object.assign(meta, { title: r.wishlist.title, description: r.wishlist.description ?? '', event_date: r.wishlist.event_date ?? '', show_claimer_names: r.wishlist.show_claimer_names, visibility: r.wishlist.visibility, password: '' })
+    if (r.wishlist.visibility === 'selected') allowed.value = (await api(`/wishlists/${id}/allowed-users`).catch(() => ({ users: [] }))).users.map((u: any) => u.id)
     err.value = ''; stale.value = false
   } catch (e) { err.value = errMsg(e) } finally { loading.value = false }
   clearTimeout(poll)
@@ -52,7 +54,15 @@ async function patchList(body: any, ok = '已儲存') {
   }
 }
 async function saveMeta() {
-  await patchList({ title: meta.title.trim(), description: meta.description || null, event_date: meta.event_date || null, show_claimer_names: meta.show_claimer_names })
+  if (meta.visibility === 'password' && !meta.password && !w.value.has_password) { err.value = '請設定清單密碼（8–64 字）'; return }
+  const body: any = { title: meta.title.trim(), description: meta.description || null, event_date: meta.event_date || null, show_claimer_names: meta.show_claimer_names, visibility: meta.visibility }
+  if (meta.visibility === 'password' && meta.password) body.access_password = meta.password
+  if (!await patchList(body)) return
+  meta.password = ''
+  if (meta.visibility === 'selected') {
+    try { await api(`/wishlists/${id}/allowed-users`, { method: 'PUT', body: { user_ids: allowed.value } }) }
+    catch (e) { msg.value = ''; err.value = errMsg(e) }
+  }
 }
 async function publish() {
   pubBusy.value = true; pubErrs.value = []
@@ -130,6 +140,7 @@ const closed = computed(() => w.value && ['closed', 'archived'].includes(w.value
           <label class="c-field"><span>說明</span><textarea v-model="meta.description" rows="2" /></label>
           <label class="c-field"><span>活動日</span><input v-model="meta.event_date" type="date"></label>
           <label class="c-switch"><input v-model="meta.show_claimer_names" type="checkbox"><span>顯示認領者暱稱給其他訪客</span></label>
+          <CreatorVisibilityPicker v-model:visibility="meta.visibility" v-model:password="meta.password" v-model:users="allowed" :has-password="w.has_password" />
           <p class="c-mute">驚喜模式：{{ w.surprise_mode ? (w.surprise_locked ? '開啟中（鎖定至活動日，無法關閉）' : '開啟中（已解鎖）') : '未開啟' }}</p>
           <p v-if="msg" class="c-ok" role="status">{{ msg }}</p>
           <button class="c-btn block">儲存設定</button>
@@ -150,6 +161,7 @@ const closed = computed(() => w.value && ['closed', 'archived'].includes(w.value
     <CreatorConfirm :open="!!del" title="刪除品項" :text="`確定刪除「${del?.title}」？`" :ok="del?.force ? '連同認領一併刪除' : '刪除'" danger :busy="delBusy" :error="delErr" @close="del = null" @ok="remove(!!del?.force)" />
     <CreatorSheet :open="showShare" title="分享你的清單" @close="showShare = false">
       <p v-if="w?.status === 'draft'" class="c-err">尚未發佈，朋友打開會看到不存在。</p>
+      <p class="c-mute">{{ visDesc(w?.visibility) }}</p>
       <input id="c-share-input" class="c-input c-mb" :value="shareUrl" readonly @focus="($event.target as HTMLInputElement).select()">
       <label class="c-switch"><input v-model="external" type="checkbox"><span>連結加上 openExternalBrowser=1（在 LINE 內改用預設瀏覽器開啟）</span></label>
       <div class="c-row wrap">
@@ -158,6 +170,7 @@ const closed = computed(() => w.value && ['closed', 'archived'].includes(w.value
         <a class="c-btn c-grow" :href="`sms:?&body=${encodeURIComponent(shareUrl)}`">簡訊</a>
         <a class="c-btn c-grow" :href="`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`" target="_blank" rel="noopener">Facebook</a>
       </div>
+      <CreatorQr :text="shareUrl" :size="180" />
       <button class="c-btn block c-mt" @click="showShare = false">關閉</button>
     </CreatorSheet>
   </main>

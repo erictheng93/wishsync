@@ -10,7 +10,7 @@ export function useWishlistEvents(slug: Ref<string | null | undefined>, onEvent:
     close()
     if (!slug.value) return
     if (typeof EventSource === 'undefined') return startPoll()
-    es = new EventSource(`${base}/public/wishlists/${slug.value}/events`)
+    es = new EventSource(`${base}/public/wishlists/${slug.value}/events${getListAccess(slug.value) ? `?access=${encodeURIComponent(getListAccess(slug.value)!)}` : ''}`, { withCredentials: true })
     es.onopen = () => { errs = 0; stopPoll(); status.value = 'live' }
     for (const t of ['item.updated', 'wishlist.updated']) es.addEventListener(t, () => onEvent(t))
     es.onerror = () => {
