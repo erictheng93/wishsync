@@ -159,9 +159,9 @@ async fn unlock_non_password_404_and_rate_limited(pool: PgPool) {
     assert_eq!(call(&pool, "POST", &format!("/public/wishlists/{link}/unlock"), &[], Some(json!({ "password": "whatever-123" }))).await.0, StatusCode::NOT_FOUND);
     let (_, slug, _) = mk(&pool, &c, "password", Some("correct-horse")).await;
     let u = format!("/public/wishlists/{slug}/unlock");
-    for _ in 0..10 {
-        assert_eq!(call(&pool, "POST", &u, &[], Some(json!({ "password": "wrong-password" }))).await.0, StatusCode::UNPROCESSABLE_ENTITY);
-    }
+    assert_eq!(call(&pool, "POST", &u, &[], Some(json!({ "password": "wrong-password" }))).await.0, StatusCode::UNPROCESSABLE_ENTITY);
+    // 直接把計數推到上限（不跑 10 次 argon2）：固定視窗對齊時鐘，慢的迴圈若跨過視窗邊界計數會歸零而偶發失敗
+    sqlx::query("UPDATE rate_limits SET count = 10 WHERE key LIKE $1").bind(format!("unlock:{slug}:%")).execute(&pool).await.unwrap();
     let (s, _, v) = call(&pool, "POST", &u, &[], Some(json!({ "password": "correct-horse" }))).await;
     assert_eq!((s, v["code"].as_str()), (StatusCode::TOO_MANY_REQUESTS, Some("RATE_LIMITED")));
 }
