@@ -27,6 +27,7 @@ const visible = computed(() => list.value.filter(w => w.status !== 'archived'))
   <main class="c-page">
     <CreatorHeader title="我的清單">
       <NuxtLink v-if="user?.is_staff" to="/admin" class="c-btn">後台</NuxtLink>
+      <NuxtLink to="/me/wallet" class="c-btn">點數</NuxtLink>
       <NuxtLink to="/settings" class="c-btn" aria-label="設定">設定</NuxtLink>
     </CreatorHeader>
     <p v-if="err" class="c-err" role="alert">{{ err }} <button class="c-btn" @click="load()">重試</button></p>

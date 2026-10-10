@@ -79,3 +79,11 @@ dialog.c-sheet:focus-visible{outline:0}
 .c-card summary{display:flex;align-items:center;min-height:44px;cursor:pointer}
 .c-list a,.c-card a:not(.c-btn){display:inline-flex;align-items:center;min-height:44px}
 .c-switch,.c-switch span{cursor:pointer}
+/* P2-A 眾籌 / 錢包 / 採購單 */
+.c-badge.funded,.c-badge.fulfilled,.c-badge.ordered,.c-badge.placed,.c-badge.shipped,.c-badge.captured{color:var(--ok);border-color:var(--ok)}
+.c-badge.failed,.c-badge.expired,.c-badge.frozen{color:var(--bad);border-color:var(--bad)}
+.c-dl{display:grid;grid-template-columns:auto 1fr;gap:2px 12px;margin:8px 0;font-size:14px}
+.c-dl dt{color:var(--mute)}.c-dl dd{margin:0}
+.c-sub{border-top:1px dashed var(--line);margin-top:12px;padding-top:8px}
+.c-sub .c-list>li{padding:8px 0;border-bottom:1px solid var(--line)}
+.c-pos{color:var(--ok)}.c-neg{color:var(--bad)}

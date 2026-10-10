@@ -73,6 +73,10 @@ onMounted(() => loadReports())
     <div class="c-row wrap c-mb">
       <div class="c-card c-grow c-center c-m0"><div class="c-big">{{ openCount ?? '–' }}</div><div class="c-mute">待處理檢舉</div></div>
     </div>
+    <div class="c-row wrap c-mb">
+      <NuxtLink to="/admin/orders" class="c-btn c-grow">採購單佇列</NuxtLink>
+      <NuxtLink to="/admin/wallets" class="c-btn c-grow">點數錢包</NuxtLink>
+    </div>
     <nav class="c-tabs" aria-label="後台功能">
       <button v-for="t in [['reports', '檢舉佇列'], ['lists', '清單搜尋'], ['users', '使用者'], ['flags', '系統旗標']]" :key="t[0]" class="c-btn" :class="{ on: tab === t[0] }" @click="tab = t[0] as any">{{ t[1] }}</button>
     </nav>

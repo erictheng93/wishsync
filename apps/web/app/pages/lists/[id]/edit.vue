@@ -11,6 +11,8 @@ const sheet = ref(false), editing = ref<any>(null)
 const del = ref<any>(null), delBusy = ref(false), delErr = ref('')
 const pubBusy = ref(false), pubErrs = ref<string[]>([])
 const external = ref(false), copied = ref(false), showShare = ref(false)
+const addrOpen = ref(false), addrEl = ref<HTMLElement>()
+function openAddress() { sheet.value = false; addrOpen.value = true; nextTick(() => addrEl.value?.scrollIntoView({ block: 'center' })) }
 const meta = reactive<any>({ title: '', description: '', event_date: '', show_claimer_names: false })
 let poll: any
 
@@ -42,7 +44,10 @@ async function patchList(body: any, ok = '已儲存') {
   catch (e: any) {
     if (e.code === 'STALE_VERSION') { stale.value = true; err.value = '這份清單已在其他地方被修改，請重新載入'; return false }
     err.value = errMsg(e)
-    if (e.code === 'WISHLIST_NOT_PUBLISHABLE') pubErrs.value = (e.errors || []).map((x: any) => x.detail)
+    if (e.code === 'WISHLIST_NOT_PUBLISHABLE') {
+      pubErrs.value = (e.errors || []).map((x: any) => x.detail)
+      if ((e.errors || []).some((x: any) => x.code === 'SHIPPING_ADDRESS_REQUIRED')) openAddress()
+    }
     return false
   }
 }
@@ -98,7 +103,8 @@ const closed = computed(() => w.value && ['closed', 'archived'].includes(w.value
           <div v-else class="c-thumb">{{ i.image_status === 'pending' ? '處理中' : '無圖' }}</div>
           <div class="c-grow">
             <strong>{{ i.title }}</strong>
-            <div class="c-mute">需要 {{ i.qty_needed }}・數量認領・優先度{{ { high: '高', medium: '中', low: '低' }[i.priority as string] || '' }}</div>
+            <div v-if="i.funding_mode === 'crowdfund'" class="c-mute">點數眾籌 {{ fmtPts(i.pledged_points) }} / {{ fmtPts(i.target_points) }} 點<template v-if="i.funding_deadline">・至 {{ fmtTime(i.funding_deadline) }}</template>・優先度{{ { high: '高', medium: '中', low: '低' }[i.priority as string] || '' }}</div>
+            <div v-else class="c-mute">需要 {{ i.qty_needed }}・數量認領・優先度{{ { high: '高', medium: '中', low: '低' }[i.priority as string] || '' }}</div>
             <CreatorStatusBadge v-if="i.image_status === 'pending' || i.image_status === 'rejected'" :v="i.image_status" />
             <div v-if="i.image_status === 'rejected'" class="c-err">圖片未通過，請換一張</div>
           </div>
@@ -111,6 +117,11 @@ const closed = computed(() => w.value && ['closed', 'archived'].includes(w.value
         </div>
       </article>
       <button v-if="!closed" class="c-btn block c-mb16" @click="openItem()">＋ 新增品項</button>
+
+      <details ref="addrEl" class="c-card" :open="addrOpen" @toggle="addrOpen = ($event.target as HTMLDetailsElement).open">
+        <summary>收件資訊（點數眾籌用）<span v-if="w.has_shipping_address" class="c-badge active">已填寫</span></summary>
+        <CreatorShippingForm :wishlist-id="id" @saved="w.has_shipping_address = !!$event.has_shipping_address" />
+      </details>
 
       <details class="c-card">
         <summary>清單設定</summary>
@@ -135,7 +146,7 @@ const closed = computed(() => w.value && ['closed', 'archived'].includes(w.value
       </div></div>
     </template>
 
-    <CreatorItemSheet :open="sheet" :wishlist-id="id" :item="editing" @close="sheet = false" @saved="saved" @reload="saved" />
+    <CreatorItemSheet :open="sheet" :wishlist-id="id" :item="editing" @close="sheet = false" @saved="saved" @reload="saved" @address="openAddress" />
     <CreatorConfirm :open="!!del" title="刪除品項" :text="`確定刪除「${del?.title}」？`" :ok="del?.force ? '連同認領一併刪除' : '刪除'" danger :busy="delBusy" :error="delErr" @close="del = null" @ok="remove(!!del?.force)" />
     <CreatorSheet :open="showShare" title="分享你的清單" @close="showShare = false">
       <p v-if="w?.status === 'draft'" class="c-err">尚未發佈，朋友打開會看到不存在。</p>

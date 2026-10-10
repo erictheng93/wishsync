@@ -7,8 +7,12 @@ const items = [
   { id: 'i1', title: '玻璃奶瓶 240ml', brand: 'Pigeon', spec: '寬口徑 / 3 入裝', image_url: null, product_url: 'https://example.com', unit_price_amount: 450, priority: 'high', qty_needed: 10, qty_claimed: 6 },
   { id: 'i2', title: 'NB 尿布 2 包', brand: null, spec: null, image_url: null, product_url: null, unit_price_amount: 300, priority: 'medium', qty_needed: 2, qty_claimed: 1 },
   { id: 'i3', title: '奶粉 1 號 800g', brand: null, spec: null, image_url: null, product_url: null, unit_price_amount: 800, priority: 'low', qty_needed: 2, qty_claimed: 2 },
+  // 點數眾籌品項（P2-A）：沒有後端也能預覽卡片；/me 回 401，所以點「用點數贊助」會導到登入頁
+  { id: 'i4', title: 'Combi 嬰兒推車', brand: 'Combi', spec: null, image_url: null, product_url: null, unit_price_amount: null, priority: 'high', qty_needed: 1, qty_claimed: 0,
+    funding_mode: 'crowdfund', target_points: 9800, pledged_points: 6300, remaining_points: 3500, funding_status: 'open', display_status: 'open', funding_deadline: '2026-12-19T15:59:00Z',
+    contributors: [{ display_name: '阿明', points: 3000 }, { display_name: '匿名朋友', points: 1300 }, { display_name: '小華', points: 2000 }] },
 ]
-const view = i => { const r = i.qty_needed - i.qty_claimed; return { funding_mode: 'quantity', ...i, qty_remaining: r, is_fully_claimed: r <= 0, progress_percent: Math.round(i.qty_claimed / i.qty_needed * 100) } }
+const view = i => { const r = i.qty_needed - i.qty_claimed; return { funding_mode: 'quantity', ...i, qty_remaining: r, is_fully_claimed: r <= 0, progress_percent: i.target_points ? Math.floor(i.pledged_points / i.target_points * 100) : Math.round(i.qty_claimed / i.qty_needed * 100) } }
 const guests = new Map(), claims = new Map(), idem = new Map(), sse = new Set()
 let n = 0
 
