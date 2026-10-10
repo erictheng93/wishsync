@@ -11,3 +11,4 @@ dist/
 playwright-report/
 test-results/
 apps/web/qa/out/
+.claude/worktrees/
