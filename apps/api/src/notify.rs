@@ -103,6 +103,11 @@ pub async fn tick(pool: &PgPool) -> Result<usize, sqlx::Error> {
         };
         // 寄信時才產生：退訂連結；訪客確認信的一次性恢復權杖（每次寄信換發，30 天）
         let mut payload = payload;
+        // 眾籌通知：寄信時才查品項名稱（品項可能已被刪除，仍保留列）
+        if let Some(it) = payload.get("item_id").and_then(Value::as_str).and_then(|s| s.parse::<Uuid>().ok()) {
+            let t: Option<String> = sqlx::query_scalar("SELECT title FROM wishlist_items WHERE id = $1").bind(it).fetch_optional(pool).await?;
+            if let Some(t) = t { payload["item_title"] = t.into(); }
+        }
         let api = cfg.api_base_url.clone();
         let sub = match (uid, gid) { (Some(u), _) => Some(('u', u)), (_, Some(g)) => Some(('g', g)), _ => None };
         if let Some((k, i)) = sub {
@@ -136,7 +141,15 @@ pub fn render(kind: &str, title: &str, payload: &Value) -> (String, String) {
     let n = payload.get("count").and_then(Value::as_i64).unwrap_or(1);
     let base = crate::config::get().app_url;
     let manage = match payload.get("recovery_token").and_then(Value::as_str) { Some(t) => format!("{base}/me/claims#r={t}"), None => format!("{base}/me/claims") };
+    let item = payload.get("item_title").and_then(Value::as_str).unwrap_or("品項");
+    let wallet = format!("{base}/me/wallet");
     let (subject, body) = match kind {
+        "crowdfund.funded" => (format!("【WishSync】《{item}》集資達標了"), format!("你支持的「{item}」（清單《{title}》）已集資達標，營運團隊會開始代購。\n查看我的點數與捐贈：{wallet}\n")),
+        "order.shipped" => (format!("【WishSync】《{item}》已出貨"), format!("你支持的「{item}」（清單《{title}》）已出貨。\n查看我的點數與捐贈：{wallet}\n")),
+        "order.delivered" => (format!("【WishSync】《{item}》已送達"), format!("你支持的「{item}」（清單《{title}》）已送達受贈者，謝謝你的心意。\n查看我的點數與捐贈：{wallet}\n")),
+        "order.failed" => (format!("【WishSync】《{item}》代購未成功，點數已退回"), format!("你支持的「{item}」（清單《{title}》）代購未成功，你捐出的點數已全數退回錢包。\n查看我的點數：{wallet}\n")),
+        "funding.expired" => (format!("【WishSync】《{item}》募集期限已到"), format!("「{item}」（清單《{title}》）在期限內未達標。你的點數會再保留 7 天：期間可到錢包撤回，或轉捐給同一份清單的其他品項；逾期未處理會自動退回錢包。\n處理我的捐贈：{wallet}\n")),
+        "item.removed" => (format!("【WishSync】《{item}》已被移除，點數已退回"), format!("清單《{title}》的建立者移除了「{item}」（或封存了清單），你捐出的點數已退回錢包。\n查看我的點數：{wallet}\n")),
         "claim.digest" => (format!("【WishSync】《{title}》今日有 {n} 件新認領"), format!("你的清單《{title}》今日彙整：有 {n} 件新認領。\n登入查看：{base}/dashboard\n")),
         "claim.created" => (format!("【WishSync】《{title}》有 {n} 件新認領"), format!("你的清單《{title}》有 {n} 件新認領。\n登入查看：{base}/dashboard\n")),
         "claim.confirmation" => ("【WishSync】認領已確認".into(), format!("你的認領已記錄，謝謝你的心意。\n管理我的認領：{manage}\n")),

@@ -34,6 +34,7 @@ struct It {
     id: Uuid, title: String, brand: Option<String>, spec: Option<String>, image_key: Option<String>, image_status: String,
     product_url: Option<String>, unit_price_amount: Option<i64>, priority: String, funding_mode: String,
     qty_needed: i32, qty_claimed: i32,
+    target_points: Option<i64>, pledged_points: i64, funding_status: Option<String>, display_status: Option<String>, funding_deadline: Option<DateTime<Utc>>,
 }
 
 async fn wishlist(State(st): State<AppState>, Path(slug): Path<String>, req: HeaderMap) -> Result<Response, AppError> {
@@ -58,9 +59,11 @@ async fn wishlist(State(st): State<AppState>, Path(slug): Path<String>, req: Hea
     }
 
     let items: Vec<It> = sqlx::query_as(
-        "SELECT id, title, brand, spec, image_key, image_status::text AS image_status, product_url, unit_price_amount,
-                priority::text AS priority, funding_mode::text AS funding_mode, qty_needed, qty_claimed
-         FROM wishlist_items WHERE wishlist_id = $1 AND deleted_at IS NULL ORDER BY sort_order, id")
+        &format!("SELECT i.id, i.title, i.brand, i.spec, i.image_key, i.image_status::text AS image_status, i.product_url, i.unit_price_amount,
+                i.priority::text AS priority, i.funding_mode::text AS funding_mode, i.qty_needed, i.qty_claimed,
+                i.target_points, i.pledged_points, i.funding_status::text AS funding_status, ({}) AS display_status, i.funding_deadline
+         FROM wishlist_items i LEFT JOIN purchase_orders po ON po.item_id = i.id
+         WHERE i.wishlist_id = $1 AND i.deleted_at IS NULL ORDER BY i.sort_order, i.id", crate::points::DISPLAY_STATUS_SQL))
         .bind(w.id).fetch_all(&st.pool).await?;
 
     // 驚喜鎖定期間無論 show_claimer_names 為何一律不輸出（伺服器端強制）
@@ -75,21 +78,51 @@ async fn wishlist(State(st): State<AppState>, Path(slug): Path<String>, req: Hea
         for (item, name, qty) in rows { claimers.entry(item).or_default().push(json!({ "display_name": name, "qty": qty })); }
     }
 
-    let (total, got): (i64, i64) = items.iter().fold((0, 0), |a, i| (a.0 + i.qty_needed as i64, a.1 + i.qty_claimed as i64));
+    // 眾籌捐贈者：同一位（同 user 且非匿名）合併成一筆；匿名者各自一筆、一律「匿名朋友」。只算 pledged / captured。
+    // 與 claimers 同一道閘：show_claimer_names 且未驚喜鎖定才輸出。
+    let mut contributors: HashMap<Uuid, Vec<Value>> = HashMap::new();
+    if visible {
+        let rows: Vec<(Uuid, Uuid, bool, String, i64)> = sqlx::query_as(
+            "SELECT c.item_id, c.user_id, c.is_anonymous, c.donor_name, c.points FROM contributions c JOIN wishlist_items i ON i.id = c.item_id
+             WHERE i.wishlist_id = $1 AND i.deleted_at IS NULL AND c.status IN ('pledged', 'captured') ORDER BY c.created_at, c.id")
+            .bind(w.id).fetch_all(&st.pool).await?;
+        let mut merged: HashMap<(Uuid, Uuid), usize> = HashMap::new(); // (item, user) -> 該品項 contributors 的索引（僅非匿名）
+        for (item, user, anon, name, points) in rows {
+            let list = contributors.entry(item).or_default();
+            if anon { list.push(json!({ "display_name": "匿名朋友", "points": points })); continue; }
+            match merged.get(&(item, user)) {
+                Some(&k) => list[k]["points"] = json!(list[k]["points"].as_i64().unwrap_or(0) + points),
+                None => { merged.insert((item, user), list.len()); list.push(json!({ "display_name": name, "points": points })); }
+            }
+        }
+    }
+
+    // 完成度：數量型 = qty_claimed/qty_needed；眾籌型達標（funded / fulfilled）算 1/1（見 wishlists::units）
+    let (mut total, mut got, mut fulfilled) = (0i64, 0i64, 0usize);
+    for i in &items {
+        let (c, n) = crate::wishlists::units(&i.funding_mode, i.qty_needed, i.qty_claimed, i.funding_status.as_deref());
+        total += n; got += c;
+        if c >= n { fulfilled += 1; }
+    }
     let pct = crate::wishlists::completion_pct;
-    let fulfilled = items.iter().filter(|i| i.qty_claimed >= i.qty_needed).count();
     let item_json: Vec<Value> = items.iter().map(|i| {
+        let cf = i.funding_mode == "crowdfund";
+        let funded = matches!(i.funding_status.as_deref(), Some("funded" | "fulfilled"));
         let mut v = json!({
             "id": i.id, "title": i.title, "brand": i.brand, "spec": i.spec,
             "image_url": image_url(i.image_key.as_deref(), &i.image_status),
             "product_url": i.product_url, "unit_price_amount": i.unit_price_amount, "priority": i.priority,
             "funding_mode": i.funding_mode, "qty_needed": i.qty_needed, "qty_claimed": i.qty_claimed,
-            "qty_remaining": i.qty_needed - i.qty_claimed, "is_fully_claimed": i.qty_claimed >= i.qty_needed,
-            "target_points": null, "pledged_points": null, "remaining_points": null,
-            "funding_status": null, "display_status": null, "funding_deadline": null,
-            "progress_percent": pct(i.qty_claimed as i64, i.qty_needed as i64),
+            "qty_remaining": i.qty_needed - i.qty_claimed, "is_fully_claimed": if cf { funded } else { i.qty_claimed >= i.qty_needed },
+            "target_points": i.target_points, "pledged_points": cf.then_some(i.pledged_points),
+            "remaining_points": i.target_points.filter(|_| cf).map(|t| (t - i.pledged_points).max(0)),
+            "funding_status": i.funding_status, "display_status": i.display_status, "funding_deadline": i.funding_deadline,
+            "progress_percent": if cf { pct(i.pledged_points, i.target_points.unwrap_or(0)) } else { pct(i.qty_claimed as i64, i.qty_needed as i64) },
         });
-        if visible { v["claimers"] = json!(claimers.remove(&i.id).unwrap_or_default()); }
+        if visible {
+            v["claimers"] = json!(claimers.remove(&i.id).unwrap_or_default());
+            if cf { v["contributors"] = json!(contributors.remove(&i.id).unwrap_or_default()); }
+        }
         v
     }).collect();
 

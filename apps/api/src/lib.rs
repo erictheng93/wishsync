@@ -20,6 +20,7 @@ pub mod points;
 pub mod sealed;
 pub mod contributions;
 pub mod wallet;
+pub mod orders;
 
 use axum::{response::IntoResponse, Router};
 use sqlx::PgPool;
@@ -40,6 +41,7 @@ pub fn app(state: AppState) -> Router {
             .merge(dashboard::routes())
             .merge(reports::routes())
             .merge(admin::routes())
+            .merge(orders::routes())
             .merge(account::routes())
             .merge(wishlists::routes())
             .merge(uploads::routes())

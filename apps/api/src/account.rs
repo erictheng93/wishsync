@@ -88,9 +88,21 @@ async fn export(State(st): State<AppState>, u: CurrentUser) -> Result<Response, 
     let claims: Vec<Value> = sqlx::query_scalar(
         "SELECT jsonb_build_object('id', id, 'item_id', item_id, 'qty', qty, 'status', status::text, 'note', note, 'created_at', created_at)
            FROM claims WHERE user_id = $1 ORDER BY id").bind(u.id).fetch_all(&st.pool).await?;
+    // P2-A：錢包、點數流水與本人的認捐（不含他人資料）
+    let wallet: Option<Value> = sqlx::query_scalar("SELECT jsonb_build_object('id', id, 'balance', balance, 'status', status::text, 'created_at', created_at) FROM point_wallets WHERE user_id = $1")
+        .bind(u.id).fetch_optional(&st.pool).await?;
+    let ledger: Vec<Value> = sqlx::query_scalar(
+        "SELECT jsonb_build_object('id', l.id, 'delta', l.delta, 'balance_after', l.balance_after, 'entry_type', l.entry_type::text, 'ref_type', l.ref_type,
+                'ref_id', l.ref_id, 'note', l.note, 'created_at', l.created_at)
+           FROM point_ledger l JOIN point_wallets w ON w.id = l.wallet_id WHERE w.user_id = $1 ORDER BY l.seq").bind(u.id).fetch_all(&st.pool).await?;
+    let contributions: Vec<Value> = sqlx::query_scalar(
+        "SELECT jsonb_build_object('id', id, 'item_id', item_id, 'wishlist_id', wishlist_id, 'points', points, 'refunded_points', refunded_points, 'status', status::text,
+                'message', message, 'is_anonymous', is_anonymous, 'captured_at', captured_at, 'released_at', released_at, 'created_at', created_at)
+           FROM contributions WHERE user_id = $1 ORDER BY id").bind(u.id).fetch_all(&st.pool).await?;
     sqlx::query("INSERT INTO audit_logs (actor_type, actor_id, action, entity, entity_id) VALUES ('user', $1, 'account.export', 'users', $1)").bind(u.id).execute(&st.pool).await?;
     let now = chrono::Utc::now();
-    let mut res = Json(json!({ "exported_at": now, "user": user, "identities": identities, "wishlists": wishlists, "claims": claims })).into_response();
+    let mut res = Json(json!({ "exported_at": now, "user": user, "identities": identities, "wishlists": wishlists, "claims": claims,
+        "wallet": wallet, "ledger": ledger, "contributions": contributions })).into_response();
     let h = res.headers_mut();
     h.insert(header::CONTENT_DISPOSITION, HeaderValue::from_str(&format!("attachment; filename=\"wishsync-export-{}.json\"", now.format("%Y-%m-%d"))).unwrap());
     h.insert(header::CACHE_CONTROL, HeaderValue::from_static("private, no-store"));
@@ -103,11 +115,21 @@ async fn delete_me(State(st): State<AppState>, u: CurrentUser, Json(b): Json<Val
     }
     let id = u.id;
     let mut tx = st.pool.begin().await?;
+    // P2-A：還有進行中的認捐（pledged）或點數餘額就不能刪帳號（否則點數會憑空消失）。先鎖錢包，與認捐 / 營運發點互斥。
+    // captured（已達標、採購中）的認捐不擋：點數已花出，帳號匿名化後 donor_name 一併去識別。
+    sqlx::query("SELECT id FROM point_wallets WHERE user_id = $1 FOR UPDATE").bind(id).execute(&mut *tx).await?;
+    let held: (i64, i64) = sqlx::query_as(
+        "SELECT (SELECT count(*) FROM contributions WHERE user_id = $1 AND status = 'pledged'), (SELECT coalesce(sum(balance), 0)::bigint FROM point_wallets WHERE user_id = $1)")
+        .bind(id).fetch_one(&mut *tx).await?;
+    if held.0 > 0 || held.1 > 0 {
+        return Err(AppError::problem(409, "ACCOUNT_HAS_POINTS", format!("帳號還有 {} 筆進行中的認捐、{} 點餘額。請先到錢包撤回認捐，並聯絡客服處理剩餘點數後再刪除帳號。", held.0, held.1)));
+    }
     sqlx::query("UPDATE sessions SET revoked_at = now() WHERE user_id = $1 AND revoked_at IS NULL").bind(id).execute(&mut *tx).await?;
     sqlx::query("DELETE FROM otp_challenges WHERE email = (SELECT email FROM users WHERE id = $1)").bind(id).execute(&mut *tx).await?;
     sqlx::query("DELETE FROM auth_identities WHERE user_id = $1").bind(id).execute(&mut *tx).await?;
-    sqlx::query("UPDATE wishlists SET status = 'archived', visibility = 'private', closed_at = COALESCE(closed_at, now()) WHERE owner_id = $1 AND status <> 'archived'")
-        .bind(id).execute(&mut *tx).await?;
+    let archived: Vec<Uuid> = sqlx::query_scalar("UPDATE wishlists SET status = 'archived', visibility = 'private', closed_at = COALESCE(closed_at, now()) WHERE owner_id = $1 AND status <> 'archived' RETURNING id")
+        .bind(id).fetch_all(&mut *tx).await?;
+    crate::wishlists::release_pledged(&mut tx, &archived).await?; // 別人捐在這些清單上、尚未達標的點數退回各自錢包
     // F-08：取消他人清單上的 reserved 認領並回補（purchased / delivered 已履行，保留）。鎖序同 claims::apply：先 item（依 id）後 claim。
     sqlx::query("SELECT id FROM wishlist_items WHERE id IN (SELECT item_id FROM claims WHERE user_id = $1 AND status = 'reserved') ORDER BY id FOR UPDATE")
         .bind(id).execute(&mut *tx).await?;
@@ -122,6 +144,7 @@ async fn delete_me(State(st): State<AppState>, u: CurrentUser, Json(b): Json<Val
          SELECT DISTINCT wishlist_id FROM r").bind(id).fetch_all(&mut *tx).await?;
     for w in wids { crate::dashboard::notify(&mut *tx, w).await?; }
     sqlx::query("UPDATE claims SET claimer_name = '已刪除的使用者' WHERE user_id = $1").bind(id).execute(&mut *tx).await?;
+    sqlx::query("UPDATE contributions SET donor_name = '已刪除的使用者' WHERE user_id = $1").bind(id).execute(&mut *tx).await?;
     sqlx::query("UPDATE notifications SET status = 'cancelled' WHERE user_id = $1 AND status = 'pending'").bind(id).execute(&mut *tx).await?;
     let (at,): (chrono::DateTime<chrono::Utc>,) = sqlx::query_as(
         "UPDATE users SET display_name = '已刪除的使用者', email = NULL, avatar_key = NULL, notification_prefs = '{}'::jsonb,
