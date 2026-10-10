@@ -564,3 +564,21 @@ async fn wallet_contributions_flags_and_filter(pool: PgPool) {
     let (_, _, other) = call(&app, "GET", "/wallet/contributions", Some(&tb), None, None).await;
     assert_eq!(other["data"].as_array().unwrap().len(), 0);
 }
+
+#[sqlx::test(migrations = "../../db/migrations")]
+async fn pledge_respects_list_visibility(pool: PgPool) {
+    let app = test_app(&pool);
+    let (owner, _) = user(&pool, "小米").await;
+    let (stranger, ts) = user(&pool, "路人").await;
+    let (friend, tf) = user(&pool, "好友").await;
+    for u in [stranger, friend] { grant(&pool, u, 1000).await; }
+    let (a, b) = if owner < friend { (owner, friend) } else { (friend, owner) };
+    sqlx::query("INSERT INTO friendships (user_a, user_b) VALUES ($1, $2)").bind(a).bind(b).execute(&pool).await.unwrap();
+    let wl = wishlist(&pool, owner).await;
+    sqlx::query("UPDATE wishlists SET visibility = 'friends' WHERE id = $1").bind(wl).execute(&pool).await.unwrap();
+    let item = cf_item(&pool, wl, 500).await;
+    let (st, _, b) = pledge(&app, item, &ts, 100).await;
+    assert_eq!((st, b["code"].as_str()), (StatusCode::FORBIDDEN, Some("FRIENDS_ONLY")));
+    assert_eq!(balance(&pool, stranger).await, 1000);
+    assert_eq!(pledge(&app, item, &tf, 100).await.0, StatusCode::CREATED);
+}

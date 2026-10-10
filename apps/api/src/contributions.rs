@@ -89,6 +89,15 @@ async fn create(State(st): State<AppState>, Path(item_id): Path<Uuid>, user: Cur
     if message.as_deref().is_some_and(|m| m.chars().count() > 200) { return Err(AppError::invalid("/message", "RANGE", "留言至多 200 字")); }
     let anon = req.is_anonymous.unwrap_or(false);
 
+    // 存取判斷（同 claims）：好友/指定/密碼清單看得到才能認捐；在交易外做，不影響鎖序
+    let acl: Option<(Uuid, Uuid, String, Option<String>)> = sqlx::query_as(
+        "SELECT w.id, w.owner_id, w.visibility::text, w.access_password_hash FROM wishlist_items i JOIN wishlists w ON w.id = i.wishlist_id
+         WHERE i.id = $1 AND i.deleted_at IS NULL AND w.deleted_at IS NULL").bind(item_id).fetch_optional(&st.pool).await?;
+    if let Some((wid, owner_id, vis, pw)) = &acl {
+        let acc = headers.get("x-list-access").and_then(|v| v.to_str().ok());
+        crate::access::check_wishlist(&st.pool, &crate::access::ListAccess { wishlist_id: *wid, owner_id: *owner_id, visibility: vis, pw_hash: pw.as_deref() }, Some(user.id), acc).await?;
+    }
+
     let scope = format!("user:{}:POST /items/{{id}}/contributions", user.id);
     let hash = idempotency::request_hash(&format!("POST /items/{item_id}/contributions"), &body);
     let mut tx = st.pool.begin().await?;
