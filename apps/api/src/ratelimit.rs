@@ -42,6 +42,7 @@ pub fn spawn_cleanup(pool: PgPool) {
         loop {
             t.tick().await;
             if let Err(e) = crate::claims::expire_due(&pool).await { tracing::error!(error=%e, "expire_due"); }
+            if let Err(e) = crate::contributions::tick_funding(&pool).await { tracing::error!(error=?e, "tick_funding"); }
             if n % 12 == 0 { if let Err(e) = cleanup(&pool).await { tracing::error!(error=%e, "cleanup"); } }
             n = n.wrapping_add(1);
         }

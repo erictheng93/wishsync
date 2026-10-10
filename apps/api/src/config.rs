@@ -24,6 +24,8 @@ pub struct Config {
     pub turnstile_secret: Option<String>,
     pub turnstile_verify_url: String,
     pub s3: crate::uploads::S3,
+    /// 收件地址 AEAD 金鑰（SHIPPING_ENC_KEY，base64 32 bytes），見 sealed.rs
+    pub shipping_key: [u8; 32],
 }
 
 static CONFIG: OnceLock<Config> = OnceLock::new();
@@ -34,6 +36,11 @@ pub fn init(c: Config) { let _ = CONFIG.set(c); }
 /// 已 init 則回該設定；否則（僅測試 / examples 等未經 main 的情況）回 dev 設定。
 /// 正式程序一定經 main 的 init，所以此 fallback 不會在 production 生效。
 pub fn get() -> Config { CONFIG.get().cloned().unwrap_or_else(Config::dev) }
+
+fn key32(b64: &str) -> Option<[u8; 32]> {
+    use base64::Engine;
+    base64::engine::general_purpose::STANDARD.decode(b64.trim()).ok()?.try_into().ok()
+}
 
 fn var(k: &str) -> Option<String> { std::env::var(k).ok().filter(|v| !v.is_empty()) }
 
@@ -59,6 +66,7 @@ impl Config {
             turnstile_secret: var("TURNSTILE_SECRET"),
             turnstile_verify_url: v("TURNSTILE_VERIFY_URL", "https://challenges.cloudflare.com/turnstile/v0/siteverify"),
             s3: crate::uploads::S3::dev(),
+            shipping_key: var("SHIPPING_ENC_KEY").and_then(|k| key32(&k)).unwrap_or_else(|| { use sha2::Digest; sha2::Sha256::digest(b"dev-shipping-key").into() }),
         }
     }
 
@@ -91,6 +99,7 @@ impl Config {
             _ => return Err("production 必須明確設定 TRUSTED_PROXY=cloudflare|none（不設會讓所有使用者看起來來自同一 IP，使每 IP 限流變成全域限流）".into()),
         }
         need("TURNSTILE_SECRET")?;
+        c.shipping_key = key32(&need("SHIPPING_ENC_KEY")?).ok_or("SHIPPING_ENC_KEY 必須是 base64 編碼的 32 bytes")?;
         c.s3 = crate::uploads::S3 {
             endpoint: need("S3_ENDPOINT")?.trim_end_matches('/').into(), bucket: need("S3_BUCKET")?,
             ak: need("S3_ACCESS_KEY")?, sk: need("S3_SECRET_KEY")?, public_base: need("S3_PUBLIC_BASE")?,

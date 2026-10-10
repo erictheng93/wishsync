@@ -6,7 +6,7 @@ use wishsync_api::config::{client_ip, Config};
 
 #[test]
 fn production_fails_closed() {
-    let all = ["APP_ENV", "OTP_PEPPER", "OAUTH_SECRET", "UNSUB_SECRET", "CF_ACCOUNT_ID", "CF_EMAIL_API_TOKEN", "MAIL_FROM", "APP_URL", "API_BASE_URL", "TRUSTED_PROXY", "TURNSTILE_SECRET", "S3_ENDPOINT", "S3_BUCKET", "S3_ACCESS_KEY", "S3_SECRET_KEY", "S3_PUBLIC_BASE", "BIND"];
+    let all = ["APP_ENV", "OTP_PEPPER", "OAUTH_SECRET", "UNSUB_SECRET", "CF_ACCOUNT_ID", "CF_EMAIL_API_TOKEN", "MAIL_FROM", "APP_URL", "API_BASE_URL", "TRUSTED_PROXY", "TURNSTILE_SECRET", "S3_ENDPOINT", "S3_BUCKET", "S3_ACCESS_KEY", "S3_SECRET_KEY", "S3_PUBLIC_BASE", "BIND", "SHIPPING_ENC_KEY"];
     for k in all { std::env::remove_var(k); }
     // 未設 APP_ENV => production => 缺 OTP_PEPPER
     assert!(Config::try_from_env().unwrap_err().contains("OTP_PEPPER"));
@@ -27,6 +27,11 @@ fn production_fails_closed() {
     std::env::set_var("TRUSTED_PROXY", "none");
     assert!(Config::try_from_env().unwrap_err().contains("TURNSTILE_SECRET"));
     std::env::set_var("TURNSTILE_SECRET", "ts-secret");
+    // 收件資訊金鑰必填且須為 base64 的 32 bytes
+    assert!(Config::try_from_env().unwrap_err().contains("SHIPPING_ENC_KEY"));
+    std::env::set_var("SHIPPING_ENC_KEY", "dG9vLXNob3J0");
+    assert!(Config::try_from_env().unwrap_err().contains("32 bytes"));
+    std::env::set_var("SHIPPING_ENC_KEY", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=");
     // S3_* 逐一必填，缺哪個就指出哪個
     for (k, v) in [("S3_ENDPOINT", "https://r2.x.tw"), ("S3_BUCKET", "b"), ("S3_ACCESS_KEY", "ak"), ("S3_SECRET_KEY", "sk"), ("S3_PUBLIC_BASE", "https://cdn.x.tw")] {
         assert!(Config::try_from_env().unwrap_err().contains(k), "{k}");

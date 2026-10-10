@@ -54,21 +54,33 @@ async fn bus(pool: &PgPool) -> &'static broadcast::Sender<Uuid> {
     }).await
 }
 
-struct Snap { status: String, title: String, hidden: bool, items: HashMap<Uuid, (i32, i32)> }
+/// 單一品項的 SSE 比對單位：任何一項變動就推 item.updated（pledged_points / funding_status / display_status 為眾籌欄位）
+#[derive(Clone, PartialEq)]
+struct ItemSnap { needed: i32, claimed: i32, mode: String, pledged: i64, target: Option<i64>, funding_status: Option<String>, display_status: Option<String> }
+
+struct Snap { status: String, title: String, hidden: bool, items: HashMap<Uuid, ItemSnap> }
 
 async fn snapshot(pool: &PgPool, wid: Uuid) -> Result<Option<Snap>, sqlx::Error> {
     let w: Option<(String, String, String)> = sqlx::query_as(
         "SELECT status::text, title, moderation_status::text FROM wishlists WHERE id = $1 AND deleted_at IS NULL").bind(wid).fetch_optional(pool).await?;
     let Some((status, title, m)) = w else { return Ok(None) };
-    let items: Vec<(Uuid, i32, i32)> = sqlx::query_as(
-        "SELECT id, qty_needed, qty_claimed FROM wishlist_items WHERE wishlist_id = $1 AND deleted_at IS NULL").bind(wid).fetch_all(pool).await?;
-    Ok(Some(Snap { status, title, hidden: m == "hidden", items: items.into_iter().map(|i| (i.0, (i.1, i.2))).collect() }))
+    let items: Vec<(Uuid, i32, i32, String, i64, Option<i64>, Option<String>, Option<String>)> = sqlx::query_as(
+        &format!("SELECT i.id, i.qty_needed, i.qty_claimed, i.funding_mode::text, i.pledged_points, i.target_points, i.funding_status::text, ({}) AS display_status
+                    FROM wishlist_items i LEFT JOIN purchase_orders po ON po.item_id = i.id WHERE i.wishlist_id = $1 AND i.deleted_at IS NULL", crate::points::DISPLAY_STATUS_SQL))
+        .bind(wid).fetch_all(pool).await?;
+    Ok(Some(Snap { status, title, hidden: m == "hidden", items: items.into_iter().map(|i|
+        (i.0, ItemSnap { needed: i.1, claimed: i.2, mode: i.3, pledged: i.4, target: i.5, funding_status: i.6, display_status: i.7 })).collect() }))
 }
 
-fn item_event(id: Uuid, needed: i32, claimed: i32, deleted: bool) -> Value {
+fn units(s: &ItemSnap) -> (i64, i64) { crate::wishlists::units(&s.mode, s.needed, s.claimed, s.funding_status.as_deref()) }
+
+fn item_event(id: Uuid, s: &ItemSnap, deleted: bool) -> Value {
+    let cf = s.mode == "crowdfund";
+    let (needed, claimed) = (s.needed, s.claimed);
     let mut v = json!({ "item_id": id, "qty_needed": needed, "qty_claimed": claimed, "qty_remaining": (needed - claimed).max(0),
-        "is_fully_claimed": claimed >= needed, "pledged_points": null, "target_points": null, "funding_status": null,
-        "display_status": null, "updated_at": chrono::Utc::now() });
+        "is_fully_claimed": if cf { units(s).0 >= 1 } else { claimed >= needed },
+        "pledged_points": cf.then_some(s.pledged), "target_points": s.target, "remaining_points": s.target.filter(|_| cf).map(|t| (t - s.pledged).max(0)),
+        "funding_status": s.funding_status, "display_status": s.display_status, "updated_at": chrono::Utc::now() });
     if deleted { v["deleted"] = json!(true); }
     v
 }
@@ -101,12 +113,12 @@ async fn events(State(st): State<AppState>, Path(slug): Path<String>) -> Result<
             let Ok(Some(s)) = snapshot(&pool, wid).await else { continue };
             let mut evs: Vec<(&str, Value)> = vec![];
             if !s.hidden {
-                for (id, &(n, c)) in &s.items { if seen.get(id) != Some(&(n, c)) { evs.push(("item.updated", item_event(*id, n, c, false))); } }
-                for (id, &(n, c)) in seen.iter() { if !s.items.contains_key(id) { evs.push(("item.updated", item_event(*id, n, c, true))); } }
+                for (id, cur) in &s.items { if seen.get(id) != Some(cur) { evs.push(("item.updated", item_event(*id, cur, false))); } }
+                for (id, old) in seen.iter() { if !s.items.contains_key(id) { evs.push(("item.updated", item_event(*id, old, true))); } }
             }
-            let fulfilled = s.items.values().filter(|i| i.1 >= i.0).count();
+            let fulfilled = s.items.values().filter(|i| { let (c, n) = units(i); c >= n }).count();
             evs.push(("wishlist.updated", json!({ "status": s.status, "title": s.title,
-                "completion": { "item_count": s.items.len(), "fulfilled_count": fulfilled, "completion_pct": crate::wishlists::completion_pct(s.items.values().map(|i| i.1 as i64).sum(), s.items.values().map(|i| i.0 as i64).sum()) },
+                "completion": { "item_count": s.items.len(), "fulfilled_count": fulfilled, "completion_pct": crate::wishlists::completion_pct(s.items.values().map(|i| units(i).0).sum(), s.items.values().map(|i| units(i).1).sum()) },
                 "updated_at": chrono::Utc::now() })));
             seen = s.items;
             for (name, data) in evs {

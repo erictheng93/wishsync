@@ -16,6 +16,11 @@ pub mod claims;
 pub mod idempotency;
 pub mod ratelimit;
 pub mod session;
+pub mod points;
+pub mod sealed;
+pub mod contributions;
+pub mod wallet;
+pub mod orders;
 
 use axum::{response::IntoResponse, Router};
 use sqlx::PgPool;
@@ -31,9 +36,12 @@ pub fn app(state: AppState) -> Router {
         .nest("/api/v1", Router::new().merge(public::routes())
             .merge(guest::routes())
             .merge(claims::routes())
+            .merge(contributions::routes())
+            .merge(wallet::routes())
             .merge(dashboard::routes())
             .merge(reports::routes())
             .merge(admin::routes())
+            .merge(orders::routes())
             .merge(account::routes())
             .merge(wishlists::routes())
             .merge(uploads::routes())

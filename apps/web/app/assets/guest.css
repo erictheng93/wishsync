@@ -64,3 +64,10 @@ dialog.g-dialog:focus-visible{outline:0}
 .g-wrap h1,.g-wrap p,.g-title,.g-body,.g-sheet,.g-banner{overflow-wrap:anywhere}
 /* F-19 無 JS：隱藏認領按鈕、顯示說明（規則由 head 的 <noscript><style> 帶入） */
 .g-nojs{display:none}
+/* P2-A 眾籌：快選金額、勾選、狀態徽章 */
+.g-sheet input[type=checkbox]{width:auto;min-height:0}
+.g-chips{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+.g-sheet .g-chips .g-btn{width:auto}
+.g-btn.ghost.on{background:var(--accent);color:var(--accent-fg)}
+.g-badge.ds-funded,.g-badge.ds-ordered,.g-badge.ds-shipped,.g-badge.ds-delivered{color:var(--ok);border-color:var(--ok)}
+.g-badge.ds-expired{color:var(--bad);border-color:var(--bad)}

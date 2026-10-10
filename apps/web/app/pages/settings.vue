@@ -35,7 +35,7 @@ async function remove() {
     user.value = null
     await navigateTo('/')
   } catch (e: any) {
-    delErr.value = e.code === 'ACCOUNT_HAS_BALANCE' ? `${e.detail}（餘額 ${e.body.balance ?? 0} 點、未完成認捐 ${e.body.pledged_count ?? 0}、未結案訂單 ${e.body.open_order_count ?? 0}）請先處理後再刪除。` : errMsg(e)
+    delErr.value = e.code === 'ACCOUNT_HAS_POINTS' ? `${e.detail}（可到「我的點數」撤回認捐）` : e.code === 'ACCOUNT_HAS_BALANCE' ? `${e.detail}（餘額 ${e.body.balance ?? 0} 點、未完成認捐 ${e.body.pledged_count ?? 0}、未結案訂單 ${e.body.open_order_count ?? 0}）請先處理後再刪除。` : errMsg(e)
   } finally { delBusy.value = false }
 }
 </script>

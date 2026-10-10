@@ -38,7 +38,8 @@ useHead({ noscript: [{ innerHTML: '<style>.js-claim{display:none!important}.g-no
 const items = ref<any[]>(data.value?.items ?? [])
 watch(data, v => { if (v) items.value = v.items })
 // 剩餘優先 → 已滿排最後（穩定排序）
-const sorted = computed(() => [...items.value].sort((a, b) => Number(a.is_fully_claimed) - Number(b.is_fully_claimed)))
+const isDone = (i: any) => i.funding_mode === 'crowdfund' ? deriveDisplayStatus(i) !== 'open' : i.is_fully_claimed
+const sorted = computed(() => [...items.value].sort((a, b) => Number(isDone(a)) - Number(isDone(b))))
 const pct = computed(() => data.value?.completion?.completion_pct ?? 0)
 const closed = computed(() => data.value?.status === 'closed')
 
@@ -71,7 +72,10 @@ onMounted(async () => {
     onEvent: (type, d) => {
       if (type === 'wishlist.updated' || !d) return refresh()
       if (d.deleted) items.value = items.value.filter(i => i.id !== d.item_id)
-      else items.value = items.value.map(i => i.id === d.item_id ? { ...i, ...d, id: i.id, progress_percent: Math.min(100, Math.round(d.qty_claimed / d.qty_needed * 100)) } : i)
+      else {
+        items.value = items.value.map(i => i.id === d.item_id ? mergeItemEvent(i, d) : i)
+        if (items.value.some(i => i.id === d.item_id && i.funding_mode === 'crowdfund')) refresh() // contributors 不在事件裡，補抓一次
+      }
     },
   })
   live.start()
@@ -87,6 +91,18 @@ function onDone(r: any) {
   items.value = items.value.map(i => i.id === r.item.id ? { ...i, ...r.item, is_fully_claimed: r.item.qty_remaining <= 0, progress_percent: Math.min(100, Math.round(r.item.qty_claimed / r.item.qty_needed * 100)) } : i)
   done.value = { ...r, title: sheetItem.value.title }
   sheetItem.value = null; refresh()
+}
+// --- 點數贊助（需登入：未登入導到登入頁，登入後回到本頁）---
+const fundId = ref<string | null>(null), funded = ref<any>(null)
+const fundItem = computed(() => items.value.find(i => i.id === fundId.value) ?? null) // 取即時資料（SSE / refresh 會換掉物件）
+function onFund(it: any) {
+  if (!me.value) return navigateTo({ path: '/login', query: { redirect: `/s/${slug}` } })
+  fundId.value = it.id
+}
+function onFunded(r: any) {
+  items.value = items.value.map(i => i.id === r.item.id ? { ...i, ...r.item } : i)
+  funded.value = { ...r, title: fundItem.value?.title }
+  fundId.value = null; refresh()
 }
 async function onSwitchEdit() { await loadMine(); const it = sheetItem.value; sheetItem.value = null; await nextTick(); sheetItem.value = it }
 function onStale(rem: number) { items.value = items.value.map(i => i.id === sheetItem.value?.id ? { ...i, qty_remaining: rem, is_fully_claimed: rem <= 0 } : i) }
@@ -118,7 +134,7 @@ function dismissHint() { setPref('ws_hint_dismissed', '1'); lineHint.value = fal
       </template>
       <p v-if="!items.length" class="g-center g-mute">建立者還在準備清單，晚點再回來看看</p>
       <ul class="c-list">
-        <GuestItemCard v-for="it in sorted" :key="it.id" :item="it" :mine="myClaims[it.id] ?? null" :masked="masked" :closed="closed" :online="online" @claim="sheetItem = it" />
+        <GuestItemCard v-for="it in sorted" :key="it.id" :item="it" :mine="myClaims[it.id] ?? null" :masked="masked" :closed="closed" :online="online" @claim="sheetItem = it" @fund="onFund(it)" />
       </ul>
       <div class="g-foot">
         <div><span class="g-dot" :class="{ on: mode !== 'connecting' }" />{{ liveLabel(mode) }}</div>
@@ -129,6 +145,16 @@ function dismissHint() { setPref('ws_hint_dismissed', '1'); lineHint.value = fal
 
     <GuestClaimSheet v-if="sheetItem" :key="sheetItem.id + (sheetMine?.id ?? '')" :item="sheetItem" :mine="sheetMine" :online="online" :logged-in-name="me?.display_name"
       @close="sheetItem = null" @done="onDone" @stale="onStale" @switch-edit="onSwitchEdit" />
+    <GuestFundSheet v-if="fundItem" :key="fundItem.id" :item="fundItem" :slug="slug" :online="online" :logged-in-name="me?.display_name"
+      @close="fundId = null" @done="onFunded" @stale="refresh()" />
+    <GuestDialog v-if="funded" labelledby="funded-title" @close="funded = null"><div class="g-sheet center">
+      <h1 id="funded-title" class="ok">✓ 感謝你的贊助！</h1>
+      <p>你為「{{ funded.title }}」贊助了 {{ fmtPts(funded.contribution.points) }} 點</p>
+      <div v-if="funded.funded" class="g-banner ok">剛好達標了！平台會代購並寄出，進度會用 Email 通知你。</div>
+      <p v-if="funded.wallet" class="g-mute">錢包餘額剩 {{ fmtPts(funded.wallet.balance) }} 點</p>
+      <NuxtLink class="g-btn block" to="/me/wallet">查看我的點數與認捐</NuxtLink>
+      <button class="g-link" @click="funded = null">回到清單繼續看</button>
+    </div></GuestDialog>
     <GuestReportSheet v-if="reporting" :slug="slug" @close="reporting = false" @sent="reporting = false; toast = '已收到檢舉，我們會盡快處理'" />
 
     <GuestDialog v-if="done" labelledby="done-title" @close="done = null"><div class="g-sheet center">

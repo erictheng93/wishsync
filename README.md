@@ -60,7 +60,7 @@ cd apps/web && npm run typecheck && npm test && npm run build   # CI 的 web job
 
 ### 端對端測試（Playwright）
 
-`apps/web/e2e/` 以真實的 API + Web + Postgres + Mailpit 跑瀏覽器流程（訪客認領、防超賣、創建者註冊 / 登入 / 發佈、即時更新、驚喜模式、檢舉下架、LINE 內建瀏覽器、版面煙霧測試等）。
+`apps/web/e2e/` 以真實的 API + Web + Postgres + Mailpit 跑瀏覽器流程（訪客認領、防超賣、點數眾籌（發點、贊助 / 撤回、達標、捐款者名單、採購與差額退回、轉投）、創建者註冊 / 登入 / 發佈、即時更新、驚喜模式、檢舉下架、LINE 內建瀏覽器、版面煙霧測試等）。
 
 前置條件：
 - `docker compose up -d db mailpit`（Postgres 在 5432、Mailpit 在 8025；OTP 信從 Mailpit HTTP API 讀取）。
@@ -93,6 +93,17 @@ npx playwright show-report                                      # 開啟上次�
   - `TRUSTED_PROXY`：`cloudflare` 或 `none`。dev 預設 `none`；**production 必須明確設定**，未設或其他值會拒絕啟動（不設會讓所有使用者看起來來自同一 IP，使每 IP 限流變成全域限流）。設 `cloudflare` 時信任 `CF-Connecting-IP`，所以 API 不可被直接存取，否則該標頭可被偽造；若 `BIND` 不是回送位址，啟動時會印出 WARN。
   - `TURNSTILE_SECRET`：production 必填；檢舉的 `turnstile_token` 會送 siteverify 驗證，失敗回 403 `FORBIDDEN`。dev/test 不設則略過驗證（接受任何 token，含前端的 `dev-bypass`）。`TURNSTILE_VERIFY_URL` 僅測試時覆寫。
   - `S3_ENDPOINT`、`S3_BUCKET`、`S3_ACCESS_KEY`、`S3_SECRET_KEY`、`S3_PUBLIC_BASE`：production 全部必填，缺漏啟動即 panic 並指出缺哪個；dev 預設本機 MinIO。`S3_REGION` 選填。
+  - `SHIPPING_ENC_KEY`：收件資訊加密金鑰，**production 必填**，必須是 base64 編碼的 32 bytes，否則拒絕啟動。dev / test 不設時使用固定的開發金鑰。詳見下方〈收件資訊加密金鑰〉。
+
+### 收件資訊加密金鑰（`SHIPPING_ENC_KEY`）
+
+眾籌品項達標後由平台代購寄出，所以受捐者的收件姓名、電話、地址會在應用層以 XChaCha20-Poly1305 加密後才存進資料庫（`shipping_addresses.*_enc`、`purchase_orders.shipping_address_snapshot`）。資料庫、備份、log 都看不到明文，實作在 `apps/api/src/sealed.rs`。
+
+- **產生**：`openssl rand -base64 32`。每個環境各自產生一把，不要共用，也不要 commit 進 repo。
+- **部署**：production 一定要設定這個變數，否則後端拒絕啟動。正式環境加入時機：在部署包含 migration `0004_crowdfund.sql` 的版本之前。
+- **遺失 = 地址全部讀不回來**：金鑰遺失或被換掉之後，所有已存的收件資訊和採購單上的地址快照都無法解密，營運就無法寄貨（後台採購單的收件資訊會是空的）。請像資料庫密碼一樣保管，至少備份在兩個獨立的地方（例如密碼管理器加上離線備份）。
+- **不要更換**：目前沒有金鑰輪替機制（`key_version` 固定為 1）。要輪替時須先實作「多把金鑰依 `key_version` 解密，加上背景重新加密」，不能直接替換環境變數的值。
+- **洩漏時**：攻擊者必須同時拿到金鑰和資料庫才能讀到地址。若確認金鑰外洩，請先實作輪替再重新加密，並評估是否需要通知受影響的使用者。
 - 前端：`NUXT_PUBLIC_API_BASE`（預設 `http://localhost:8080`）；`NUXT_PUBLIC_TURNSTILE_SITE_KEY`（檢舉用 Cloudflare Turnstile；未設定時檢舉送 `dev-bypass`，僅限本機 mock；**正式部署必填**，`npm run deploy` 缺少它會直接中止，`deploy:demo` 不受影響）
 
 ## 部署
