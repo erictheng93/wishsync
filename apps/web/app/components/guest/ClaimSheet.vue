@@ -5,6 +5,10 @@ const props = defineProps<{ item: any, mine: any | null, online: boolean, logged
 const emit = defineEmits<{ close: [], done: [r: any], stale: [remaining: number], switchEdit: [] }>()
 const { api, newKey } = useGuest()
 
+// 登入者：預設帶帳號的 default_claim_visibility（分享頁不會預先載入 /me，這裡自己抓）；載入前不送，由伺服器套預設
+const { fetchMe } = useAuth()
+const vis = ref<string | undefined>()
+if (props.loggedInName) fetchMe().then(u => { vis.value ??= u?.default_claim_visibility })
 const key = newKey()
 const editing = !!props.mine
 const max = ref(props.item.qty_remaining + (props.mine?.qty ?? 0))
@@ -31,7 +35,7 @@ async function submit() {
     } else {
       r = await api(`/items/${props.item.id}/claims`, {
         method: 'POST', headers: { 'Idempotency-Key': key }, retryAsNewGuest: true,
-        body: { qty: qty.value, display_name: props.loggedInName ? undefined : name.value.trim() || undefined, contact: contact.value || undefined, email: email.value || undefined, note: note.value || undefined },
+        body: { qty: qty.value, display_name: props.loggedInName ? undefined : name.value.trim() || undefined, contact: contact.value || undefined, email: email.value || undefined, note: note.value || undefined, visibility: props.loggedInName ? vis.value : undefined },
       })
     }
     let persisted = true
@@ -80,6 +84,10 @@ async function submit() {
           <label for="cn">你的暱稱（必填）</label>
           <input id="cn" v-model="name" maxlength="30" :readonly="busy" :required="needName" placeholder="例如：阿明" autocomplete="nickname">
           <div v-if="errs.name || errs.display_name" class="g-field-err">{{ errs.name || errs.display_name }}</div>
+        </template>
+        <template v-if="loggedInName && vis">
+          <label for="cv">這筆捐助誰看得到</label>
+          <select id="cv" v-model="vis" :disabled="busy"><option value="public">公開</option><option value="friends">僅好友</option><option value="private">私人</option></select>
         </template>
         <label for="cc">聯絡方式（選填，只有建立者看得到）</label>
         <input id="cc" v-model="contact" maxlength="80" :readonly="busy" placeholder="LINE ID 或電話">

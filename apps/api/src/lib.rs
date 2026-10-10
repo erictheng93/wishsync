@@ -1,4 +1,7 @@
+pub mod access;
 pub mod account;
+pub mod friends;
+pub mod profiles;
 pub mod config;
 pub mod admin;
 pub mod dashboard;
@@ -45,7 +48,9 @@ pub fn app(state: AppState) -> Router {
             .merge(account::routes())
             .merge(wishlists::routes())
             .merge(uploads::routes())
-            .merge(auth::routes()))
+            .merge(auth::routes())
+            .merge(friends::routes())
+            .merge(profiles::routes()))
         .layer(axum::middleware::from_fn_with_state(state.clone(), read_only))
         .layer(cors())
         .layer(axum::middleware::map_response(problem_json))
@@ -101,7 +106,7 @@ fn cors() -> tower_http::cors::CorsLayer {
         .allow_origin(origin.parse::<axum::http::HeaderValue>().expect("APP_URL"))
         .allow_credentials(true)
         .allow_methods([Method::GET, Method::POST, Method::PATCH, Method::PUT, Method::DELETE])
-        .allow_headers([header::CONTENT_TYPE, HeaderName::from_static("x-guest-token"), HeaderName::from_static("idempotency-key")])
+        .allow_headers([header::CONTENT_TYPE, HeaderName::from_static("x-guest-token"), HeaderName::from_static("idempotency-key"), HeaderName::from_static("x-list-access")])
         .expose_headers([HeaderName::from_static("idempotency-replayed")])
 }
 

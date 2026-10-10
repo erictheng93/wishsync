@@ -5,6 +5,7 @@ const route = useRoute()
 const slug = route.params.slug as string
 const { public: { apiBase } } = useRuntimeConfig()
 const { api } = useGuest()
+const listUrl = `${apiBase}/api/v1/public/wishlists/${slug}`
 
 // 不用 useFetch 的 error 拋出：404 / 410 在頁內顯示，並設正確 HTTP 狀態碼（410 需 noindex、不洩漏標題）
 // cache: 'no-cache'：API 回的 Cache-Control 帶 stale-while-revalidate（給 CDN 用），瀏覽器會先吐舊資料；認領後的 refresh() 必須是新的（仍會用 ETag 回 304）
@@ -12,11 +13,43 @@ const { data: fetched, error, refresh } = await useFetch<any>(`${apiBase}/api/v1
 // 404 找不到 / 410 下架 / 其他（5xx、網路、逾時）= 暫時無法載入，回 503，避免爬蟲與快取把暫時性錯誤記成「不存在」
 // 暫時性錯誤（5xx / 網路）時保留上次成功的內容，不要讓 15 秒輪詢的一次失敗把整頁換成錯誤畫面；404 / 410 才清空
 const data = ref<any>(fetched.value)
-watch([fetched, error], ([v, e]) => { if (v) data.value = v; else if (e && [404, 410].includes(e.statusCode as number)) data.value = null })
-const gone = computed(() => error.value?.statusCode === 410)
-const notFound = computed(() => error.value?.statusCode === 404)
-const failed = computed(() => !!error.value && !gone.value && !notFound.value)
-if (error.value && import.meta.server) setResponseStatus(useRequestEvent()!, gone.value ? 410 : notFound.value ? 404 : 503)
+// 受限清單（好友 / 指定 / 密碼）：SSR 沒有帶 cookie 會拿到 403（或擁有者的私人清單 404），client 掛載後帶憑證重抓才知道真正結果。
+// st = 目前結果的 HTTP 狀態；gate = 403 的 body（含 code / owner）；checking = client 重抓中（先不顯示 gate，避免閃一下）
+const st = ref<number | null>(error.value?.statusCode ?? null)
+const gate = ref<any>(null), checking = ref(st.value === 403)
+const restricted = ref(false)
+const pw = ref(''), pwBusy = ref(false), pwErr = ref('')
+const hold = (c: number | null) => c === 403 && !gate.value // SSR 的 403 不是最終結果，等 client 重抓
+watch([fetched, error], ([v, e]) => {
+  if (v) { data.value = v; st.value = null } else if (e) { st.value = e.statusCode as number; if ([404, 410].includes(st.value!)) data.value = null; if (st.value === 403) loadClient() }
+})
+async function loadClient() {
+  try {
+    const acc = getListAccess(slug)
+    const r = await $fetch<any>(listUrl, { credentials: 'include', cache: 'no-cache', headers: acc ? { 'X-List-Access': acc } : {} })
+    data.value = r; st.value = null; gate.value = null; restricted.value = isRestricted(r.visibility)
+    setActiveAccess(acc); startLive()
+  } catch (e: any) {
+    st.value = e?.statusCode ?? e?.response?.status ?? 0
+    if (st.value === 403) { gate.value = e.data ?? {}; restricted.value = true; data.value = null; if (gate.value.code === 'PASSWORD_REQUIRED') setListAccess(slug, null) }
+    else if ([404, 410].includes(st.value!)) data.value = null
+  } finally { checking.value = false }
+}
+// 受限清單用帶憑證的 $fetch 更新；公開 / 連結清單維持 useFetch refresh（ETag）
+const reload = () => restricted.value ? loadClient() : refresh()
+async function unlock() {
+  pwBusy.value = true; pwErr.value = ''
+  try {
+    const r = await api(`/public/wishlists/${slug}/unlock`, { method: 'POST', body: { password: pw.value } })
+    setListAccess(slug, r.access_token); pw.value = ''
+    await loadClient()
+  } catch (e: any) { pwErr.value = e.message } finally { pwBusy.value = false }
+}
+const gone = computed(() => st.value === 410)
+const notFound = computed(() => st.value === 404)
+const forbidden = computed(() => st.value === 403 && !!gate.value)
+const failed = computed(() => !!st.value && !gone.value && !notFound.value && st.value !== 403)
+if (error.value && import.meta.server) setResponseStatus(useRequestEvent()!, gone.value ? 410 : notFound.value ? 404 : st.value === 403 ? 200 : 503)
 
 if (data.value) {
   // 規格：docs 03 §5.6 meta 內容規則
@@ -32,7 +65,7 @@ if (data.value) {
     ogImageWidth: 1200, ogImageHeight: 630,
     ogType: 'website', ogUrl: () => `${origin}/s/${slug}`, ogLocale: 'zh_TW', twitterCard: 'summary_large_image',
   })
-} else useSeoMeta({ title: gone.value ? '此清單已被下架' : failed.value ? '暫時無法載入' : '找不到這份清單', robots: 'noindex' })
+} else useSeoMeta({ title: () => data.value?.title ?? (st.value === 403 ? '需要權限才能查看' : gone.value ? '此清單已被下架' : failed.value ? '暫時無法載入' : '找不到這份清單'), robots: 'noindex' }) // 受限清單 client 重抓成功後標題改成清單名
 
 useHead({ noscript: [{ innerHTML: '<style>.js-claim{display:none!important}.g-nojs{display:block!important}</style>' }] })
 const items = ref<any[]>(data.value?.items ?? [])
@@ -61,16 +94,22 @@ const masked = computed(() => isOwner.value && !!data.value?.surprise_mode)
 let live: ReturnType<typeof createLiveRefresh> | undefined
 onMounted(async () => {
   online.value = navigator.onLine
-  addEventListener('online', () => { online.value = true; refresh() }); addEventListener('offline', () => (online.value = false))
+  addEventListener('online', () => { online.value = true; reload() }); addEventListener('offline', () => (online.value = false))
   lineHint.value = isLineBrowser() && !getPref('ws_hint_dismissed')
   loadMine()
   $fetch<any>(`${apiBase}/api/v1/me`, { credentials: 'include' }).then(m => { me.value = m; isOwner.value = m?.id === data.value?.owner?.id }).catch(() => {})
-  if (!data.value) return
+  if (hold(st.value) || st.value === 404) await loadClient()
+  startLive()
+})
+function startLive() {
+  if (live || !data.value) return
+  const acc = getListAccess(slug)
   live = createLiveRefresh({
-    url: `${apiBase}/api/v1/public/wishlists/${slug}/events`,
-    refresh, onMode: m => (mode.value = m),
+    url: `${apiBase}/api/v1/public/wishlists/${slug}/events${acc ? `?access=${encodeURIComponent(acc)}` : ''}`,
+    withCredentials: restricted.value,
+    refresh: reload, onMode: m => (mode.value = m),
     onEvent: (type, d) => {
-      if (type === 'wishlist.updated' || !d) return refresh()
+      if (type === 'wishlist.updated' || !d) return reload()
       if (d.deleted) items.value = items.value.filter(i => i.id !== d.item_id)
       else {
         items.value = items.value.map(i => i.id === d.item_id ? mergeItemEvent(i, d) : i)
@@ -79,8 +118,8 @@ onMounted(async () => {
     },
   })
   live.start()
-})
-onBeforeUnmount(() => live?.stop())
+}
+onBeforeUnmount(() => { live?.stop(); setActiveAccess(null) })
 
 
 // --- 認領 sheet / 成功 overlay ---
@@ -90,7 +129,7 @@ function onDone(r: any) {
   myClaims.value = { ...myClaims.value, [r.claim.item_id]: r.claim }
   items.value = items.value.map(i => i.id === r.item.id ? { ...i, ...r.item, is_fully_claimed: r.item.qty_remaining <= 0, progress_percent: Math.min(100, Math.round(r.item.qty_claimed / r.item.qty_needed * 100)) } : i)
   done.value = { ...r, title: sheetItem.value.title }
-  sheetItem.value = null; refresh()
+  sheetItem.value = null; reload()
 }
 // --- 點數贊助（需登入：未登入導到登入頁，登入後回到本頁）---
 const fundId = ref<string | null>(null), funded = ref<any>(null)
@@ -114,7 +153,26 @@ function dismissHint() { setPref('ws_hint_dismissed', '1'); lineHint.value = fal
   <GuestTop />
   <main class="g-wrap">
     <div v-if="gone" class="g-center"><h1>此清單已被下架</h1><p class="g-mute">這份清單因違反服務條款已被移除，目前無法瀏覽或認領。</p><NuxtLink to="/">回首頁</NuxtLink></div>
-    <div v-else-if="failed && !data" class="g-center"><h1>系統暫時無法載入，請稍後再試</h1><button class="g-btn" @click="refresh()">重新載入</button></div>
+    <div v-else-if="hold(st) || checking" class="g-center g-mute" role="status">載入中…</div>
+    <div v-else-if="forbidden" class="g-center">
+      <template v-if="gate.code === 'PASSWORD_REQUIRED'">
+        <h1>這份清單需要密碼</h1>
+        <p v-if="gate.owner" class="g-mute">由 {{ gate.owner.display_name }} 建立。請向對方詢問密碼。</p>
+        <form @submit.prevent="unlock">
+          <input v-model="pw" type="password" class="g-input" autocomplete="off" aria-label="清單密碼" placeholder="輸入密碼" required>
+          <p v-if="pwErr" class="g-field-err" role="alert">{{ pwErr }}</p>
+          <button class="g-btn block" :disabled="pwBusy || !pw">{{ pwBusy ? '驗證中…' : '解鎖' }}</button>
+        </form>
+      </template>
+      <template v-else>
+        <h1>{{ gate.code === 'LOGIN_REQUIRED' ? '請先登入' : '你沒有權限查看這份清單' }}</h1>
+        <p class="g-mute">{{ apiErrMsg({ code: gate.code, status: 403 }) }}<template v-if="gate.code === 'FRIENDS_ONLY' && gate.owner">（擁有者：{{ gate.owner.display_name }}）</template></p>
+        <NuxtLink v-if="gate.code === 'LOGIN_REQUIRED'" class="g-btn" :to="{ path: '/login', query: { redirect: `/s/${slug}` } }">登入後查看</NuxtLink>
+        <NuxtLink v-else-if="gate.code === 'FRIENDS_ONLY' && gate.owner?.handle" class="g-btn" :to="`/u/${gate.owner.handle}`">前往 {{ gate.owner.display_name }} 的頁面加好友</NuxtLink>
+      </template>
+      <p><NuxtLink to="/">回首頁</NuxtLink></p>
+    </div>
+    <div v-else-if="failed && !data" class="g-center"><h1>系統暫時無法載入，請稍後再試</h1><button class="g-btn" @click="reload()">重新載入</button></div>
     <div v-else-if="!data" class="g-center"><h1>找不到這份清單</h1><NuxtLink to="/">回首頁</NuxtLink></div>
     <template v-else>
       <div class="g-banner g-nojs">需要 JavaScript 才能認領；你仍可查看清單內容</div>

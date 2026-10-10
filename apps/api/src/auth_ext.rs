@@ -20,11 +20,11 @@ pub fn routes() -> Router<AppState> {
 }
 
 // ---------- 密碼 ----------
-fn hash_pw(p: &str) -> Result<String, AppError> {
+pub(crate) fn hash_pw(p: &str) -> Result<String, AppError> {
     Argon2::default().hash_password(p.as_bytes(), &SaltString::generate(&mut OsRng)).map(|h| h.to_string())
         .map_err(|e| { tracing::error!(error = %e, "argon2 hash"); AppError::problem(500, "INTERNAL_ERROR", "系統錯誤") })
 }
-fn verify_pw(p: &str, hash: &str) -> bool {
+pub(crate) fn verify_pw(p: &str, hash: &str) -> bool {
     PasswordHash::new(hash).is_ok_and(|h| Argon2::default().verify_password(p.as_bytes(), &h).is_ok())
 }
 /// 帳號不存在時也驗一次，讓回應時間與「密碼錯誤」相近。
@@ -33,7 +33,7 @@ static DUMMY_HASH: LazyLock<String> = LazyLock::new(|| hash_pw("dummy-password-f
 fn check_pw(p: &str) -> Result<(), AppError> {
     if (8..=128).contains(&p.chars().count()) { Ok(()) } else { Err(AppError::invalid("/password", "RANGE", "密碼長度須為 8–128 字元")) }
 }
-async fn hash_blocking(p: String) -> Result<String, AppError> {
+pub(crate) async fn hash_blocking(p: String) -> Result<String, AppError> {
     tokio::task::spawn_blocking(move || hash_pw(&p)).await.map_err(|_| AppError::problem(500, "INTERNAL_ERROR", "系統錯誤"))?
 }
 

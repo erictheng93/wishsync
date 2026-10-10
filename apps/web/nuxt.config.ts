@@ -10,7 +10,7 @@ export default defineNuxtConfig({
   },
   // 創建者頁面靠 cookie 驗證，只在 client 渲染；/s/** 維持 SSR（OG 預覽）
   routeRules: {
-    ...Object.fromEntries(['/dashboard/**', '/lists/**', '/me/wallet', '/settings', '/admin/**', '/login', '/register', '/forgot-password'].map(r => [r, { ssr: false }])),
+    ...Object.fromEntries(['/dashboard/**', '/lists/**', '/me/wallet', '/settings', '/friends', '/invite/**', '/u/**', '/admin/**', '/login', '/register', '/forgot-password'].map(r => [r, { ssr: false }])),
     // 測試用：NUXT_API_PROXY=<後端網址> 時，同網域的 /api/v1/** 代理到該後端（只有 npm run deploy:preview 會設）。
     // 為什麼：Pages 與臨時通道是不同網站，cookie 會被當第三方擋掉；同源代理後 cookie 是第一方。
     ...(process.env.NUXT_API_PROXY ? { '/api/v1/**': { proxy: `${process.env.NUXT_API_PROXY.replace(/\/$/, '')}/api/v1/**` } } : {}),

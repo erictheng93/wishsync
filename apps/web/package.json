@@ -19,7 +19,8 @@
     "e2e:headed": "playwright test --headed"
   },
   "dependencies": {
-    "nuxt": "^4"
+    "nuxt": "^4",
+    "uqr": "^0.1.3"
   },
   "devDependencies": {
     "@playwright/test": "^1.64.0",

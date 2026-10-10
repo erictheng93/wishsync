@@ -39,6 +39,7 @@ const cancel = (r: any) => {
   const t = r.claim.status === 'purchased' ? '建立者會收到通知，確定要取消認領？' : '確定要取消這筆認領？'
   if (confirm(t)) guard(async () => { await api(`/claims/${r.claim.id}`, { method: 'DELETE' }); r.claim.status = 'cancelled' })
 }
+const setVis = (r: any, ev: Event) => guard(async () => { Object.assign(r.claim, (await api(`/claims/${r.claim.id}`, { method: 'PATCH', body: { visibility: (ev.target as HTMLSelectElement).value } })).claim) })
 const saveNick = () => guard(async () => { guest.value = (await api('/guest/me', { method: 'PATCH', body: { display_name: nick.value } })).guest; editing.value = false })
 const wipe = () => {
   if (confirm('確定刪除你的暱稱與聯絡方式？認領紀錄會保留為「已刪除的訪客」，且此裝置之後無法再管理。')) guard(async () => {
@@ -71,6 +72,9 @@ const wipe = () => {
           <div class="g-body">
             <div class="g-title">{{ r.item.title }} × {{ r.claim.qty }}</div>
             <span class="g-badge">{{ label[r.claim.status] }}</span>
+            <label v-if="r.claim.visibility" class="g-mute">誰看得到
+              <select :value="r.claim.visibility" @change="setVis(r, $event)"><option value="public">公開</option><option value="friends">僅好友</option><option value="private">私人</option></select>
+            </label>
             <div class="g-actions">
               <button v-if="r.claim.status === 'reserved'" class="g-btn sm" @click="setStatus(r, 'purchased')">標記已購買</button>
               <button v-if="r.claim.status === 'purchased'" class="g-btn sm" @click="setStatus(r, 'delivered')">標記已送達</button>

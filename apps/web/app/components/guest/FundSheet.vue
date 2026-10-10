@@ -26,7 +26,7 @@ async function submit() {
   busy.value = true
   try {
     const r = await api(`/items/${props.item.id}/contributions`, {
-      method: 'POST', headers: { 'Idempotency-Key': key.value }, noRedirect: true,
+      method: 'POST', headers: { 'Idempotency-Key': key.value, ...(getActiveAccess() ? { 'X-List-Access': getActiveAccess()! } : {}) }, noRedirect: true, // 密碼清單權杖
       body: { points: points.value, message: message.value.trim() || undefined, is_anonymous: anon.value },
     })
     emit('done', r)

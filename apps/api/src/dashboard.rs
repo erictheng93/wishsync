@@ -6,8 +6,8 @@
 //! 就重新查詢並只推「有變動」的品項 + wishlist.updated。事件只含數量彙總，不含認領者。
 use crate::{error::AppError, AppState};
 use axum::{
-    extract::{Path, State},
-    http::{header, HeaderValue},
+    extract::{Path, Query, State},
+    http::{header, request::Parts, HeaderValue},
     response::{sse::{Event, KeepAlive, Sse}, IntoResponse, Response},
     routing::get,
     Router,
@@ -85,12 +85,17 @@ fn item_event(id: Uuid, s: &ItemSnap, deleted: bool) -> Value {
     v
 }
 
-async fn events(State(st): State<AppState>, Path(slug): Path<String>) -> Result<Response, AppError> {
-    let w: Option<(Uuid, String)> = sqlx::query_as(
-        "SELECT id, moderation_status::text FROM wishlists
-          WHERE slug = $1 AND deleted_at IS NULL AND visibility <> 'private' AND status IN ('active', 'closed')")
+#[derive(serde::Deserialize)]
+struct EventsQ { access: Option<String> }
+
+async fn events(State(st): State<AppState>, Path(slug): Path<String>, Query(q): Query<EventsQ>, parts: Parts) -> Result<Response, AppError> {
+    let w: Option<(Uuid, String, Uuid, String, Option<String>)> = sqlx::query_as(
+        "SELECT id, moderation_status::text, owner_id, visibility::text, access_password_hash FROM wishlists
+          WHERE slug = $1 AND deleted_at IS NULL AND status IN ('active', 'closed')")
         .bind(&slug).fetch_optional(&st.pool).await?;
-    let (wid, m) = w.ok_or(AppError::NotFound)?;
+    let (wid, m, owner_id, vis, pw) = w.ok_or(AppError::NotFound)?;
+    let viewer = crate::access::viewer(&parts, &st).await?;
+    crate::access::check_wishlist(&st.pool, &crate::access::ListAccess { wishlist_id: wid, owner_id, visibility: &vis, pw_hash: pw.as_deref() }, viewer, q.access.as_deref()).await?;
     if m == "hidden" { return Err(AppError::WishlistRemoved); }
     let mut rx = bus(&st.pool).await.subscribe(); // 先訂閱再取快照，避免漏事件
     let mut seen = snapshot(&st.pool, wid).await?.map(|s| s.items).unwrap_or_default();

@@ -2,9 +2,9 @@
 use crate::{error::AppError, AppState};
 use axum::{
     extract::{Path, State},
-    http::{header, HeaderMap, StatusCode},
+    http::{header, request::Parts, StatusCode},
     response::{IntoResponse, Response},
-    routing::get,
+    routing::{get, post},
     Json, Router,
 };
 use chrono::{DateTime, NaiveDate, Utc};
@@ -14,7 +14,21 @@ use std::collections::HashMap;
 use uuid::Uuid;
 
 pub fn routes() -> Router<AppState> {
-    Router::new().route("/public/wishlists/{slug}", get(wishlist))
+    Router::new().route("/public/wishlists/{slug}", get(wishlist)).route("/public/wishlists/{slug}/unlock", post(unlock))
+}
+
+/// POST /public/wishlists/{slug}/unlock：密碼清單換存取權杖（同 slug+IP 每 15 分鐘 10 次）
+async fn unlock(State(st): State<AppState>, Path(slug): Path<String>, peer: crate::ratelimit::Peer, Json(b): Json<Value>) -> Result<Json<Value>, AppError> {
+    if !crate::validate::slug_ok(&slug) { return Err(AppError::NotFound); }
+    crate::ratelimit::check(&st.pool, &format!("unlock:{slug}:{}", peer.0), 10, 900).await?;
+    let w: Option<(Uuid, Option<String>)> = sqlx::query_as(
+        "SELECT id, access_password_hash FROM wishlists WHERE slug = $1 AND deleted_at IS NULL AND visibility::text = 'password' AND status IN ('active', 'closed')")
+        .bind(&slug).fetch_optional(&st.pool).await?;
+    let (Some((id, Some(hash))), Some(pw)) = (w, b["password"].as_str().map(str::to_owned)) else { return Err(AppError::NotFound) };
+    let h = hash.clone();
+    let ok = tokio::task::spawn_blocking(move || crate::auth_ext::verify_pw(&pw, &h)).await.unwrap_or(false);
+    if !ok { return Err(AppError::problem(422, "WRONG_PASSWORD", "密碼錯誤")); }
+    Ok(Json(json!({ "access_token": crate::access::access_token(id, &hash) })))
 }
 
 pub fn image_url(key: Option<&str>, status: &str) -> Option<String> {
@@ -26,7 +40,7 @@ struct W {
     id: Uuid, slug: String, r#type: String, status: String, visibility: String, moderation: String,
     title: String, description: Option<String>, cover_image_key: Option<String>, cover_image_status: String,
     event_date: Option<NaiveDate>, show_claimer_names: bool, surprise_mode: bool,
-    owner_id: Uuid, owner_name: String, locked: bool, updated_at: DateTime<Utc>,
+    owner_id: Uuid, owner_name: String, pw_hash: Option<String>, locked: bool, updated_at: DateTime<Utc>,
 }
 
 #[derive(FromRow)]
@@ -37,24 +51,29 @@ struct It {
     target_points: Option<i64>, pledged_points: i64, funding_status: Option<String>, display_status: Option<String>, funding_deadline: Option<DateTime<Utc>>,
 }
 
-async fn wishlist(State(st): State<AppState>, Path(slug): Path<String>, req: HeaderMap) -> Result<Response, AppError> {
+async fn wishlist(State(st): State<AppState>, Path(slug): Path<String>, parts: Parts) -> Result<Response, AppError> {
     if !crate::validate::slug_ok(&slug) { return Err(AppError::NotFound); }
     let w: W = sqlx::query_as(
         "SELECT w.id, w.slug::text AS slug, w.type::text AS type, w.status::text AS status, w.visibility::text AS visibility,
                 w.moderation_status::text AS moderation, w.title, w.description, w.cover_image_key,
                 w.cover_image_status::text AS cover_image_status, w.event_date, w.show_claimer_names, w.surprise_mode,
-                w.owner_id, u.display_name AS owner_name,
+                w.owner_id, u.display_name AS owner_name, w.access_password_hash AS pw_hash,
                 (w.surprise_mode AND (w.event_date IS NULL OR now() < (w.event_date::timestamp AT TIME ZONE 'Asia/Taipei'))) AS locked,
                 GREATEST(w.updated_at, COALESCE((SELECT max(updated_at) FROM wishlist_items WHERE wishlist_id = w.id), w.updated_at)) AS updated_at
          FROM wishlists w JOIN users u ON u.id = w.owner_id
          WHERE w.slug = $1 AND w.deleted_at IS NULL")
         .bind(&slug).fetch_optional(&st.pool).await?.ok_or(AppError::NotFound)?;
-    if w.status == "draft" || w.status == "archived" || w.visibility == "private" { return Err(AppError::NotFound); }
+    if w.status == "draft" || w.status == "archived" { return Err(AppError::NotFound); }
+    let viewer = crate::access::viewer(&parts, &st).await?;
+    let acc = parts.headers.get("x-list-access").and_then(|v| v.to_str().ok());
+    crate::access::check_wishlist(&st.pool, &crate::access::ListAccess { wishlist_id: w.id, owner_id: w.owner_id, visibility: &w.visibility, pw_hash: w.pw_hash.as_deref() }, viewer, acc).await?;
     if w.moderation == "hidden" { return Err(AppError::WishlistRemoved); }
 
-    let cache = [(header::CACHE_CONTROL, "public, s-maxage=10, stale-while-revalidate=60".to_string())];
+    // friends/selected/password 依觀看者而異：不可被共用快取，也不出 ETag
+    let restricted = !matches!(w.visibility.as_str(), "public" | "link");
     let etag = format!("\"w-{}-{}{}\"", w.slug, w.updated_at.timestamp_millis(), if w.locked { "-l" } else { "" });
-    if req.get(header::IF_NONE_MATCH).and_then(|v| v.to_str().ok()) == Some(etag.as_str()) {
+    let cache = [(header::CACHE_CONTROL, if restricted { "private, no-store" } else { "public, s-maxage=10, stale-while-revalidate=60" }.to_string())];
+    if !restricted && parts.headers.get(header::IF_NONE_MATCH).and_then(|v| v.to_str().ok()) == Some(etag.as_str()) {
         return Ok((StatusCode::NOT_MODIFIED, cache, [(header::ETAG, etag)]).into_response());
     }
 
@@ -71,9 +90,11 @@ async fn wishlist(State(st): State<AppState>, Path(slug): Path<String>, req: Hea
     let mut claimers: HashMap<Uuid, Vec<Value>> = HashMap::new();
     if visible {
         let rows: Vec<(Uuid, String, i64)> = sqlx::query_as(
-            "SELECT c.item_id, c.claimer_name, sum(c.qty)::bigint FROM claims c JOIN wishlist_items i ON i.id = c.item_id
+            // 登入者的捐助非 public → 對外顯示「匿名」（此回應可被共用快取，不做逐觀看者的好友判斷）
+            "SELECT c.item_id, CASE WHEN c.visibility IS NULL OR c.visibility = 'public' THEN c.claimer_name ELSE '匿名' END AS n, sum(c.qty)::bigint
+             FROM claims c JOIN wishlist_items i ON i.id = c.item_id
              WHERE i.wishlist_id = $1 AND i.deleted_at IS NULL AND c.status IN ('reserved','purchased','delivered')
-             GROUP BY c.item_id, c.claimer_name ORDER BY min(c.created_at)")
+             GROUP BY c.item_id, n ORDER BY min(c.created_at)")
             .bind(w.id).fetch_all(&st.pool).await?;
         for (item, name, qty) in rows { claimers.entry(item).or_default().push(json!({ "display_name": name, "qty": qty })); }
     }
@@ -127,7 +148,7 @@ async fn wishlist(State(st): State<AppState>, Path(slug): Path<String>, req: Hea
     }).collect();
 
     let body = json!({
-        "slug": w.slug, "type": w.r#type, "status": w.status, "title": w.title, "description": w.description,
+        "slug": w.slug, "visibility": w.visibility, "type": w.r#type, "status": w.status, "title": w.title, "description": w.description,
         "cover_image_url": image_url(w.cover_image_key.as_deref(), &w.cover_image_status),
         "event_date": w.event_date, "id": w.id,
         "owner": { "id": w.owner_id, "display_name": w.owner_name },
@@ -135,5 +156,6 @@ async fn wishlist(State(st): State<AppState>, Path(slug): Path<String>, req: Hea
         "completion": { "item_count": items.len(), "fulfilled_count": fulfilled, "completion_pct": pct(got, total) },
         "items": item_json, "updated_at": w.updated_at,
     });
+    if restricted { return Ok((cache, Json(body)).into_response()); }
     Ok((cache, [(header::ETAG, etag)], Json(body)).into_response())
 }

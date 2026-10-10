@@ -53,11 +53,14 @@ async fn create(State(st): State<AppState>, Path(slug): Path<String>, mut parts:
     if !crate::validate::slug_ok(&slug) { return Err(AppError::NotFound); }
     let detail = match b.detail.as_deref() { Some(d) => Some(crate::validate::text(d, "/detail", true)?).filter(|d| !d.is_empty()), None => None };
     if detail.as_deref().is_some_and(|d| d.chars().count() > 1000) { return Err(AppError::invalid("/detail", "TOO_LONG", "最多 1000 字")); }
-    let w: Option<(Uuid, String)> = sqlx::query_as(
-        "SELECT id, moderation_status::text FROM wishlists
-         WHERE slug = $1 AND deleted_at IS NULL AND visibility <> 'private' AND status IN ('active', 'closed')")
+    let w: Option<(Uuid, String, Uuid, String, Option<String>)> = sqlx::query_as(
+        "SELECT id, moderation_status::text, owner_id, visibility::text, access_password_hash FROM wishlists
+         WHERE slug = $1 AND deleted_at IS NULL AND status IN ('active', 'closed')")
         .bind(&slug).fetch_optional(&st.pool).await?;
-    let (wid, m) = w.ok_or(AppError::NotFound)?;
+    let (wid, m, owner_id, vis, pw) = w.ok_or(AppError::NotFound)?;
+    let viewer = crate::access::viewer(&parts, &st).await?;
+    let acc = parts.headers.get("x-list-access").and_then(|v| v.to_str().ok());
+    crate::access::check_wishlist(&st.pool, &crate::access::ListAccess { wishlist_id: wid, owner_id, visibility: &vis, pw_hash: pw.as_deref() }, viewer, acc).await?;
     if m == "hidden" { return Err(AppError::WishlistRemoved); }
 
     // 檢舉者（選填）：session 或 guest token（X-Guest-Token / ws_guest，DB 存 SHA-256(token 字串)）

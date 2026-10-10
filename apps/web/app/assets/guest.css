@@ -71,3 +71,6 @@ dialog.g-dialog:focus-visible{outline:0}
 .g-btn.ghost.on{background:var(--accent);color:var(--accent-fg)}
 .g-badge.ds-funded,.g-badge.ds-ordered,.g-badge.ds-shipped,.g-badge.ds-delivered{color:var(--ok);border-color:var(--ok)}
 .g-badge.ds-expired{color:var(--bad);border-color:var(--bad)}
+/* 分享頁密碼門檻輸入框 */
+.g-input{width:100%;box-sizing:border-box;font:inherit;font-size:16px;min-height:44px;padding:10px 14px;margin:8px 0;border:1px solid var(--line);background:var(--bg-alt);color:var(--fg)}
+.g-input:focus{outline:2px solid var(--red);outline-offset:0;border-color:var(--red)}
